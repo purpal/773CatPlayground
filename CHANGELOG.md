@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/purpal/773CatPlayground/compare/v0.4.1...v0.4.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* victory buttons losing their background once fully shown ([ebf8116](https://github.com/purpal/773CatPlayground/commit/ebf8116cac1c21ecaa8d268de67b0dea4efdf213))
+
 ## [0.4.1](https://github.com/purpal/773CatPlayground/compare/v0.4.0...v0.4.1) (2026-10-23)
 
 
