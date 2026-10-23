@@ -1,6 +1,31 @@
 # 773CatPlayground
 做給小7玩的遊戲
 
+Android App「773 遊樂場」：一個遊戲大廳，目前收錄「彩虹倒水」。
+
+## 遊戲
+
+### 彩虹倒水
+- 把試管裡的彩色水倒來倒去，讓每支試管只剩一種顏色
+- 200 關，顏色從 2 種逐步增加到 12 種；每關都由解題器確認有解
+- 依通過關卡數升級稱號（🐱 小貓見習生 → 🏆 倒水之神）
+- 倒水動畫、過關動畫與隨機稱讚語；音效與背景音樂由程式即時合成
+- 可復原上一步、重玩本關
+
+### 新增遊戲
+1. 在 `Navigation.kt` 的 `Screen` 加上新遊戲畫面
+2. 在 `MainActivity.kt` 的 `AppRoot` 顯示該畫面
+3. 在 `lobby/GameRegistry.kt` 加一筆 `GameEntry`，大廳就會出現
+
+## 開發
+
+需要 JDK 17 以上與 Android SDK（compileSdk 35）。
+
+```sh
+./gradlew testDebugUnitTest   # 單元測試（含 200 關可解性檢查）
+./gradlew assembleDebug       # 建置 debug APK
+```
+
 ## 版號與發佈
 
 版號由 GitHub Actions 的 [release-please](https://github.com/googleapis/release-please-action) 自動管理，請勿手動修改版號或 `CHANGELOG.md`。
@@ -11,7 +36,11 @@
    - `feat!: ...` 或內文含 `BREAKING CHANGE:` → 1.0 之前升次版號，1.0 之後升主版號
    - `docs:`、`chore:`、`refactor:`、`test:` 等不會觸發新版本
 2. 推送到 `main` 後，release-please 會自動開 Release PR（更新 `.release-please-manifest.json` 中的版號與 `CHANGELOG.md`）並**自動合併**。
-3. 合併後會立即建立 `vX.Y.Z` tag 與 GitHub Release，並執行 release build，把產出的檔案上傳到該 Release。
+3. 合併後會立即建立 `vX.Y.Z` tag 與 GitHub Release，並建置簽署過的 APK 上傳到該 Release。
+4. 推送到 `main` 時會先跑單元測試與建置，失敗就不會發版。
+
+APK 簽署需要在 repo 的 **Settings → Secrets and variables → Actions** 設定
+`ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`。
 
 > 首次使用前，請到 repo 的 **Settings → Actions → General → Workflow permissions**，
 > 勾選「Allow GitHub Actions to create and approve pull requests」。
