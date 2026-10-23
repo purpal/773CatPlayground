@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/purpal/773CatPlayground/compare/v0.2.0...v0.3.0) (2026-10-23)
+
+
+### Features
+
+* league-style victory screen and faster pouring ([2e81269](https://github.com/purpal/773CatPlayground/commit/2e81269ad4a26b63ea07174d5dd9e77ca95cd03a))
+
 ## [0.2.0](https://github.com/purpal/773CatPlayground/compare/v0.1.0...v0.2.0) (2026-10-23)
 
 
