@@ -145,6 +145,15 @@ internal object ShooterSounds {
         return Synth.toPcm(b, 0.35f)
     }
 
+    /** 光束的嗡嗡聲（持續射擊時每隔一小段重播）。 */
+    fun beam(): ShortArray {
+        val b = Synth.buffer(0.2)
+        addTone(b, 0.0, 0.2, 180.0, 190.0, 0.4, Wave.SAW, pluck = false)
+        addTone(b, 0.0, 0.2, 720.0, 760.0, 0.15, Wave.SQUARE, pluck = false)
+        addNoise(b, 0.0, 0.2, 0.15, 0.6)
+        return Synth.toPcm(b, 0.3f)
+    }
+
     fun dialog(): ShortArray {
         val b = Synth.buffer(0.05)
         addTone(b, 0.0, 0.04, 1000.0, 1200.0, 0.4, Wave.SQUARE)

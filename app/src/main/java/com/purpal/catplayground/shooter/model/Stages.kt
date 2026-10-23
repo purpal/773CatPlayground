@@ -35,7 +35,6 @@ class StageDef(
     val theme: StageTheme,
     val bossName: String,
     val createBoss: () -> Boss,
-    val intro: List<DialogLine>,
     val outro: List<DialogLine>,
     val script: StageScript,
 )
@@ -57,11 +56,6 @@ object Stages {
         theme = StageTheme.CHEESE_BARN,
         bossName = "起司鼠王",
         createBoss = ::MouseBoss,
-        intro = listOf(
-            boss("吱吱！最萌動物的寶座是我的！誰都別想搶走我的起司！"),
-            cat("喵～論可愛，貓咪才是第一名！"),
-            boss("哼！看我的起司大砲！"),
-        ),
         outro = listOf(
             boss("吱…你的肉球真的好可愛…起司分你一半…"),
             cat("謝謝招待喵！下一站，出發！"),
@@ -100,11 +94,6 @@ object Stages {
         theme = StageTheme.PARK,
         bossName = "柴犬隊長",
         createBoss = ::DogBoss,
-        intro = listOf(
-            boss("汪！大家都說柴犬的笑容最療癒！"),
-            cat("笑容？先看看我的貓貓拳！"),
-            boss("隊員們，上吧！不對…只剩我了。汪嗚！"),
-        ),
         outro = listOf(
             boss("嗚汪…我、我只是想被摸摸頭…"),
             cat("摸摸～你也很可愛，但第一名是我喵！"),
@@ -141,11 +130,6 @@ object Stages {
         theme = StageTheme.HONEY_FOREST,
         bossName = "熊熊大王",
         createBoss = ::BearBoss,
-        intro = listOf(
-            boss("呼嚕…森林裡最大隻又最可愛的，就是熊熊！"),
-            cat("大隻不等於可愛喵！"),
-            boss("吃我的蜂蜜熊掌！"),
-        ),
         outro = listOf(
             boss("蜂蜜…分你吃…你贏了…"),
             cat("甜甜的！萌王寶座又近了一步喵！"),

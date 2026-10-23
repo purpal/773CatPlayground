@@ -3,16 +3,29 @@ package com.purpal.catplayground.shooter.render
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
+import com.purpal.catplayground.shooter.model.BallTurret
+import com.purpal.catplayground.shooter.model.Balloon
+import com.purpal.catplayground.shooter.model.Boss
 import com.purpal.catplayground.shooter.model.BulletStyle
 import com.purpal.catplayground.shooter.model.CatType
+import com.purpal.catplayground.shooter.model.CheeseDrone
+import com.purpal.catplayground.shooter.model.Enemy
 import com.purpal.catplayground.shooter.model.EnemyBullet
+import com.purpal.catplayground.shooter.model.EnemyKind
+import com.purpal.catplayground.shooter.model.Frisbee
+import com.purpal.catplayground.shooter.model.ItemType
 import com.purpal.catplayground.shooter.model.Laser
+import com.purpal.catplayground.shooter.model.MainWeapon
+import com.purpal.catplayground.shooter.model.MousePlane
 import com.purpal.catplayground.shooter.model.Particle
 import com.purpal.catplayground.shooter.model.ParticleKind
 import com.purpal.catplayground.shooter.model.Phase
@@ -28,16 +41,16 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /** 把世界座標（寬 1000）縮放到畫面並置中。 */
-class Viewport(val scale: Float, val offsetX: Float, val offsetY: Float) {
-    fun toScreen(x: Float, y: Float) = Offset(offsetX + x * scale, offsetY + y * scale)
-}
+class Viewport(val scale: Float, val offsetX: Float, val offsetY: Float)
 
 fun viewportFor(size: Size, worldHeight: Float): Viewport {
     val scale = minOf(size.width / WORLD_WIDTH, size.height / worldHeight)
     return Viewport(scale, (size.width - WORLD_WIDTH * scale) / 2f, (size.height - worldHeight * scale) / 2f)
 }
 
-fun DrawScope.drawWorld(w: World, view: Viewport) {
+private val WhiteFlash = ColorFilter.tint(Color.White, BlendMode.SrcIn)
+
+fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
     drawRect(themeEdge(w.stage.theme))
     val shake = if (w.shakeTime > 0f) sin(w.time * 90f) * 10f * minOf(1f, w.shakeTime * 3f) else 0f
     withTransform({
@@ -46,28 +59,86 @@ fun DrawScope.drawWorld(w: World, view: Viewport) {
     }) {
         clipRect(0f, 0f, WORLD_WIDTH, w.height) {
             drawBackground(w.stage.theme, w.scroll, w.height, w.time)
+            // 背景稍微壓暗，讓角色、子彈與特效更突出。
+            drawRect(Color(0xFF140A26).copy(alpha = 0.28f), size = Size(WORLD_WIDTH, w.height))
             for (wall in w.walls) drawSonicWall(wall)
-            for (item in w.items) at(item.x, item.y, 1.05f) { drawItemBadge(item.type, item.age) }
-            for (e in w.enemies) drawEnemy(e, w.time)
-            for (s in w.playerShots) drawShot(s)
-            drawPlayer(w)
-            for (l in w.lasers) drawLaser(l)
-            for (b in w.bullets) drawBullet(b)
-            for (p in w.particles) drawParticle(p)
+            for (item in w.items) {
+                val bob = sin(item.age * 5f) * 4f
+                if (item.type != ItemType.COIN) drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 0.9f + sin(item.age * 6f) * 0.15f, alpha = 0.35f, blendMode = BlendMode.Plus)
+                drawSprite(sprites.item(item.type), item.x, item.y + bob, 0.95f)
+            }
+            for (e in w.enemies) drawEnemy(e, w, sprites)
+            for (s in w.playerShots) drawShot(s, sprites)
+            drawBeam(w, sprites)
+            drawPlayer(w, sprites)
+            for (l in w.lasers) drawLaser(l, sprites)
+            for (b in w.bullets) drawBullet(b, sprites)
+            for (p in w.particles) drawParticle(p, sprites)
             if (w.blastRadius >= 0f) drawBlast(w)
         }
     }
+    if (w.screenFlash > 0f) drawRect(Color.White.copy(alpha = w.screenFlash * 0.65f))
 }
 
-private fun DrawScope.drawPlayer(w: World) {
+private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
     val p = w.player
     if (!p.alive || w.phase == Phase.PLAYER_DOWN || w.phase == Phase.CONTINUE) return
-    val blinking = p.invulnerable > 0f && p.transformed <= 0f && (w.time * 14f).toInt() % 2 == 0
-    if (blinking) return
-    val bank = (p.vx / p.cat.baseSpeed) * 14f
-    at(p.x, p.y, 1.3f) { drawCatShip(p.cat, w.time, bank, transformed = p.transformed > 0f) }
-    // 判定點：小小的愛心
-    if (w.firing) shape(Shapes.heart, p.x, p.y + 4f, 9f, Color(0xFFFF4081))
+    val beast = p.transformed > 0f
+    if (beast) {
+        val aura = if (p.cat == CatType.ORANGE) 0xFFFFC107L else 0xFFB388FFL
+        drawSprite(sprites.glow(aura), p.x, p.y, 2.2f + sin(w.time * 12f) * 0.2f, alpha = 0.7f, blendMode = BlendMode.Plus)
+    }
+    val blink = p.invulnerable > 0f && !beast && (w.time * 14f).toInt() % 2 == 0
+    val bank = (p.vx / p.cat.baseSpeed).coerceIn(-1.5f, 1.5f) * 12f
+    val frame = (w.time * 16f).toInt() % 4
+    drawSprite(sprites.cat(p.cat, frame, beast), p.x, p.y, if (beast) 1.4f else 1.15f, bank, alpha = if (blink) 0.35f else 1f)
+    val shooting = w.firing && (w.phase == Phase.STAGE || w.phase == Phase.BOSS || w.phase == Phase.WARNING)
+    if (shooting && p.mainWeapon != MainWeapon.FOCUS) {
+        val flicker = 0.45f + ((w.time * 30f).toInt() % 3) * 0.12f
+        drawSprite(sprites.muzzle(), p.x, p.y - 58f, flicker, w.time * 600f, blendMode = BlendMode.Plus)
+    }
+    // 判定點
+    if (w.firing) {
+        circle(p.x, p.y + 4f, 8f, Color.White)
+        shape(Shapes.heart, p.x, p.y + 4f, 6.5f, Color(0xFFFF2D6F))
+    }
+}
+
+private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
+    val slow = ((w.time * 4f).toInt() + e.id) % 2
+    val fast = ((w.time * 18f).toInt() + e.id) % 2
+    // 被打中時白色閃一下；持續被光束照射時改成閃爍，避免整隻一直泛白。
+    val flash = e.hitFlash > 0f && ((w.time * 20f).toInt() % 2 == 0)
+    fun sprite(s: Sprite, scale: Float = 1f, rotation: Float = 0f, flipX: Boolean = false) {
+        drawSprite(s, e.x, e.y, scale, rotation, flipX = flipX)
+        if (flash) drawSprite(s, e.x, e.y, scale, rotation, alpha = 0.5f, flipX = flipX, colorFilter = WhiteFlash)
+    }
+    when (e.kind) {
+        EnemyKind.CHEESE_DRONE -> {
+            sprite(sprites.cheeseWheel(), rotation = (e as CheeseDrone).spin * 57.3f)
+            sprite(sprites.enemy(e.kind, 0, 0))
+        }
+        EnemyKind.FRISBEE -> sprite(sprites.frisbee(), rotation = (e as Frisbee).spin * 57.3f)
+        EnemyKind.BALL_TURRET -> {
+            sprite(sprites.enemy(e.kind, 0, 0))
+            sprite(sprites.barrel(), rotation = (e as BallTurret).aim * 57.3f)
+        }
+        EnemyKind.BEEHIVE -> sprite(sprites.beehive(), rotation = e.age * 200f)
+        EnemyKind.MOUSE_PLANE -> sprite(sprites.enemy(e.kind, fast, 0), flipX = (e as MousePlane).facing < 0f)
+        EnemyKind.MINI_MOUSE -> sprite(sprites.enemy(e.kind, fast, 0), 0.8f)
+        EnemyKind.BEE -> sprite(sprites.enemy(e.kind, fast, 0))
+        EnemyKind.BALLOON -> sprite(sprites.enemy(e.kind, 0, 0, (e as Balloon).drop))
+        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR -> {
+            val boss = e as Boss
+            val defeated = w.phase == Phase.BOSS_DEFEATED
+            val wobble = if (defeated) sin(w.time * 50f) * 6f else 0f
+            drawSprite(sprites.enemy(e.kind, slow, boss.phase), e.x + wobble, e.y, rotationDegrees = wobble * 0.5f)
+            if (flash || defeated && (w.time * 10f).toInt() % 2 == 0) {
+                drawSprite(sprites.enemy(e.kind, slow, boss.phase), e.x + wobble, e.y, alpha = 0.3f, colorFilter = WhiteFlash)
+            }
+        }
+        else -> sprite(sprites.enemy(e.kind, slow, 0))
+    }
 }
 
 // ───────────── 背景 ─────────────
@@ -97,7 +168,6 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.HONEY_FOREST -> forestRow(y, random)
         }
     }
-    // 前景飄落的小東西（灰塵、花瓣、葉子），比地面捲得快一點。
     val drift = Random(theme.ordinal)
     repeat(14) {
         val x = drift.nextFloat() * WORLD_WIDTH + sin(time * 0.8f + it) * 30f
@@ -140,7 +210,6 @@ private fun DrawScope.barnRow(y: Float, random: Random, row: Int) {
 
 private fun DrawScope.parkRow(y: Float, random: Random, row: Int) {
     if (row % 2 == 0) drawRect(Color(0xFF98DB8A), Offset(0f, y), Size(WORLD_WIDTH, TILE / 2f))
-    // 蜿蜒的步道
     for (k in 0..6) {
         val fy = y + k * TILE / 6f
         val worldY = row * TILE + (TILE - k * TILE / 6f)
@@ -209,99 +278,96 @@ private fun DrawScope.drawHoneycomb(x: Float, y: Float) {
     }
 }
 
-// ───────────── 子彈與特效 ─────────────
+// ───────────── 子彈、武器與特效 ─────────────
 
-private fun DrawScope.drawBullet(b: EnemyBullet) {
-    val color = b.color.toColor()
-    // 畫得比判定大一點，比較好看清楚；判定仍以 b.radius 計算。
-    val r = b.radius * 1.3f
-    circle(b.x, b.y, r * 1.7f, color.copy(alpha = 0.28f))
-    when (b.style) {
-        BulletStyle.ORB, BulletStyle.BIG_ORB, BulletStyle.SEED -> {
-            circle(b.x, b.y, r, color)
-            circle(b.x, b.y, r * 0.5f, Color.White)
-        }
-        BulletStyle.RICE -> {
-            val angle = atan2(b.vy, b.vx) * 57.3f
-            at(b.x, b.y, rotationDegrees = angle) {
-                oval(0f, 0f, r * 2.6f, r * 1.5f, color)
-                oval(0f, 0f, r * 1.6f, r * 0.7f, Color.White)
-            }
-        }
-        BulletStyle.CHEESE -> {
-            shape(Shapes.wedge, b.x, b.y, r * 1.2f, color, rotationDegrees = b.age * 300f)
-            circle(b.x, b.y, r * 0.3f, Color(0xFFFFA000))
-        }
-        BulletStyle.BONE -> at(b.x, b.y, rotationDegrees = b.age * 420f) {
-            drawRoundRect(color, Offset(-r, -r * 0.3f), Size(r * 2f, r * 0.6f), CornerRadius(r * 0.3f))
-            for (sx in listOf(-1f, 1f)) for (sy in listOf(-1f, 1f)) circle(sx * r, sy * r * 0.32f, r * 0.38f, color)
-        }
-        BulletStyle.NOTE -> {
-            circle(b.x - r * 0.2f, b.y + r * 0.35f, r * 0.65f, color)
-            line(b.x + r * 0.35f, b.y + r * 0.35f, b.x + r * 0.35f, b.y - r, color, r * 0.3f)
-            line(b.x + r * 0.35f, b.y - r, b.x + r, b.y - r * 0.6f, color, r * 0.3f)
-            circle(b.x - r * 0.35f, b.y + r * 0.2f, r * 0.2f, Color.White)
-        }
-        BulletStyle.HONEY -> {
-            shape(Shapes.drop, b.x, b.y, r, color)
-            circle(b.x - r * 0.3f, b.y, r * 0.25f, Color.White.copy(alpha = 0.8f))
-        }
-        BulletStyle.STAR -> {
-            shape(Shapes.star, b.x, b.y, r * 1.25f, color, rotationDegrees = b.age * 360f)
-            circle(b.x, b.y, r * 0.3f, Color.White)
-        }
+private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
+    val sprite = sprites.bullet(b.style, b.color, b.radius)
+    val scale = b.radius / SpriteCache.bulletReference(b.radius)
+    val rotation = when {
+        b.style == BulletStyle.RICE -> atan2(b.vy, b.vx) * 57.3f
+        b.spin -> b.age * 300f
+        else -> 0f
     }
+    drawSprite(sprite, b.x, b.y, scale, rotation)
 }
 
-private fun DrawScope.drawShot(s: PlayerShot) {
+private fun DrawScope.drawShot(s: PlayerShot, sprites: SpriteCache) {
     when (s.style) {
-        ShotStyle.PELLET -> {
-            oval(s.x, s.y, 18f, 30f, Color(0xFF40C4FF).copy(alpha = 0.35f))
-            at(s.x, s.y, rotationDegrees = atan2(s.vy, s.vx) * 57.3f + 90f) { oval(0f, 0f, 9f, 22f, Color(0xFFB3E5FC)) }
-        }
-        ShotStyle.FOCUS -> {
-            drawRoundRect(Color(0xFFFF6E40).copy(alpha = 0.4f), Offset(s.x - 9f, s.y - 22f), Size(18f, 44f), CornerRadius(9f))
-            drawRoundRect(Color(0xFFFFE0B2), Offset(s.x - 4f, s.y - 18f), Size(8f, 36f), CornerRadius(4f))
-        }
+        ShotStyle.PELLET -> drawSprite(sprites.pellet(), s.x, s.y, 1f, atan2(s.vy, s.vx) * 57.3f + 90f)
         ShotStyle.PAW -> {
-            circle(s.x, s.y, s.radius * 1.4f, Color(0xFFFFB74D).copy(alpha = 0.35f))
-            paw(s.x, s.y, s.radius, Color(0xFFFFE0B2))
-            paw(s.x, s.y, s.radius * 0.7f, Color(0xFFFF8A65))
+            val scale = s.radius / 26f
+            drawSprite(sprites.fire(), s.x, s.y + 40f * scale, scale * 0.9f, alpha = 0.35f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.paw(), s.x, s.y + 22f * scale, scale * 0.85f, alpha = 0.4f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.paw(), s.x, s.y, scale, blendMode = BlendMode.Plus)
         }
-        ShotStyle.NEEDLE -> {
-            line(s.x, s.y - 20f, s.x, s.y + 16f, Color(0xFFE040FB).copy(alpha = 0.4f), 10f)
-            line(s.x, s.y - 18f, s.x, s.y + 14f, Color(0xFFF3E5F5), 4f)
-        }
-        ShotStyle.MISSILE -> at(s.x, s.y, rotationDegrees = atan2(s.vy, s.vx) * 57.3f + 180f) {
-            circle(18f, 0f, 7f, Color(0xFFB9F6CA).copy(alpha = 0.5f))
-            fish(0f, 0f, 14f, Color(0xFF00E676))
-            circle(-6f, -2f, 2f, Color(0xFF1B5E20))
+        ShotStyle.CLAW -> drawSprite(sprites.claw(), s.x, s.y, 1f)
+        ShotStyle.MISSILE -> {
+            val angle = atan2(s.vy, s.vx) * 57.3f
+            drawSprite(sprites.glow(0xFF69F0AEL), s.x - s.vx * 0.02f, s.y - s.vy * 0.02f, 0.35f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.missile(), s.x, s.y, 1f, angle + 180f)
         }
         ShotStyle.SONIC -> for (k in 0..2) {
-            val r = 14f + k * 9f + (s.age * 60f) % 9f
-            drawArc(Color(0xFFD1A6FF).copy(alpha = 0.9f - k * 0.25f), 200f, 140f, false, Offset(s.x - r, s.y - r), Size(r * 2, r * 2), style = Stroke(5f))
+            val r = 14f + k * 10f + (s.age * 70f) % 10f
+            drawArc(Color(0xFFD1A6FF).copy(alpha = 0.9f - k * 0.25f), 200f, 140f, false, Offset(s.x - r, s.y - r), Size(r * 2, r * 2), style = Stroke(6f), blendMode = BlendMode.Plus)
         }
     }
 }
 
-private fun DrawScope.drawLaser(l: Laser) {
+/** 集中型光束：外層光暈、青色本體、白色核心、往上流動的能量環，命中點有光球。 */
+private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
+    val b = w.beam
+    if (!b.active) return
+    val top = b.top
+    val height = b.bottom - top
+    if (height <= 0f) return
+    val pulse = 1f + sin(w.time * 40f) * 0.08f
+    val width = b.width * pulse
+    val cyan = Color(0xFF40E0FF)
+    drawRect(
+        Brush.horizontalGradient(listOf(Color.Transparent, cyan.copy(alpha = 0.45f), Color.Transparent), b.x - width * 1.6f, b.x + width * 1.6f),
+        Offset(b.x - width * 1.6f, top),
+        Size(width * 3.2f, height),
+        blendMode = BlendMode.Plus,
+    )
+    drawRect(
+        Brush.horizontalGradient(listOf(cyan.copy(alpha = 0.2f), cyan, Color.White, cyan, cyan.copy(alpha = 0.2f)), b.x - width / 2f, b.x + width / 2f),
+        Offset(b.x - width / 2f, top),
+        Size(width, height),
+    )
+    drawRect(Color.White, Offset(b.x - width * 0.14f, top), Size(width * 0.28f, height))
+    var k = 0
+    while (k < 30) {
+        val y = b.bottom - ((w.time * 1500f + k * 110f) % height)
+        if (y < top) break
+        drawOval(Color.White.copy(alpha = 0.5f), Offset(b.x - width * 0.7f, y - width * 0.15f), Size(width * 1.4f, width * 0.3f), blendMode = BlendMode.Plus)
+        k++
+    }
+    drawSprite(sprites.glow(0xFF80F0FFL), b.x, b.bottom, width / 50f * 1.4f, blendMode = BlendMode.Plus)
+    if (top > 0f) {
+        drawSprite(sprites.glow(0xFF80F0FFL), b.x, top, width / 50f * 2.4f * pulse, alpha = 0.9f, blendMode = BlendMode.Plus)
+        drawSprite(sprites.muzzle(), b.x, top, width / 90f * 1.8f, w.time * 900f, alpha = 0.8f, blendMode = BlendMode.Plus)
+    }
+}
+
+private fun DrawScope.drawLaser(l: Laser, sprites: SpriteCache) {
     val color = l.color.toColor()
     val start = Offset(l.x, l.y)
     val end = Offset(l.endX, l.endY)
     if (!l.active) {
         if (l.age < l.warnTime) {
-            val blink = if ((l.age * 12f).toInt() % 2 == 0) 0.8f else 0.35f
-            drawLine(color.copy(alpha = blink), start, end, 5f)
-            circle(l.x, l.y, 14f + l.age * 20f, color.copy(alpha = 0.4f))
+            val blink = if ((l.age * 12f).toInt() % 2 == 0) 0.9f else 0.4f
+            drawLine(color.copy(alpha = blink), start, end, 6f)
+            drawLine(Color.White.copy(alpha = blink), start, end, 2f)
+            drawSprite(sprites.glow(l.color), l.x, l.y, 0.3f + l.age * 0.8f, blendMode = BlendMode.Plus)
         }
         return
     }
     val fade = minOf(1f, (l.warnTime + l.activeTime - l.age) * 6f)
-    drawLine(color.copy(alpha = 0.3f * fade), start, end, l.width * 2.2f)
-    drawLine(color.copy(alpha = fade), start, end, l.width)
-    drawLine(Color.White.copy(alpha = fade), start, end, l.width * 0.4f)
-    circle(l.x, l.y, l.width * 1.3f, color.copy(alpha = 0.6f * fade))
-    circle(l.x, l.y, l.width * 0.7f, Color.White.copy(alpha = fade))
+    val pulse = 1f + sin(l.age * 50f) * 0.1f
+    drawLine(color.copy(alpha = 0.35f * fade), start, end, l.width * 2.6f * pulse, StrokeCap.Round, blendMode = BlendMode.Plus)
+    drawLine(color.copy(alpha = fade), start, end, l.width * pulse, StrokeCap.Round)
+    drawLine(Color.White.copy(alpha = fade), start, end, l.width * 0.4f, StrokeCap.Round)
+    drawSprite(sprites.glow(l.color), l.x, l.y, l.width / 50f * 2.2f * pulse, alpha = fade, blendMode = BlendMode.Plus)
 }
 
 private fun DrawScope.drawSonicWall(w: SonicWall) {
@@ -310,20 +376,34 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
     val topLeft = Offset(w.x - w.radius, w.centerY - w.radius)
     val size = Size(w.radius * 2f, w.radius * 2f)
     val pulse = 1f + sin(w.age * 20f) * 0.1f
-    drawArc(Color(0xFFB388FF).copy(alpha = 0.45f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f * pulse))
-    drawArc(Color(0xFFEDE7F6).copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(6f))
+    drawArc(Color(0xFF9C6BFF).copy(alpha = 0.45f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f * pulse), blendMode = BlendMode.Plus)
+    drawArc(Color(0xFFEDE7F6).copy(alpha = 0.95f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(5f))
+    val inner = w.radius - w.thickness * 0.6f
+    drawArc(Color(0xFFD1C4E9).copy(alpha = 0.6f * fade), -90f - degrees, degrees * 2f, false, Offset(w.x - inner, w.centerY - inner), Size(inner * 2f, inner * 2f), style = Stroke(3f))
 }
 
-private fun DrawScope.drawParticle(p: Particle) {
+private fun DrawScope.drawParticle(p: Particle, sprites: SpriteCache) {
     val t = p.progress
     val color = p.color.toColor()
     when (p.kind) {
-        ParticleKind.SPARK -> circle(p.x, p.y, p.size * (1f - t), color.copy(alpha = 1f - t))
+        ParticleKind.SPARK -> drawLine(
+            color.copy(alpha = 1f - t),
+            Offset(p.x, p.y),
+            Offset(p.x - p.vx * 0.035f, p.y - p.vy * 0.035f),
+            p.size * (1f - t * 0.5f),
+            StrokeCap.Round,
+            blendMode = BlendMode.Plus,
+        )
+        ParticleKind.FIRE -> {
+            val s = p.size * (0.6f + t * 0.9f) / 50f
+            drawSprite(sprites.fire(), p.x, p.y, s, alpha = (1f - t) * (1f - t * 0.3f))
+            if (t < 0.35f) drawSprite(sprites.fire(), p.x, p.y, s * 0.7f, alpha = 1f - t / 0.35f, blendMode = BlendMode.Plus)
+        }
+        ParticleKind.SMOKE -> drawSprite(sprites.smoke(), p.x, p.y, p.size * (0.6f + t) / 50f, alpha = 0.6f * (1f - t))
+        ParticleKind.FLASH -> drawSprite(sprites.glow(0xFFFFFFFFL), p.x, p.y, p.size / 50f * (0.7f + t * 0.5f), alpha = 1f - t, blendMode = BlendMode.Plus)
         ParticleKind.STAR -> shape(Shapes.star, p.x, p.y, p.size * (1f - t * 0.5f), color.copy(alpha = 1f - t), rotationDegrees = t * 360f)
         ParticleKind.HEART -> shape(Shapes.heart, p.x, p.y, p.size * (1f - t * 0.3f), color.copy(alpha = 1f - t))
-        ParticleKind.RING -> drawCircle(color.copy(alpha = 1f - t), p.size * (0.2f + t), Offset(p.x, p.y), style = Stroke(10f * (1f - t) + 1f))
-        ParticleKind.SMOKE -> circle(p.x, p.y, p.size * (0.5f + t), color.copy(alpha = 0.5f * (1f - t)))
-        ParticleKind.FLASH -> circle(p.x, p.y, p.size * (0.6f + t * 0.4f), color.copy(alpha = 1f - t))
+        ParticleKind.RING -> drawCircle(color.copy(alpha = 1f - t), p.size * (0.2f + t), Offset(p.x, p.y), style = Stroke(14f * (1f - t) + 1f), blendMode = BlendMode.Plus)
     }
 }
 
@@ -333,13 +413,14 @@ private fun DrawScope.drawBlast(w: World) {
     val color = if (p.cat == CatType.ORANGE) Color(0xFFFFC107) else Color(0xFFB388FF)
     drawCircle(
         Brush.radialGradient(
-            0.7f to Color.Transparent,
-            0.95f to color.copy(alpha = 0.55f),
-            1f to Color.White.copy(alpha = 0.9f),
+            0.6f to Color.Transparent,
+            0.9f to color.copy(alpha = 0.6f),
+            1f to Color.White,
             center = Offset(p.x, p.y),
             radius = r.coerceAtLeast(1f),
         ),
         r,
         Offset(p.x, p.y),
+        blendMode = BlendMode.Plus,
     )
 }

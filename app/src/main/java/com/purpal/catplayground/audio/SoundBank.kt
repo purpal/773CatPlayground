@@ -10,7 +10,7 @@ enum class Sfx {
 
     // 射擊遊戲
     SHOT, SHOT_HEAVY, ENEMY_HIT, EXPLODE_SMALL, EXPLODE_BIG, ITEM, POWER_UP, PLAYER_HIT,
-    ROAR_TIGER, ROAR_PANTHER, BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, DIALOG,
+    ROAR_TIGER, ROAR_PANTHER, BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM, DIALOG,
 }
 
 /** 勝利音效中「轟」的時間點，要和勝利橫幅落地的動畫對齊。 */
@@ -43,6 +43,7 @@ object SoundBank {
         Sfx.SONIC -> ShooterSounds.sonic()
         Sfx.MISSILE -> ShooterSounds.missile()
         Sfx.LASER -> ShooterSounds.laser()
+        Sfx.BEAM -> ShooterSounds.beam()
         Sfx.DIALOG -> ShooterSounds.dialog()
     }
 

@@ -35,16 +35,15 @@ enum class ItemType { SPREAD, FOCUS, SPECIAL, HOMING, SONIC, REPAIR, BOMB, COIN 
 /** 給畫面播放音效用的事件。 */
 enum class SoundCue {
     SHOT, SHOT_HEAVY, ENEMY_HIT, EXPLODE_SMALL, EXPLODE_BIG, ITEM, POWER_UP, PLAYER_HIT,
-    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER,
+    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM,
 }
 
 enum class Phase {
     /** 關卡標題，機體從下方飛入。 */
     INTRO,
     STAGE,
+    /** 警告畫面；Boss 在這段時間進場，到定位後直接開打。 */
     WARNING,
-    /** Boss 登場後的對話；世界暫停，等畫面呼叫 [World.dialogFinished]。 */
-    BOSS_DIALOG,
     BOSS,
     BOSS_DEFEATED,
     OUTRO_DIALOG,

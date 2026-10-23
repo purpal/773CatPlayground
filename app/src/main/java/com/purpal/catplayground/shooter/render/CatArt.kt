@@ -1,125 +1,140 @@
 package com.purpal.catplayground.shooter.render
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.purpal.catplayground.shooter.model.CatType
 import kotlin.math.sin
 
-private class CatLook(
+private class CatPalette(
     val fur: Color,
-    val dark: Color,
+    val furShade: Color,
+    val stripe: Color,
     val belly: Color,
     val iris: Color,
-    val pupilSlit: Boolean,
+    val slit: Boolean,
+    val innerEar: Color,
 )
 
-private val orangeLook = CatLook(Color(0xFFFFA64D), Color(0xFFE0712A), Color(0xFFFFE6C7), Color(0xFF5A3A22), pupilSlit = false)
-private val blackLook = CatLook(Color(0xFF2E2A3B), Color(0xFF15131C), Color(0xFF4B4562), Color(0xFFFFD54F), pupilSlit = true)
-private val tigerLook = CatLook(Color(0xFFFFA726), Color(0xFF1E1A16), Color(0xFFFFF8EC), Color(0xFF7CB342), pupilSlit = true)
-private val pantherLook = CatLook(Color(0xFF1C1B2E), Color(0xFF3D3A78), Color(0xFF2A2847), Color(0xFFFFEB3B), pupilSlit = true)
-
-private val Pink = Color(0xFFFF8FB1)
-private val Blush = Color(0x66FF6F9F)
+private val orange = CatPalette(Color(0xFFFFA445), Color(0xFFE0782A), Color(0xFFB4501E), Color(0xFFFFF4E2), Color(0xFF8A5A2B), false, Color(0xFFFF9DB5))
+private val black = CatPalette(Color(0xFF3A3452), Color(0xFF221E33), Color(0xFF221E33), Color(0xFFF2EEFF), Color(0xFFFFD43B), true, Color(0xFFFF8FB0))
+private val tiger = CatPalette(Color(0xFFFF9A1F), Color(0xFFD9680E), Color(0xFF1E1410), Color(0xFFFFFBF2), Color(0xFF7CD13A), true, Color(0xFFFFF4E2))
+private val panther = CatPalette(Color(0xFF2B2640), Color(0xFF15121F), Color(0xFF6E5BD6), Color(0xFF2B2640), Color(0xFFFFE135), true, Color(0xFF6E5BD6))
 
 /**
- * 玩家的貓咪機體（正面朝向玩家），中心在 (0,0)，大約 80 寬。
- * transformed 為 true 時畫成老虎／黑豹。
+ * 玩家機體，中心 (0,0)，大約 90 寬。
+ * frame 0～3 控制推進火焰與尾巴的擺動（精靈圖會各畫一張）。
  */
+fun DrawScope.drawCatSprite(cat: CatType, frame: Int, beast: Boolean) {
+    val p = when {
+        beast && cat == CatType.ORANGE -> tiger
+        beast -> panther
+        cat == CatType.ORANGE -> orange
+        else -> black
+    }
+    val wave = sin(frame * 1.57f)
+    jetFlames(frame, beast, cat)
+    tail(p, wave, stripes = cat == CatType.ORANGE || beast)
+    // 身體、手、肚子、腳
+    blob(ovalPath(0f, 26f, 50f, 42f), p.fur, p.furShade)
+    blob(ovalPath(0f, 30f, 28f, 24f), p.belly, p.belly.shade(0.12f), highlight = false, width = 0f)
+    for (side in listOf(-1f, 1f)) {
+        blob(ovalPath(side * 23f, 24f, 14f, 18f), p.fur, p.furShade)
+        blob(ovalPath(side * 12f, 45f, 18f, 12f), p.belly, p.belly.shade(0.15f), highlight = false)
+    }
+    head(p, cat, beast)
+}
+
+/** 選單或對話框直接畫的版本（會擺動）。 */
 fun DrawScope.drawCatShip(cat: CatType, time: Float, bank: Float, transformed: Boolean) {
-    if (transformed) {
-        val aura = if (cat == CatType.ORANGE) Color(0xFFFFC107) else Color(0xFF9C6BFF)
-        val pulse = 1f + sin(time * 10f) * 0.08f
-        drawCircle(
-            Brush.radialGradient(listOf(aura.copy(alpha = 0.6f), aura.copy(alpha = 0f)), Offset.Zero, 90f * pulse),
-            90f * pulse,
-            Offset.Zero,
-        )
-        at(0f, 0f, scale = 1.3f, rotationDegrees = bank) { drawBigCat(cat, time, fierce = true) }
-        return
-    }
-    at(0f, 0f, rotationDegrees = bank) { drawCatBody(if (cat == CatType.ORANGE) orangeLook else blackLook, cat == CatType.ORANGE, time) }
+    at(0f, 0f, rotationDegrees = bank) { drawCatSprite(cat, ((time * 12f).toInt()) % 4, transformed) }
 }
 
-/** 大絕畫面上的老虎／黑豹大頭（同樣以 (0,0) 為中心，約 80 寬，用 scale 放大）。 */
+/** 大絕動畫裡的大頭（老虎／黑豹在咆哮）。 */
 fun DrawScope.drawBigCat(cat: CatType, time: Float, fierce: Boolean) {
-    val look = if (cat == CatType.ORANGE) tigerLook else pantherLook
-    drawCatBody(look, stripes = cat == CatType.ORANGE, time = time, fierce = fierce, tiger = true)
+    drawCatSprite(cat, ((time * 12f).toInt()) % 4, beast = fierce)
 }
 
-private fun DrawScope.drawCatBody(look: CatLook, stripes: Boolean, time: Float, fierce: Boolean = false, tiger: Boolean = false) {
-    // 腳底的推進火焰
-    val flicker = 1f + sin(time * 40f) * 0.15f
-    for (side in listOf(-1f, 1f)) {
-        shape(Shapes.flame, side * 13f, 50f, 11f, Color(0xFFFF9100), sy = 1.3f * flicker)
-        shape(Shapes.flame, side * 13f, 47f, 6f, Color(0xFFFFF59D), sy = 1.2f * flicker)
+private fun DrawScope.jetFlames(frame: Int, beast: Boolean, cat: CatType) {
+    val length = 1f + (frame % 2) * 0.25f
+    val outer = when {
+        !beast -> Color(0xFFFF8A1F)
+        cat == CatType.ORANGE -> Color(0xFFFF5A1F)
+        else -> Color(0xFF8E5BFF)
     }
-    // 尾巴
-    val sway = sin(time * 4f) * 6f
-    line(16f, 26f, 32f + sway, 6f, look.fur, 9f)
-    line(32f + sway, 6f, 26f + sway, -14f, look.fur, 9f)
-    if (stripes) line(30f + sway, 0f, 34f + sway, 4f, look.dark, 4f)
-    // 身體與肚子
-    oval(0f, 22f, 54f, 46f, look.fur)
-    oval(0f, 26f, 30f, 28f, look.belly)
+    for (side in listOf(-1f, 1f)) {
+        shape(Shapes.flame, side * 12f, 62f, 11f, outer.copy(alpha = 0.55f), sy = 1.9f * length)
+        shape(Shapes.flame, side * 12f, 58f, 8f, outer, sy = 1.5f * length)
+        shape(Shapes.flame, side * 12f, 55f, 4.5f, Color(0xFFFFF7C2), sy = 1.4f * length)
+    }
+}
+
+private fun DrawScope.tail(p: CatPalette, wave: Float, stripes: Boolean) {
+    val tip = 8f * wave
+    val path = Path().apply {
+        moveTo(16f, 34f)
+        cubicTo(42f, 34f, 46f, 6f, 34f + tip, -10f)
+    }
+    drawPath(path, Toon.Outline, style = Stroke(15f, cap = StrokeCap.Round))
+    drawPath(path, p.fur, style = Stroke(9.5f, cap = StrokeCap.Round))
     if (stripes) {
-        line(-24f, 16f, -16f, 20f, look.dark, 4f)
-        line(24f, 16f, 16f, 20f, look.dark, 4f)
+        inkLine(38f, 20f, 46f, 22f, 4f, p.stripe)
+        inkLine(38f, 6f, 45f, 3f, 4f, p.stripe)
     }
-    // 前腳
-    for (side in listOf(-1f, 1f)) {
-        circle(side * 13f, 42f, 8f, look.fur)
-        line(side * 13f - 3f, 46f, side * 13f - 3f, 49f, look.dark, 1.5f)
-        line(side * 13f + 3f, 46f, side * 13f + 3f, 49f, look.dark, 1.5f)
-    }
+}
+
+private fun DrawScope.head(p: CatPalette, cat: CatType, beast: Boolean) {
     // 耳朵
     for (side in listOf(-1f, 1f)) {
-        shape(Shapes.triangle, side * 19f, -36f, 13f, look.fur, rotationDegrees = side * 18f)
-        shape(Shapes.triangle, side * 19f, -33f, 7f, if (tiger && !stripes) look.dark else Pink, rotationDegrees = side * 18f)
+        blob(earPath(side * 27f, -54f, side * 36f, -18f, side * 8f, -34f), p.fur, p.furShade, highlight = false)
+        blob(earPath(side * 25f, -46f, side * 30f, -24f, side * 14f, -33f), p.innerEar, null, highlight = false, width = 0f)
     }
-    // 頭
-    circle(0f, -8f, 31f, look.fur)
-    if (tiger) oval(0f, 6f, 40f, 24f, look.belly)
-    if (stripes) {
-        line(0f, -37f, 0f, -28f, look.dark, 5f)
-        line(-9f, -35f, -7f, -27f, look.dark, 4f)
-        line(9f, -35f, 7f, -27f, look.dark, 4f)
-        line(-30f, -8f, -22f, -6f, look.dark, 4f)
-        line(30f, -8f, 22f, -6f, look.dark, 4f)
-        if (tiger) {
-            line(-29f, 0f, -21f, 1f, look.dark, 3.5f)
-            line(29f, 0f, 21f, 1f, look.dark, 3.5f)
+    // 老虎的臉頰毛
+    if (beast) {
+        for (side in listOf(-1f, 1f)) {
+            blob(polyPath(side * 30f, -14f, side * 48f, -4f, side * 34f, 2f, side * 46f, 10f, side * 28f, 12f), p.belly, p.belly.shade(0.15f), highlight = false)
         }
+    }
+    blob(ovalPath(0f, -8f, 74f, 64f), p.fur, p.furShade, shadeDx = 0.08f, shadeDy = 0.1f)
+    // 嘴邊白毛
+    if (cat == CatType.ORANGE || beast) blob(ovalPath(0f, 8f, 36f, 22f), p.belly, p.belly.shade(0.1f), highlight = false, width = 0f)
+    // 斑紋
+    if (cat == CatType.ORANGE || (beast && cat == CatType.ORANGE)) {
+        for (k in -1..1) {
+            val x = k * 9f
+            drawPath(polyPath(x - 3f, -40f, x + 3f, -40f, x, -27f + kotlin.math.abs(k) * 4f), p.stripe)
+        }
+        for (side in listOf(-1f, 1f)) {
+            inkLine(side * 36f, -10f, side * 27f, -8f, 3.5f, p.stripe)
+            inkLine(side * 36f, -2f, side * 28f, -1f, 3.5f, p.stripe)
+        }
+    }
+    if (beast && cat == CatType.BLACK) {
+        // 黑豹的紫色光澤
+        drawArc(p.stripe.copy(alpha = 0.8f), 200f, 70f, false, Offset(-30f, -36f), androidx.compose.ui.geometry.Size(60f, 50f), style = Stroke(3.5f))
     }
     // 眼睛
     for (side in listOf(-1f, 1f)) {
-        val ex = side * 11f
-        if (fierce) {
-            oval(ex, -9f, 13f, 11f, look.iris)
-            oval(ex, -9f, 3.5f, 10f, Color.Black)
-            line(ex - side * 8f, -19f, ex + side * 6f, -14f, look.dark.takeIf { stripes } ?: Color.Black, 3.5f)
-        } else {
-            oval(ex, -8f, 13f, 16f, look.iris)
-            if (look.pupilSlit) oval(ex, -8f, 4f, 13f, Color.Black)
-            circle(ex + 2.5f, -12f, 3f, Color.White)
-            circle(ex - 2.5f, -5f, 1.5f, Color.White)
-        }
+        if (beast) angryEye(side * 14f, -8f, 15f, 15f, p.iris, side)
+        else animeEye(side * 14f, -8f, 15f, 19f, p.iris, slit = p.slit)
     }
-    // 鼻子、嘴巴、鬍鬚、腮紅
-    shape(Shapes.triangle, 0f, 2f, 3.5f, Pink, rotationDegrees = 180f)
-    drawArc(look.dark, 0f, 180f, false, Offset(-7f, 2f), androidx.compose.ui.geometry.Size(7f, 6f), style = Stroke(1.8f))
-    drawArc(look.dark, 0f, 180f, false, Offset(0f, 2f), androidx.compose.ui.geometry.Size(7f, 6f), style = Stroke(1.8f))
-    if (fierce) {
-        shape(Shapes.triangle, -4f, 11f, 2.5f, Color.White, rotationDegrees = 180f)
-        shape(Shapes.triangle, 4f, 11f, 2.5f, Color.White, rotationDegrees = 180f)
+    // 鼻子、嘴
+    drawPath(polyPath(-4f, 2f, 4f, 2f, 0f, 6f), Color(0xFFFF6F91))
+    if (beast) {
+        openMouth(0f, 9f, 18f, 12f)
+        drawPath(polyPath(-7f, 9f, -3f, 9f, -5f, 15f), Color.White)
+        drawPath(polyPath(3f, 9f, 7f, 9f, 5f, 15f), Color.White)
+    } else {
+        catMouth(0f, 8f, 5f)
+        blush(-22f, 6f, 10f)
+        blush(22f, 6f, 10f)
     }
-    val whisker = if (look == blackLook || look == pantherLook) Color(0xFFBDBDBD) else Color(0xFF6D4C41)
+    val whisker = if (cat == CatType.BLACK) Color(0xFFD9D4F0) else Toon.Outline.copy(alpha = 0.6f)
     for (side in listOf(-1f, 1f)) {
-        line(side * 15f, 2f, side * 34f, -2f, whisker, 1.3f)
-        line(side * 15f, 5f, side * 35f, 5f, whisker, 1.3f)
-        line(side * 15f, 8f, side * 33f, 12f, whisker, 1.3f)
-        if (!fierce) circle(side * 19f, 5f, 5f, Blush)
+        inkLine(side * 18f, 4f, side * 40f, 0f, 1.6f, whisker)
+        inkLine(side * 18f, 8f, side * 41f, 9f, 1.6f, whisker)
     }
 }

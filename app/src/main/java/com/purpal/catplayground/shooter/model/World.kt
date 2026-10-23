@@ -32,9 +32,20 @@ class World(
     val cues = ArrayList<SoundCue>()
 
     // ── 給畫面的輸入 ──
+    /** 搖桿式輸入（-1～1），測試與自動駕駛用。 */
     var moveX = 0f
     var moveY = 0f
     var firing = false
+    /** 觸控板式輸入：手指移動的距離（世界座標），下一步套用後歸零。 */
+    private var dragX = 0f
+    private var dragY = 0f
+
+    /** 集中型光束。 */
+    val beam = BeamState()
+
+    /** 大爆炸時整個畫面閃白的強度（0～1）。 */
+    var screenFlash = 0f
+        private set
 
     var phase = Phase.INTRO
         private set
@@ -75,8 +86,7 @@ class World(
 
     /** 畫面在對話、接關、過關時不需要更新世界。 */
     val running: Boolean
-        get() = phase != Phase.BOSS_DIALOG && phase != Phase.OUTRO_DIALOG &&
-            phase != Phase.CONTINUE && phase != Phase.CLEAR
+        get() = phase != Phase.OUTRO_DIALOG && phase != Phase.CONTINUE && phase != Phase.CLEAR
 
     init {
         player.y = height + 120f
@@ -87,6 +97,7 @@ class World(
     fun update(dt: Float) {
         if (!running) return
         updateParticles(dt)
+        if (screenFlash > 0f) screenFlash = (screenFlash - dt * 3f).coerceAtLeast(0f)
         if (ultimateCinematic > 0f) {
             ultimateCinematic -= dt
             if (ultimateCinematic <= 0f) startBlast()
@@ -145,16 +156,18 @@ class World(
     }
 
     fun onBossArrived() {
-        setPhase(Phase.BOSS_DIALOG)
+        setPhase(Phase.BOSS)
     }
 
-    /** 對話結束後由畫面呼叫。 */
+    /** 打倒 Boss 後的對話結束時由畫面呼叫。 */
     fun dialogFinished() {
-        when (phase) {
-            Phase.BOSS_DIALOG -> setPhase(Phase.BOSS)
-            Phase.OUTRO_DIALOG -> setPhase(Phase.CLEAR)
-            else -> Unit
-        }
+        if (phase == Phase.OUTRO_DIALOG) setPhase(Phase.CLEAR)
+    }
+
+    /** 手指拖曳的距離（世界座標）。 */
+    fun drag(dx: Float, dy: Float) {
+        dragX += dx
+        dragY += dy
     }
 
     fun onBossPhaseChanged(b: Boss) {
@@ -162,8 +175,8 @@ class World(
         items += Item(b.x, b.y + 80f, ItemType.REPAIR)
         clearBullets(toScore = true)
         shake(0.4f)
-        burst(b.x, b.y, 0xFFFFFFFFL, 24, 400f)
-        cue(SoundCue.EXPLODE_BIG)
+        flash(0.6f)
+        explode(b.x, b.y, big = true)
     }
 
     private fun bossDefeatedSequence() {
@@ -185,13 +198,33 @@ class World(
         val p = player
         if (p.invulnerable > 0f) p.invulnerable -= dt
         if (p.transformed > 0f) p.transformed -= dt
+        beam.active = false
+        val dragDx = dragX
+        val dragDy = dragY
+        dragX = 0f
+        dragY = 0f
         if (!p.alive || phase == Phase.INTRO) return
         val len = hypot(moveX, moveY)
         val mx = if (len > 1f) moveX / len else moveX
         val my = if (len > 1f) moveY / len else moveY
-        p.vx = mx * p.speed
-        p.x = (p.x + p.vx * dt).coerceIn(40f, WORLD_WIDTH - 40f)
-        p.y = (p.y + my * p.speed * dt).coerceIn(playerMinY, playerMaxY)
+        // 觸控板式：跟著手指走；速度越快（黑貓、護甲完整）同樣的手指距離走得越遠，
+        // 每步的最大位移也受速度限制，所以中彈變慢時會感覺得到。
+        val gain = DRAG_GAIN * p.speed / REFERENCE_SPEED
+        var dx = mx * p.speed * dt + dragDx * gain
+        var dy = my * p.speed * dt + dragDy * gain
+        val step = hypot(dx, dy)
+        val maxStep = p.speed * MAX_DRAG_SPEED_FACTOR * dt
+        if (step > maxStep) {
+            // 太快的甩動：這一步只走最大距離，剩下的留到後面幾步補上，最後仍會停在手指指到的位置。
+            val keep = 1f - maxStep / step
+            dragX += dragDx * keep
+            dragY += dragDy * keep
+            dx = dx / step * maxStep
+            dy = dy / step * maxStep
+        }
+        p.vx = p.vx * 0.6f + dx / dt * 0.4f
+        p.x = (p.x + dx).coerceIn(40f, WORLD_WIDTH - 40f)
+        p.y = (p.y + dy).coerceIn(playerMinY, playerMaxY)
 
         val canShoot = phase == Phase.STAGE || phase == Phase.BOSS || phase == Phase.WARNING
         if (p.fireTimer > 0f) p.fireTimer -= dt
@@ -204,6 +237,13 @@ class World(
                     lastShotCue = time
                 }
             }
+            if (p.mainWeapon == MainWeapon.FOCUS) {
+                val hit = Weapons.updateBeam(this, p, dt)
+                if (hit != null && every(time, dt, 0.05f)) {
+                    sparks(beam.x + jitter(beam.width * 0.3f), beam.top, 2, 0xFF80F0FFL)
+                }
+                if (every(time, dt, 0.16f)) cue(SoundCue.BEAM)
+            }
             if (p.subWeapon != SubWeapon.NONE && p.subTimer <= 0f) Weapons.fireSub(this, p)
         }
     }
@@ -214,7 +254,8 @@ class World(
         p.armor -= amount
         p.invulnerable = 1.2f
         shake(0.25f)
-        burst(p.x, p.y, 0xFFFFFFFFL, 10, 260f)
+        flash(0.25f)
+        sparks(p.x, p.y, 10, 0xFFFFFFFFL)
         cue(SoundCue.PLAYER_HIT)
         if (p.armor <= 0f) {
             p.armor = 0f
@@ -257,6 +298,7 @@ class World(
         blastRadius = 0f
         blastHit.clear()
         shake(0.8f)
+        flash(1f)
         cue(SoundCue.BOMB_BLAST)
     }
 
@@ -277,7 +319,7 @@ class World(
         for (e in enemies) {
             if (e.alive && !e.invulnerable && e.id !in blastHit && dist2(e.x, e.y, px, py) < (blastRadius + e.radius).let { it * it }) {
                 blastHit += e.id
-                hitEnemy(e, if (e.isBoss) 700f else 400f)
+                damageEnemy(e, if (e.isBoss) 700f else 400f)
             }
         }
         if (blastRadius > height * 1.6f) blastRadius = -1f
@@ -288,7 +330,10 @@ class World(
     private fun updatePlayerShots(dt: Float) {
         for (s in playerShots) {
             s.age += dt
-            if (s.style == ShotStyle.MISSILE) steerMissile(s, dt)
+            if (s.style == ShotStyle.MISSILE) {
+                steerMissile(s, dt)
+                if (every(s.age, dt, 0.035f)) particles += Particle(s.x, s.y, 0f, 0f, 0.4f, 16f, 0xFFDDE6EEL, ParticleKind.SMOKE)
+            }
             s.x += s.vx * dt
             s.y += s.vy * dt
             if (s.style == ShotStyle.SONIC && s.age >= s.burstAt) {
@@ -460,8 +505,10 @@ class World(
                 if (!e.alive || e.invulnerable || e.id in s.hits) continue
                 val r = e.radius + s.radius
                 if (dist2(s.x, s.y, e.x, e.y) > r * r) continue
-                hitEnemy(e, s.damage)
-                particles += Particle(s.x, s.y, 0f, -40f, 0.18f, s.radius * 1.4f, 0xFFFFFFFFL, ParticleKind.FLASH)
+                damageEnemy(e, s.damage)
+                particles += Particle(s.x, s.y, 0f, -40f, 0.15f, s.radius * 2.2f, 0xFFFFF3C4L, ParticleKind.FLASH)
+                if (random.nextFloat() < 0.5f) sparks(s.x, s.y, 2, 0xFFFFE082L)
+                if (s.style == ShotStyle.MISSILE) explode(s.x, s.y, big = false, quiet = true)
                 if (s.pierce > 0 && !e.isBoss) {
                     s.pierce--
                     s.hits += e.id
@@ -473,7 +520,7 @@ class World(
         }
     }
 
-    private fun hitEnemy(e: Enemy, damage: Float) {
+    fun damageEnemy(e: Enemy, damage: Float) {
         if (phase == Phase.BOSS_DEFEATED && e.isBoss) return
         e.hp -= damage
         e.hitFlash = 0.08f
@@ -503,13 +550,14 @@ class World(
         repeat(14) { items += Item(b.x + (random.nextFloat() - 0.5f) * 300f, b.y + random.nextFloat() * 100f, ItemType.COIN) }
         cue(SoundCue.BOSS_DOWN)
         shake(1.2f)
+        flash(1f)
         setPhase(Phase.BOSS_DEFEATED)
     }
 
     private fun clearBullets(toScore: Boolean) {
         for (b in bullets) {
             if (toScore) score += 10
-            particles += Particle(b.x, b.y, 0f, -60f, 0.5f, 9f, 0xFFFFF59DL, ParticleKind.STAR)
+            if (particles.size < MAX_PARTICLES) particles += Particle(b.x, b.y, 0f, -60f, 0.5f, 9f, 0xFFFFF59DL, ParticleKind.STAR)
         }
         bullets.clear()
         lasers.clear()
@@ -577,13 +625,49 @@ class World(
         for (i in 0 until count) shoot(x, y, offset + i * TWO_PI / count, speed, style, color)
     }
 
-    fun explode(x: Float, y: Float, big: Boolean) {
-        cue(if (big) SoundCue.EXPLODE_BIG else SoundCue.EXPLODE_SMALL)
-        particles += Particle(x, y, 0f, 0f, if (big) 0.6f else 0.35f, if (big) 120f else 60f, 0xFFFFF176L, ParticleKind.RING)
-        particles += Particle(x, y, 0f, 0f, 0.25f, if (big) 90f else 45f, 0xFFFFFFFFL, ParticleKind.FLASH)
-        burst(x, y, 0xFFFFB74DL, if (big) 18 else 9, if (big) 420f else 300f)
-        burst(x, y, 0xFFFFF59DL, if (big) 8 else 4, if (big) 260f else 180f, ParticleKind.STAR)
-        if (big) shake(0.3f)
+    /**
+     * 爆炸：閃光 → 數團火球 → 火花四射 → 煙 → 衝擊波圈。大爆炸還會震動、閃白。
+     */
+    fun explode(x: Float, y: Float, big: Boolean, quiet: Boolean = false) {
+        if (!quiet) cue(if (big) SoundCue.EXPLODE_BIG else SoundCue.EXPLODE_SMALL)
+        val scale = if (big) 1.8f else 1f
+        particles += Particle(x, y, 0f, 0f, 0.18f, 70f * scale, 0xFFFFFFFFL, ParticleKind.FLASH)
+        val fireballs = if (big) 7 else if (quiet) 2 else 4
+        repeat(fireballs) {
+            val a = random.nextFloat() * TWO_PI
+            val d = random.nextFloat() * 22f * scale
+            val v = 40f + random.nextFloat() * 80f * scale
+            particles += Particle(
+                x + cos(a) * d, y + sin(a) * d, cos(a) * v, sin(a) * v - 30f,
+                0.35f + random.nextFloat() * 0.25f * scale, (34f + random.nextFloat() * 26f) * scale, 0xFFFFA726L, ParticleKind.FIRE,
+            )
+        }
+        if (quiet) return
+        sparks(x, y, if (big) 16 else 8, 0xFFFFE082L, speed = if (big) 900f else 600f)
+        repeat(if (big) 5 else 2) {
+            val a = random.nextFloat() * TWO_PI
+            particles += Particle(x, y, cos(a) * 60f, sin(a) * 60f - 40f, 0.9f, 30f * scale, 0xFF8D8098L, ParticleKind.SMOKE)
+        }
+        particles += Particle(x, y, 0f, 0f, if (big) 0.55f else 0.35f, (if (big) 150f else 70f), 0xFFFFE0A0L, ParticleKind.RING)
+        if (big) {
+            shake(0.3f)
+            flash(0.35f)
+            burst(x, y, 0xFFFFF59DL, 6, 260f, ParticleKind.STAR)
+        }
+    }
+
+    /** 細長的火花（畫的時候沿著速度方向拉成線）。 */
+    fun sparks(x: Float, y: Float, count: Int, color: Long, speed: Float = 500f) {
+        repeat(count) {
+            if (particles.size >= MAX_PARTICLES) return
+            val a = random.nextFloat() * TWO_PI
+            val v = speed * (0.4f + random.nextFloat() * 0.6f)
+            particles += Particle(x, y, cos(a) * v, sin(a) * v, 0.2f + random.nextFloat() * 0.25f, 3f + random.nextFloat() * 3f, color, ParticleKind.SPARK)
+        }
+    }
+
+    fun flash(amount: Float) {
+        screenFlash = maxOf(screenFlash, amount)
     }
 
     fun puff(x: Float, y: Float, color: Long) = burst(x, y, color, 8, 180f, ParticleKind.SMOKE)
@@ -604,8 +688,14 @@ class World(
     companion object {
         const val SCROLL_SPEED = 120f
         const val INTRO_TIME = 2.8f
-        const val WARNING_TIME = 2.8f
+        const val WARNING_TIME = 2.2f
         const val ULTIMATE_CINEMATIC = 1.6f
+
+        /** 手指移動 1 單位，速度為 REFERENCE_SPEED 的機體移動 DRAG_GAIN 單位。 */
+        const val DRAG_GAIN = 1.3f
+        const val REFERENCE_SPEED = 660f
+        /** 每秒最多移動 speed × 這個倍數。 */
+        const val MAX_DRAG_SPEED_FACTOR = 5f
         const val MAX_CONTINUES = 3
         private const val MAX_PARTICLES = 700
 
@@ -618,7 +708,7 @@ class World(
             BulletStyle.NOTE -> 12f
             BulletStyle.HONEY -> 12f
             BulletStyle.STAR -> 12f
-            BulletStyle.SEED -> 8f
+            BulletStyle.SEED -> 10f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

@@ -14,7 +14,7 @@ class WorldTest {
         w.firing = true
         var t = 0f
         while (t < maxSeconds && w.phase != Phase.CLEAR) {
-            if (w.phase == Phase.BOSS_DIALOG || w.phase == Phase.OUTRO_DIALOG) w.dialogFinished()
+            if (w.phase == Phase.OUTRO_DIALOG) w.dialogFinished()
             val target = w.boss?.takeIf { !it.entering } ?: w.nearestEnemy(w.player.x, w.player.y)
             w.moveX = if (target != null && abs(target.x - w.player.x) > 20f) sign(target.x - w.player.x) else 0f
             w.update(STEP)
@@ -63,7 +63,6 @@ class WorldTest {
         var guard = 0
         w.firing = true
         while (!done(w) && guard++ < 60 * 400) {
-            if (w.phase == Phase.BOSS_DIALOG) w.dialogFinished()
             val target = w.nearestEnemy(w.player.x, w.player.y)
             w.moveX = if (target != null && abs(target.x - w.player.x) > 20f) sign(target.x - w.player.x) else 0f
             w.update(STEP)
@@ -167,5 +166,41 @@ class WorldTest {
         while (w.phase != Phase.CONTINUE) w.update(STEP)
         assertEquals(0, w.continuesLeft)
         assertFalse(w.useContinue())
+    }
+
+    @Test
+    fun dragMovesThePlayerAndFasterCatsMoveFurther() {
+        fun moved(cat: CatType): Float {
+            val w = World(Stages.mouse, cat, 2000f)
+            while (w.phase != Phase.STAGE) w.update(STEP)
+            val start = w.player.x
+            w.player.x = 300f
+            w.drag(100f, 0f)
+            repeat(15) { w.update(STEP) }
+            return w.player.x - 300f + 0f * start
+        }
+        val orange = moved(CatType.ORANGE)
+        val black = moved(CatType.BLACK)
+        // 手指移動 100：橘貓約 110、黑貓約 154，甩太快時會在幾步內補完。
+        assertEquals(100f * World.DRAG_GAIN * CatType.ORANGE.baseSpeed / World.REFERENCE_SPEED, orange, 1f)
+        assertTrue("black ($black) should move further than orange ($orange)", black > orange)
+    }
+
+    @Test
+    fun beamHitsTheClosestEnemyAbove() {
+        val w = worldInStage()
+        w.player.mainWeapon = MainWeapon.FOCUS
+        w.player.x = 500f
+        w.player.y = 1500f
+        val near = Balloon(500f, ItemType.COIN).also { it.y = 900f }
+        val far = Balloon(500f, ItemType.COIN).also { it.y = 400f }
+        w.spawn(near)
+        w.spawn(far)
+        w.firing = true
+        w.update(STEP)
+        assertTrue(w.beam.active)
+        assertTrue(near.hp < 26f)
+        assertEquals(26f, far.hp, 0.001f)
+        assertTrue(w.beam.top > 850f)
     }
 }

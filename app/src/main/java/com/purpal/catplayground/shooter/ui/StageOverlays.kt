@@ -1,5 +1,13 @@
 package com.purpal.catplayground.shooter.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,13 +26,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,29 +41,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Sfx
-import com.purpal.catplayground.shooter.model.CatType
+import com.purpal.catplayground.shooter.model.EnemyKind
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.Speaker
+import com.purpal.catplayground.shooter.model.StageTheme
 import com.purpal.catplayground.shooter.model.World
-import com.purpal.catplayground.shooter.render.drawBigCat
 import com.purpal.catplayground.shooter.render.drawBossPortrait
 import com.purpal.catplayground.shooter.render.drawCatShip
-import com.purpal.catplayground.ui.PillButton
 import com.purpal.catplayground.ui.PlayColors
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlinx.coroutines.delay
 
 private val Gold = Color(0xFFFFD54F)
 
@@ -66,92 +73,187 @@ private fun Modifier.consumeTouches(): Modifier =
 @Composable
 fun StageOverlays(
     world: World,
-    frame: Long,
+    phase: Phase,
     bestScore: Int,
     hasNextStage: Boolean,
     onNextStage: () -> Unit,
     onRestart: () -> Unit,
     onExit: () -> Unit,
 ) {
-    frame.let { }
-    when (world.phase) {
+    when (phase) {
         Phase.INTRO -> StageTitle(world)
         Phase.WARNING -> Warning(world)
-        Phase.BOSS_DIALOG, Phase.OUTRO_DIALOG -> Dialogue(world)
+        Phase.OUTRO_DIALOG -> Dialogue(world)
         Phase.CONTINUE -> ContinuePanel(world, onRestart, onExit)
         Phase.CLEAR -> ClearPanel(world, bestScore, hasNextStage, onNextStage, onExit)
         else -> Unit
     }
-    if (world.ultimateCinematic > 0f) UltimateCinematic(world)
+}
+
+private fun bossKind(theme: StageTheme) = when (theme) {
+    StageTheme.CHEESE_BARN -> EnemyKind.BOSS_MOUSE
+    StageTheme.PARK -> EnemyKind.BOSS_DOG
+    StageTheme.HONEY_FOREST -> EnemyKind.BOSS_BEAR
 }
 
 @Composable
 private fun StageTitle(world: World) {
-    val t = world.phaseTime
-    val alpha = (minOf(t / 0.4f, (World.INTRO_TIME - t) / 0.5f)).coerceIn(0f, 1f)
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        alpha.animateTo(1f, tween(400))
+        delay(((World.INTRO_TIME - 0.9f) * 1000).toLong())
+        alpha.animateTo(0f, tween(500))
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                this.alpha = alpha
-                translationX = (1f - alpha) * 60.dp.toPx()
+                this.alpha = alpha.value
+                translationX = (1f - alpha.value) * 60.dp.toPx()
             },
     ) {
         Text("STAGE ${world.stage.number}", style = titleStyle(52.sp))
         Text("${world.stage.animal}的${world.stage.title}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(6.dp))
-        Text("BOSS：${world.stage.bossName}", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+        Spacer(Modifier.height(18.dp))
+        Text(
+            "按住畫面下方：自動射擊\n手指移動：貓咪跟著移動",
+            color = Color.White,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 
+/**
+ * Boss 警告：上下兩條捲動的黃黑警示帶、閃爍的紅色 WARNING，
+ * 中間是關卡、Boss 名字與頭像。
+ */
 @Composable
 private fun Warning(world: World) {
-    val blink = (world.phaseTime * 3f).toInt() % 2 == 0
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    val loop = rememberInfiniteTransition(label = "warning")
+    val stripe by loop.animateFloat(0f, 1f, infiniteRepeatable(tween(600, easing = LinearEasing)), label = "stripe")
+    val blink by loop.animateFloat(0.35f, 1f, infiniteRepeatable(tween(260), RepeatMode.Reverse), label = "blink")
+    val enter = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 260f)) }
+
+    Box(Modifier.fillMaxSize()) {
+        // 四周泛紅
+        Canvas(Modifier.fillMaxSize()) {
+            drawRect(
+                Brush.radialGradient(
+                    0.55f to Color.Transparent,
+                    1f to Color(0xFFFF1744).copy(alpha = 0.55f * blink),
+                    center = center,
+                    radius = size.maxDimension * 0.7f,
+                ),
+            )
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
+                .align(Alignment.Center)
                 .fillMaxWidth()
-                .background(Color(0xFFD50000).copy(alpha = if (blink) 0.55f else 0.3f))
-                .padding(vertical = 18.dp),
+                .graphicsLayer {
+                    scaleY = enter.value.coerceIn(0f, 1.2f)
+                    alpha = enter.value.coerceIn(0f, 1f)
+                },
         ) {
-            Text("⚠ WARNING ⚠", style = titleStyle(40.sp, Color.White))
-            Text("${world.stage.bossName} 接近中！", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            HazardStripe(stripe)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xE6140A26))
+                    .padding(vertical = 14.dp),
+            ) {
+                Text("WARNING", style = titleStyle(54.sp, Color(0xFFFF1744).copy(alpha = blink), Color.White))
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(
+                        Modifier
+                            .size(84.dp)
+                            .background(Color(0xFF3A1D5C), CircleShape)
+                            .border(3.dp, Gold, CircleShape)
+                            .clip(CircleShape),
+                    ) {
+                        withTransform({
+                            translate(size.width / 2f, size.height * 0.62f)
+                            val s = size.width / 230f
+                            scale(s, s, Offset.Zero)
+                        }) { drawBossPortrait(bossKind(world.stage.theme), phase = 1, time = world.time) }
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("STAGE ${world.stage.number}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                        Text(world.stage.bossName, style = titleStyle(34.sp, Color.White))
+                        Text("接近中！", color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            HazardStripe(1f - stripe)
         }
     }
 }
 
 @Composable
+private fun HazardStripe(offset: Float) {
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(22.dp),
+    ) {
+        drawRect(Color(0xFFFFD600))
+        val w = size.height * 1.6f
+        clipRect {
+            var x = -w * 2 + offset * w * 2
+            while (x < size.width + w) {
+                val path = Path().apply {
+                    moveTo(x, size.height)
+                    lineTo(x + w * 0.5f, 0f)
+                    lineTo(x + w, 0f)
+                    lineTo(x + w * 0.5f, size.height)
+                    close()
+                }
+                drawPath(path, Color(0xFF1A1033))
+                x += w
+            }
+        }
+    }
+}
+
+/** 打倒 Boss 之後的簡短對話。 */
+@Composable
 private fun Dialogue(world: World) {
     val sound = LocalSound.current
-    val lines = if (world.phase == Phase.BOSS_DIALOG) world.stage.intro else world.stage.outro
-    var index by remember(world.phase) { mutableIntStateOf(0) }
-    var shownAt by remember(world.phase, index) { mutableLongStateOf(System.currentTimeMillis()) }
+    val lines = world.stage.outro
+    var index by remember { mutableIntStateOf(0) }
+    var visible by remember(index) { mutableIntStateOf(0) }
     val line = lines.getOrNull(index)
-    LaunchedEffect(world.phase, index) { if (line != null) sound.play(Sfx.DIALOG) }
     if (line == null) {
-        LaunchedEffect(world.phase) { world.dialogFinished() }
+        LaunchedEffect(Unit) { world.dialogFinished() }
         return
     }
-    val elapsed = (System.currentTimeMillis() - shownAt) / 1000f
-    val visible = (elapsed * 30f).toInt().coerceAtMost(line.text.length)
+    LaunchedEffect(index) {
+        sound.play(Sfx.DIALOG)
+        while (visible < line.text.length) {
+            delay(33)
+            visible++
+        }
+    }
 
     Box(
         Modifier
             .fillMaxSize()
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                if (visible < line.text.length) shownAt = 0L else index++
+                if (visible < line.text.length) visible = line.text.length else index++
             },
     ) {
-        PillButton(
-            "跳過 ⏭",
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .systemBarsPadding()
-                .padding(top = 64.dp, end = 12.dp),
-        ) { index = lines.size }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -172,12 +274,12 @@ private fun Dialogue(world: World) {
                     .background(if (isCat) Color(0xFFFFE0B2) else Color(0xFFE1BEE7)),
             ) {
                 withTransform({
-                    translate(size.width / 2f, size.height * (if (isCat) 0.6f else 0.62f))
-                    val s = if (isCat) size.width / 80f else size.width / 260f
+                    translate(size.width / 2f, size.height * (if (isCat) 0.62f else 0.64f))
+                    val s = if (isCat) size.width / 90f else size.width / 250f
                     scale(s, s, Offset.Zero)
                 }) {
-                    if (isCat) drawCatShip(world.player.cat, world.time, 0f, transformed = false)
-                    else drawBossPortrait(world.boss?.kind ?: return@withTransform, phase = 0, time = world.time)
+                    if (isCat) drawCatShip(world.player.cat, 0f, 0f, transformed = false)
+                    else drawBossPortrait(bossKind(world.stage.theme), phase = 0, time = 0f)
                 }
             }
             Spacer(Modifier.width(12.dp))
@@ -188,12 +290,7 @@ private fun Dialogue(world: World) {
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                 )
-                Text(
-                    line.text.take(visible),
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                )
+                Text(line.text.take(visible), color = Color.White, fontSize = 17.sp, modifier = Modifier.heightIn(min = 48.dp))
                 Text("點一下繼續 ▼", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, modifier = Modifier.align(Alignment.End))
             }
         }
@@ -271,15 +368,14 @@ private fun CenterPanel(content: @Composable () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .padding(24.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFF6A1B9A), Color(0xFF1A1033))))
+                .background(Brush.verticalGradient(listOf(Color(0xFF6A1B9A), Color(0xFF1A1033))), RoundedCornerShape(28.dp))
                 .border(2.dp, Gold.copy(alpha = 0.7f), RoundedCornerShape(28.dp))
                 .padding(24.dp),
         ) { content() }
     }
 }
 
-/** 不用圖層的實心按鈕（避免和勝利畫面一樣的背景消失問題）。 */
+/** 不用圖層的實心按鈕（避免背景消失的問題）。 */
 @Composable
 private fun BigButton(text: String, background: Color, contentColor: Color, onClick: () -> Unit) {
     val sound = LocalSound.current
@@ -298,76 +394,9 @@ private fun BigButton(text: String, background: Color, contentColor: Color, onCl
     }
 }
 
-private fun titleStyle(size: androidx.compose.ui.unit.TextUnit, color: Color = Gold) = TextStyle(
+private fun titleStyle(size: TextUnit, color: Color = Gold, shadow: Color = Color.Black) = TextStyle(
     color = color,
     fontSize = size,
     fontWeight = FontWeight.Black,
-    shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 6f), 10f),
+    shadow = Shadow(shadow.copy(alpha = 0.7f), Offset(0f, 6f), 10f),
 )
-
-/**
- * 大絕變身動畫：畫面變暗，一條斜斜的光帶從左邊衝進來，
- * 帶子上是老虎／黑豹的大頭，配上「吼——！」和招式名稱，最後一道白光。
- */
-@Composable
-private fun UltimateCinematic(world: World) {
-    val total = World.ULTIMATE_CINEMATIC
-    val t = (1f - world.ultimateCinematic / total).coerceIn(0f, 1f)
-    val tiger = world.player.cat == CatType.ORANGE
-    val bandColor = if (tiger) listOf(Color(0xFFFF6D00), Color(0xFFFFD54F), Color(0xFFFF6D00)) else listOf(Color(0xFF4A148C), Color(0xFFB388FF), Color(0xFF4A148C))
-    val slideIn = (t / 0.18f).coerceIn(0f, 1f)
-    val slideOut = ((t - 0.82f) / 0.18f).coerceIn(0f, 1f)
-    val textPop = ((t - 0.2f) / 0.15f).coerceIn(0f, 1f)
-
-    Box(Modifier.fillMaxSize().consumeTouches()) {
-        Canvas(Modifier.fillMaxSize()) {
-            drawRect(Color.Black.copy(alpha = 0.65f * (1f - slideOut)))
-            val cx = size.width / 2f
-            val cy = size.height * 0.42f
-            // 集中線
-            for (k in 0 until 36) {
-                val a = k * (2 * PI / 36).toFloat() + world.time * 0.6f
-                val inner = size.minDimension * 0.35f
-                drawLine(
-                    Color.White.copy(alpha = 0.25f * (1f - slideOut)),
-                    Offset(cx + cos(a) * inner, cy + sin(a) * inner),
-                    Offset(cx + cos(a) * size.maxDimension, cy + sin(a) * size.maxDimension),
-                    strokeWidth = if (k % 3 == 0) 6f else 2f,
-                )
-            }
-            val bandHeight = size.height * 0.26f
-            val slide = (1f - slideIn) * -size.width * 1.5f + slideOut * size.width * 1.5f
-            rotate(-10f, Offset(cx, cy)) {
-                drawRect(
-                    Brush.horizontalGradient(bandColor),
-                    topLeft = Offset(-size.width + slide, cy - bandHeight / 2f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 3f, bandHeight),
-                )
-                drawRect(Color.White, Offset(-size.width + slide, cy - bandHeight / 2f - 6f), androidx.compose.ui.geometry.Size(size.width * 3f, 6f))
-                drawRect(Color.White, Offset(-size.width + slide, cy + bandHeight / 2f), androidx.compose.ui.geometry.Size(size.width * 3f, 6f))
-                val shake = if (t > 0.2f && t < 0.6f) sin(world.time * 120f) * 6f else 0f
-                withTransform({
-                    translate(cx + slide * 0.6f + shake, cy + bandHeight * 0.05f)
-                    val s = bandHeight / 75f
-                    scale(s, s, Offset.Zero)
-                }) { drawBigCat(world.player.cat, world.time, fierce = true) }
-            }
-            if (t > 0.9f) drawRect(Color.White.copy(alpha = (t - 0.9f) / 0.1f))
-        }
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(top = 260.dp)
-                .graphicsLayer {
-                    val s = 0.4f + textPop * 0.6f + (1f - textPop) * 1.5f
-                    scaleX = s
-                    scaleY = s
-                    alpha = textPop * (1f - slideOut)
-                },
-        ) {
-            Text("吼喔喔喔——！", style = titleStyle(46.sp, Color.White))
-            Text(world.player.cat.ultimateName, style = titleStyle(26.sp, if (tiger) Gold else Color(0xFFD1C4E9)))
-        }
-    }
-}

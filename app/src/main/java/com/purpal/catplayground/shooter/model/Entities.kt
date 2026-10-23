@@ -43,7 +43,7 @@ class Player(val cat: CatType) {
     }
 }
 
-enum class ShotStyle { PELLET, FOCUS, PAW, NEEDLE, MISSILE, SONIC }
+enum class ShotStyle { PELLET, PAW, CLAW, MISSILE, SONIC }
 
 class PlayerShot(
     var x: Float,
@@ -145,7 +145,7 @@ class Item(var x: Float, var y: Float, val type: ItemType) {
     val radius = if (type == ItemType.COIN) 20f else 30f
 }
 
-enum class ParticleKind { SPARK, STAR, RING, HEART, SMOKE, FLASH }
+enum class ParticleKind { SPARK, STAR, RING, HEART, SMOKE, FLASH, FIRE }
 
 class Particle(
     var x: Float,

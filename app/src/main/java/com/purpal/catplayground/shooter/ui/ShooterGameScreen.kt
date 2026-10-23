@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -55,6 +57,8 @@ import com.purpal.catplayground.audio.Music
 import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.audio.SoundManager
 import com.purpal.catplayground.shooter.model.CatType
+import com.purpal.catplayground.shooter.model.EnemyKind
+import com.purpal.catplayground.shooter.model.MainWeapon
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.STEP
 import com.purpal.catplayground.shooter.model.SoundCue
@@ -63,19 +67,60 @@ import com.purpal.catplayground.shooter.model.Stages
 import com.purpal.catplayground.shooter.model.SubWeapon
 import com.purpal.catplayground.shooter.model.WORLD_WIDTH
 import com.purpal.catplayground.shooter.model.World
+import com.purpal.catplayground.shooter.render.SpriteCache
+import com.purpal.catplayground.shooter.render.drawUltimateCinematic
 import com.purpal.catplayground.shooter.render.drawWorld
 import com.purpal.catplayground.shooter.render.viewportFor
-import kotlin.math.hypot
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
-/** 虛擬搖桿狀態（螢幕座標），不放進 Compose state：每幀都會重畫。 */
-private class Joystick {
+/** 觸控板式操作：記錄手指位置與尚未套用的移動量（螢幕像素）。 */
+private class TouchPad {
     var pointer: PointerId? = null
-    var baseX = 0f
-    var baseY = 0f
-    var knobX = 0f
-    var knobY = 0f
+    var x = 0f
+    var y = 0f
+    var pendingDx = 0f
+    var pendingDy = 0f
     val active: Boolean get() = pointer != null
+}
+
+/** HUD 需要的數值；只有數值改變時才觸發重組，避免每幀重組造成卡頓。 */
+@Immutable
+data class HudState(
+    val phase: Phase = Phase.INTRO,
+    val score: Int = 0,
+    val armor: Int = 100,
+    val speed: Int = 100,
+    val mainWeapon: MainWeapon = MainWeapon.SPREAD,
+    val mainLevel: Int = 1,
+    val subWeapon: SubWeapon = SubWeapon.NONE,
+    val subLevel: Int = 0,
+    val bombs: Int = 0,
+    val bossName: String? = null,
+    val bossHp: Int = 0,
+    val continuesLeft: Int = 0,
+) {
+    companion object {
+        fun of(w: World): HudState {
+            val p = w.player
+            val boss = w.boss?.takeIf { !it.entering && (w.phase == Phase.BOSS || w.phase == Phase.BOSS_DEFEATED) }
+            return HudState(
+                phase = w.phase,
+                score = w.score,
+                armor = (p.armorRatio * 100).toInt(),
+                speed = (p.speed / p.cat.baseSpeed * 100).toInt(),
+                mainWeapon = p.mainWeapon,
+                mainLevel = p.mainLevel,
+                subWeapon = p.subWeapon,
+                subLevel = p.subLevel,
+                bombs = p.bombs,
+                bossName = boss?.name,
+                bossHp = ((boss?.hpRatio ?: 0f) * 200).toInt(),
+                continuesLeft = w.continuesLeft,
+            )
+        }
+    }
 }
 
 @Composable
@@ -93,7 +138,9 @@ fun ShooterGameScreen(
     var attempt by remember { mutableIntStateOf(0) }
     var paused by remember { mutableStateOf(false) }
     var frame by remember { mutableLongStateOf(0L) }
-    val joystick = remember { Joystick() }
+    var hud by remember { mutableStateOf(HudState()) }
+    val touch = remember { TouchPad() }
+    val textMeasurer = rememberTextMeasurer()
 
     BackHandler { paused = !paused }
 
@@ -110,8 +157,13 @@ fun ShooterGameScreen(
         val hudHeight = with(density) { WindowInsets.statusBars.getTop(this).toDp() } + HUD_HEIGHT
         val gameHeightPx = constraints.maxHeight - with(density) { hudHeight.toPx() }
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
+        val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
+        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit) }
         val world = remember(attempt, stageNumber, worldHeight) { World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt) }
-        val knobRadius = with(density) { 56.dp.toPx() }
+
+        LaunchedEffect(sprites, cat, stageNumber) {
+            withContext(Dispatchers.Default) { sprites.prewarm(cat, kindsFor(stageNumber)) }
+        }
 
         LaunchedEffect(world) {
             var last = withFrameNanos { it }
@@ -122,7 +174,9 @@ fun ShooterGameScreen(
                 val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
                 last = now
                 if (!paused && world.running) {
-                    applyJoystick(world, joystick, knobRadius)
+                    // 手指移動量直接換算成世界座標，第一個物理步就套用，跟手不延遲。
+                    world.drag(touch.pendingDx / pxPerUnit, touch.pendingDy / pxPerUnit)
+                    world.firing = touch.active
                     accumulator += dt
                     var steps = 0
                     while (accumulator >= STEP && steps < 4) {
@@ -134,8 +188,12 @@ fun ShooterGameScreen(
                 } else {
                     accumulator = 0f
                 }
+                touch.pendingDx = 0f
+                touch.pendingDy = 0f
                 playCues(world, sound)
                 sound.playMusic(musicFor(world))
+                val next = HudState.of(world)
+                if (next != hud) hud = next
                 if (world.phase != lastPhase) {
                     if (world.phase == Phase.CLEAR) {
                         sound.play(Sfx.WIN)
@@ -147,43 +205,46 @@ fun ShooterGameScreen(
             }
         }
 
-        // 遊戲畫面
+        // 遊戲畫面（只有這裡每幀重畫，不經過重組）
         Canvas(
             Modifier
                 .fillMaxSize()
                 .padding(top = hudHeight),
         ) {
-            frame.let { }
-            val view = viewportFor(size, world.height)
-            drawWorld(world, view)
-            if (world.phase == Phase.STAGE || world.phase == Phase.BOSS || world.phase == Phase.WARNING) {
-                drawJoystick(joystick, knobRadius, size.width / 2f, size.height - knobRadius * 2.2f)
+            if (frame < 0) return@Canvas // 讀取 frame 讓畫布每幀重畫
+            drawWorld(world, viewportFor(size, world.height), sprites)
+            if (touch.active && world.ultimateCinematic <= 0f) {
+                drawCircle(Color.White.copy(alpha = 0.18f), 46.dp.toPx(), Offset(touch.x, touch.y))
+                drawCircle(Color.White.copy(alpha = 0.5f), 46.dp.toPx(), Offset(touch.x, touch.y), style = Stroke(3.dp.toPx()))
+                drawCircle(Color(0xFFFFD54F).copy(alpha = 0.8f), 10.dp.toPx(), Offset(touch.x, touch.y))
             }
+            drawUltimateCinematic(world, sprites, textMeasurer)
         }
 
-        // 搖桿輸入：按住下半部任何地方，搖桿底座就出現在手指下。
+        // 觸控板：按住下半部任何地方開始射擊，手指移動多少，貓咪就跟著移動多少。
         Box(
             Modifier
                 .fillMaxSize()
+                .padding(top = hudHeight)
                 .pointerInput(world) {
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent()
                             for (change in event.changes) {
-                                if (joystick.pointer == null && change.pressed && !change.previousPressed &&
-                                    change.position.y > size.height * 0.45f
+                                if (touch.pointer == null && change.pressed && !change.previousPressed &&
+                                    change.position.y > size.height * 0.3f
                                 ) {
-                                    joystick.pointer = change.id
-                                    joystick.baseX = change.position.x
-                                    joystick.baseY = change.position.y
-                                    joystick.knobX = change.position.x
-                                    joystick.knobY = change.position.y
-                                } else if (change.id == joystick.pointer) {
+                                    touch.pointer = change.id
+                                    touch.x = change.position.x
+                                    touch.y = change.position.y
+                                } else if (change.id == touch.pointer) {
                                     if (change.pressed) {
-                                        joystick.knobX = change.position.x
-                                        joystick.knobY = change.position.y
+                                        touch.pendingDx += change.position.x - touch.x
+                                        touch.pendingDy += change.position.y - touch.y
+                                        touch.x = change.position.x
+                                        touch.y = change.position.y
                                     } else {
-                                        joystick.pointer = null
+                                        touch.pointer = null
                                     }
                                 }
                             }
@@ -192,12 +253,12 @@ fun ShooterGameScreen(
                 },
         )
 
-        val frameTick = frame
-        ShooterHud(world, frameTick, Modifier.height(hudHeight), onPause = { paused = true })
-        BossBar(world, frameTick, Modifier.padding(top = hudHeight))
+        ShooterHud(hud, stage.number, stage.title, Modifier.height(hudHeight), onPause = { paused = true })
+        BossBar(hud, Modifier.padding(top = hudHeight))
         UltimateButton(
-            world = world,
-            frame = frameTick,
+            cat = cat,
+            bombs = hud.bombs,
+            onPress = { world.requestUltimate() },
             modifier = Modifier
                 .align(if (ultimateOnLeft) Alignment.BottomStart else Alignment.BottomEnd)
                 .systemBarsPadding()
@@ -206,7 +267,7 @@ fun ShooterGameScreen(
 
         StageOverlays(
             world = world,
-            frame = frameTick,
+            phase = hud.phase,
             bestScore = bestScore,
             hasNextStage = Stages.get(stageNumber + 1) != null,
             onNextStage = onNextStage,
@@ -230,30 +291,13 @@ fun ShooterGameScreen(
     }
 }
 
-private fun applyJoystick(world: World, joystick: Joystick, radius: Float) {
-    if (!joystick.active) {
-        world.moveX = 0f
-        world.moveY = 0f
-        world.firing = false
-        return
-    }
-    var dx = (joystick.knobX - joystick.baseX) / radius
-    var dy = (joystick.knobY - joystick.baseY) / radius
-    val length = hypot(dx, dy)
-    if (length > 1f) {
-        dx /= length
-        dy /= length
-    }
-    if (length < 0.12f) {
-        dx = 0f
-        dy = 0f
-    }
-    world.moveX = dx
-    world.moveY = dy
-    world.firing = true
-}
-
 private val HUD_HEIGHT = 104.dp
+
+private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
+    1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.BOSS_MOUSE)
+    2 -> listOf(EnemyKind.PUPPY, EnemyKind.FRISBEE, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_RUNNER, EnemyKind.BALLOON, EnemyKind.BOSS_DOG)
+    else -> listOf(EnemyKind.BEE, EnemyKind.HONEY_POT, EnemyKind.BEAR_CUB, EnemyKind.BEEHIVE, EnemyKind.CHEESE_DRONE, EnemyKind.PUPPY, EnemyKind.BALLOON, EnemyKind.BOSS_BEAR)
+}
 
 private val random = Random(0)
 
@@ -275,13 +319,14 @@ private fun playCues(world: World, sound: SoundManager) {
             SoundCue.SONIC -> sound.play(Sfx.SONIC, 0.6f)
             SoundCue.MISSILE -> sound.play(Sfx.MISSILE, 0.4f)
             SoundCue.LASER -> sound.play(Sfx.LASER, 0.7f)
+            SoundCue.BEAM -> sound.play(Sfx.BEAM, 0.35f)
         }
     }
     world.cues.clear()
 }
 
 private fun musicFor(world: World): Music = when (world.phase) {
-    Phase.WARNING, Phase.BOSS_DIALOG, Phase.BOSS, Phase.BOSS_DEFEATED -> Music.BOSS
+    Phase.WARNING, Phase.BOSS, Phase.BOSS_DEFEATED -> Music.BOSS
     Phase.PLAYER_DOWN, Phase.CONTINUE -> if (world.boss != null) Music.BOSS else stageMusic(world)
     else -> stageMusic(world)
 }
@@ -292,29 +337,10 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.HONEY_FOREST -> Music.STAGE_BEAR
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawJoystick(j: Joystick, radius: Float, idleX: Float, idleY: Float) {
-    val bx = if (j.active) j.baseX else idleX
-    val by = if (j.active) j.baseY else idleY
-    var kx = if (j.active) j.knobX - bx else 0f
-    var ky = if (j.active) j.knobY - by else 0f
-    val length = hypot(kx, ky)
-    if (length > radius) {
-        kx = kx / length * radius
-        ky = ky / length * radius
-    }
-    val alpha = if (j.active) 0.55f else 0.25f
-    drawCircle(Color.White.copy(alpha = alpha * 0.35f), radius * 1.15f, Offset(bx, by))
-    drawCircle(Color.White.copy(alpha = alpha), radius * 1.15f, Offset(bx, by), style = Stroke(4f))
-    drawCircle(Color(0xFFFFD54F).copy(alpha = alpha + 0.2f), radius * 0.48f, Offset(bx + kx, by + ky))
-    drawCircle(Color.White.copy(alpha = alpha + 0.2f), radius * 0.2f, Offset(bx + kx - radius * 0.12f, by + ky - radius * 0.12f))
-}
-
 // ───────────── HUD ─────────────
 
 @Composable
-internal fun ShooterHud(world: World, frame: Long, modifier: Modifier = Modifier, onPause: () -> Unit) {
-    frame.let { }
-    val p = world.player
+internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modifier = Modifier, onPause: () -> Unit) {
     Column(
         modifier
             .fillMaxWidth()
@@ -324,13 +350,8 @@ internal fun ShooterHud(world: World, frame: Long, modifier: Modifier = Modifier
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    "STAGE ${world.stage.number}　${world.stage.title}",
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text("SCORE ${world.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                Text("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             }
             Box(
                 Modifier
@@ -343,23 +364,21 @@ internal fun ShooterHud(world: World, frame: Long, modifier: Modifier = Modifier
         }
         Spacer(Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Gauge("護甲", p.armorRatio, Color(0xFFFF5252), Modifier.weight(1f))
-            Gauge("速度", p.speed / p.cat.baseSpeed, Color(0xFF40C4FF), Modifier.weight(1f))
+            Gauge("護甲", hud.armor / 100f, Color(0xFFFF5252), Modifier.weight(1f))
+            Gauge("速度", hud.speed / 100f, Color(0xFF40C4FF), Modifier.weight(1f))
         }
         Spacer(Modifier.height(4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Chip("${p.mainWeapon.label} Lv${p.mainLevel}", Color(0xFFFF9100))
-            if (p.subWeapon != SubWeapon.NONE) Chip("${p.subWeapon.label} Lv${p.subLevel}", Color(0xFF7C4DFF))
+            Chip("${hud.mainWeapon.label} Lv${hud.mainLevel}", Color(0xFFFF9100))
+            if (hud.subWeapon != SubWeapon.NONE) Chip("${hud.subWeapon.label} Lv${hud.subLevel}", Color(0xFF7C4DFF))
         }
     }
 }
 
 /** Boss 血條，疊在遊戲畫面最上方。 */
 @Composable
-internal fun BossBar(world: World, frame: Long, modifier: Modifier = Modifier) {
-    frame.let { }
-    val boss = world.boss ?: return
-    if (boss.entering || (world.phase != Phase.BOSS && world.phase != Phase.BOSS_DEFEATED)) return
+internal fun BossBar(hud: HudState, modifier: Modifier = Modifier) {
+    val name = hud.bossName ?: return
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -367,7 +386,7 @@ internal fun BossBar(world: World, frame: Long, modifier: Modifier = Modifier) {
             .background(Color.Black.copy(alpha = 0.35f))
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
-        Text(boss.name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.width(8.dp))
         Box(
             Modifier
@@ -378,7 +397,7 @@ internal fun BossBar(world: World, frame: Long, modifier: Modifier = Modifier) {
         ) {
             Box(
                 Modifier
-                    .fillMaxWidth(boss.hpRatio)
+                    .fillMaxWidth(hud.bossHp / 200f)
                     .height(10.dp)
                     .clip(RoundedCornerShape(50))
                     .background(Color(0xFFFF1744)),
@@ -424,21 +443,18 @@ private fun Chip(text: String, color: Color) {
 }
 
 @Composable
-internal fun UltimateButton(world: World, frame: Long, modifier: Modifier) {
-    frame.let { }
-    val p = world.player
-    val ready = p.bombs > 0
+internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modifier: Modifier) {
+    val ready = bombs > 0
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
             Modifier
                 .size(78.dp)
-                .clip(CircleShape)
-                .background(if (ready) Color(0xFFFF6D00).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.4f))
+                .background(if (ready) Color(0xFFFF6D00).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.4f), CircleShape)
                 .border(3.dp, Color.White.copy(alpha = if (ready) 0.9f else 0.3f), CircleShape)
-                .pointerInput(world) { detectTapGestures(onPress = { world.requestUltimate() }) },
+                .pointerInput(onPress) { detectTapGestures(onPress = { onPress() }) },
             contentAlignment = Alignment.Center,
         ) {
-            Text(if (p.cat == CatType.ORANGE) "🐯" else "🐆", fontSize = 38.sp)
+            Text(if (cat == CatType.ORANGE) "🐯" else "🐆", fontSize = 38.sp)
         }
         Spacer(Modifier.height(4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -446,8 +462,7 @@ internal fun UltimateButton(world: World, frame: Long, modifier: Modifier) {
                 Box(
                     Modifier
                         .size(12.dp)
-                        .clip(CircleShape)
-                        .background(if (i < p.bombs) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.25f)),
+                        .background(if (i < bombs) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.25f), CircleShape),
                 )
             }
         }
