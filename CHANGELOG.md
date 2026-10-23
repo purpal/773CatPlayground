@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/purpal/773CatPlayground/compare/v0.5.0...v0.6.0) (2026-10-23)
+
+
+### Features
+
+* rework shooter controls, art and effects after playtest ([5750d59](https://github.com/purpal/773CatPlayground/commit/5750d591c0e825d1732ee60eed0ef7ecb4efc1a2))
+
 ## [0.5.0](https://github.com/purpal/773CatPlayground/compare/v0.4.2...v0.5.0) (2026-10-23)
 
 
