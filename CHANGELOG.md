@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/purpal/773CatPlayground/compare/v0.4.0...v0.4.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* keep victory buttons on screen and rename app to 773喵遊樂園 ([d38c9c6](https://github.com/purpal/773CatPlayground/commit/d38c9c6c38b0389741b4e0fb5bb9ccb15cb8fab2))
+
 ## [0.4.0](https://github.com/purpal/773CatPlayground/compare/v0.3.0...v0.4.0) (2026-10-23)
 
 
