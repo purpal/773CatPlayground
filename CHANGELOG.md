@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/purpal/773CatPlayground/compare/v0.6.0...v0.6.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* shooter HUD weapon chips cut off on some screens ([d13dc02](https://github.com/purpal/773CatPlayground/commit/d13dc025a2d5e0991ce70d8305d1833bbc2758de))
+
 ## [0.6.0](https://github.com/purpal/773CatPlayground/compare/v0.5.0...v0.6.0) (2026-10-23)
 
 
