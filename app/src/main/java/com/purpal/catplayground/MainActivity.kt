@@ -149,7 +149,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirmExit = false },
             containerColor = PlayColors.Dusk,
-            title = { Text("要離開 773 遊樂場嗎？😿", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("要離開 773喵遊樂園嗎？😿", color = Color.White, fontWeight = FontWeight.Bold) },
             text = { Text("遊戲進度都已經保存好了。", color = Color.White.copy(alpha = 0.8f)) },
             confirmButton = {
                 TextButton(onClick = onExit) { Text("離開", color = Color.White) }

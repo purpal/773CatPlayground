@@ -69,7 +69,7 @@ fun LobbyScreen(
             Spacer(Modifier.height(12.dp))
             BouncingCat()
             Text(
-                "773 遊樂場",
+                "773喵遊樂園",
                 color = Color.White,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,

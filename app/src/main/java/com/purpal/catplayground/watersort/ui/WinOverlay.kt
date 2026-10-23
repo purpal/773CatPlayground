@@ -16,6 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +27,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -134,123 +138,140 @@ fun WinOverlay(
         if (t > SLAM_MS) Confetti(alpha = phase(SLAM_MS, 600f))
 
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    translationX = sin(t * 0.21f) * 10.dp.toPx() * shake
-                    translationY = cos(t * 0.17f) * 8.dp.toPx() * shake
-                },
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding(),
         ) {
-            VictoryBanner(
-                scale = bannerScale,
-                alpha = phase(0f, 150f),
-                rayAngle = rayAngle,
-                raysAlpha = phase(SLAM_MS, 500f) * glow,
-                shockwave = if (t < SLAM_MS) -1f else phase(SLAM_MS, 650f),
-                sparks = if (t < SLAM_MS) -1f else phase(SLAM_MS, 1100f),
-            )
-
-            Row(horizontalArrangement = Arrangement.Center) {
-                for (k in 0 until 3) {
-                    val pop = Overshoot.transform(phase(STAR_MS + k * 150f, 300f))
-                    Text(
-                        "⭐",
-                        fontSize = if (k == 1) 46.sp else 36.sp,
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .graphicsLayer {
-                                scaleX = pop
-                                scaleY = pop
-                                alpha = pop.coerceIn(0f, 1f)
-                                translationY = if (k == 1) -6.dp.toPx() else 0f
-                            },
-                    )
-                }
-            }
-
-            val praiseIn = phase(PRAISE_MS, 350f)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .graphicsLayer {
-                        alpha = praiseIn
-                        translationY = (1f - praiseIn) * 24.dp.toPx()
-                    },
-            ) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    praise,
-                    style = TextStyle(
-                        color = Color.White,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center,
-                        shadow = Shadow(Gold.copy(alpha = 0.8f), blurRadius = 18f),
-                    ),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    if (isLastLevel) "全部 $level 關都通過了！" else "第 $level 關完成・$moves 步",
-                    color = GoldLight.copy(alpha = 0.85f),
-                    fontSize = 16.sp,
-                )
-            }
-
-            if (rankUp != null) {
-                val rankIn = phase(RANK_MS, 400f)
-                val pop = Overshoot.transform(rankIn)
-                Spacer(Modifier.height(16.dp))
+            // 內容放在可捲動的置中區塊，按鈕固定在下方，螢幕再矮或字再大都看得到按鈕。
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(min = maxHeight)
                         .graphicsLayer {
-                            scaleX = pop
-                            scaleY = pop
-                            alpha = rankIn
-                        }
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(Brush.verticalGradient(listOf(BannerTop, BannerBottom)))
-                        .border(2.dp, Gold.copy(alpha = glow), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 22.dp, vertical = 10.dp),
+                            translationX = sin(t * 0.21f) * 10.dp.toPx() * shake
+                            translationY = cos(t * 0.17f) * 8.dp.toPx() * shake
+                        },
                 ) {
-                    Text("稱號升級！", color = PlayColors.Mint, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text("${rankUp.emoji} ${rankUp.title}", color = Gold, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+                    VictoryBanner(
+                        scale = bannerScale,
+                        alpha = phase(0f, 150f),
+                        rayAngle = rayAngle,
+                        raysAlpha = phase(SLAM_MS, 500f) * glow,
+                        shockwave = if (t < SLAM_MS) -1f else phase(SLAM_MS, 650f),
+                        sparks = if (t < SLAM_MS) -1f else phase(SLAM_MS, 1100f),
+                    )
+
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        for (k in 0 until 3) {
+                            val pop = Overshoot.transform(phase(STAR_MS + k * 150f, 300f))
+                            Text(
+                                "⭐",
+                                fontSize = if (k == 1) 46.sp else 36.sp,
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .graphicsLayer {
+                                        scaleX = pop
+                                        scaleY = pop
+                                        alpha = pop.coerceIn(0f, 1f)
+                                        translationY = if (k == 1) -6.dp.toPx() else 0f
+                                    },
+                            )
+                        }
+                    }
+
+                    val praiseIn = phase(PRAISE_MS, 350f)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp)
+                            .graphicsLayer {
+                                alpha = praiseIn
+                                translationY = (1f - praiseIn) * 24.dp.toPx()
+                            },
+                    ) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            praise,
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 30.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                shadow = Shadow(Gold.copy(alpha = 0.8f), blurRadius = 18f),
+                            ),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (isLastLevel) "全部 $level 關都通過了！" else "第 $level 關完成・$moves 步",
+                            color = GoldLight.copy(alpha = 0.85f),
+                            fontSize = 16.sp,
+                        )
+                    }
+
+                    if (rankUp != null) {
+                        val rankIn = phase(RANK_MS, 400f)
+                        val pop = Overshoot.transform(rankIn)
+                        Spacer(Modifier.height(16.dp))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = pop
+                                    scaleY = pop
+                                    alpha = rankIn
+                                }
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Brush.verticalGradient(listOf(BannerTop, BannerBottom)))
+                                .border(2.dp, Gold.copy(alpha = glow), RoundedCornerShape(18.dp))
+                                .padding(horizontal = 22.dp, vertical = 10.dp),
+                        ) {
+                            Text("稱號升級！", color = PlayColors.Mint, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text("${rankUp.emoji} ${rankUp.title}", color = Gold, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                    }
                 }
             }
-
-            Spacer(Modifier.height(28.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
+            Box(
+                Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .graphicsLayer {
-                        alpha = buttonsIn
-                        translationY = (1f - buttonsIn) * 30.dp.toPx()
-                    },
+                    .padding(top = 12.dp, bottom = 24.dp)
+                    .height(56.dp),
             ) {
-                val ready = buttonsIn >= 1f
-                PillButton(
-                    "📋 關卡列表",
-                    enabled = ready,
-                    background = BannerTop,
+                if (buttonsIn > 0f) Row(
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 56.dp),
-                ) { onLevels() }
-                if (!isLastLevel) {
-                    Spacer(Modifier.width(12.dp))
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .graphicsLayer {
+                            alpha = buttonsIn
+                            translationY = (1f - buttonsIn) * 30.dp.toPx()
+                        },
+                ) {
+                    val ready = buttonsIn >= 1f
                     PillButton(
-                        "下一關 ▶",
+                        "📋 關卡列表",
                         enabled = ready,
-                        background = Gold,
-                        contentColor = PlayColors.Night,
+                        background = BannerTop,
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 56.dp),
-                    ) { onNext() }
+                    ) { onLevels() }
+                    if (!isLastLevel) {
+                        Spacer(Modifier.width(12.dp))
+                        PillButton(
+                            "下一關 ▶",
+                            enabled = ready,
+                            background = Gold,
+                            contentColor = PlayColors.Night,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 56.dp),
+                        ) { onNext() }
+                    }
                 }
             }
         }
