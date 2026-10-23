@@ -38,7 +38,7 @@ private const val HEADROOM = 0.1f       // 試管頂端留空的比例
 private const val TILT_DEGREES = 72f
 
 // 倒水動畫的三個階段：移過去並傾斜、倒水、回到原位。
-const val POUR_DURATION_MS = 800
+const val POUR_DURATION_MS = 600
 private const val MOVE_END = 0.3f
 private const val POUR_END = 0.75f
 const val POUR_SOUND_DELAY_MS = (POUR_DURATION_MS * MOVE_END).toLong()

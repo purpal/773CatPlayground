@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -54,8 +53,9 @@ fun WaterSortScreen(
     onNextLevel: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val game by produceState<WaterSortGame?>(initialValue = null, level) {
-        value = withContext(Dispatchers.Default) { WaterSortGame(level, LevelGenerator.generate(level)) }
+    var game by remember(level) { mutableStateOf<WaterSortGame?>(null) }
+    LaunchedEffect(level) {
+        game = withContext(Dispatchers.Default) { WaterSortGame(level, LevelGenerator.generate(level)) }
     }
     var win by remember(level) { mutableStateOf<WinInfo?>(null) }
 
@@ -144,13 +144,16 @@ private fun GameBoard(
         }
         if (game.board.isSolved()) {
             val rankBefore = Ranks.forCleared(cleared)
-            val newCleared = maxOf(cleared, game.level)
-            val rankAfter = Ranks.forCleared(newCleared)
-            onCleared(game.level)
-            delay(600)
+            val rankAfter = Ranks.forCleared(maxOf(cleared, game.level))
             val rankUp = rankAfter.takeIf { it != rankBefore }
-            sound.play(if (rankUp != null) Sfx.RANK_UP else Sfx.WIN)
-            onWin(WinInfo(Praise.random(), rankUp))
+            onCleared(game.level)
+            // finishPour() 把 pour 設回 null 會讓這個 LaunchedEffect 重啟並取消自己，
+            // 所以等待後顯示勝利畫面要放在不受影響的 scope 裡。
+            scope.launch {
+                delay(500)
+                sound.play(if (rankUp != null) Sfx.RANK_UP else Sfx.WIN)
+                onWin(WinInfo(Praise.random(), rankUp))
+            }
         }
     }
 

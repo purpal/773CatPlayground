@@ -46,7 +46,12 @@ import com.purpal.catplayground.watersort.Ranks
 import com.purpal.catplayground.watersort.model.LevelGenerator
 
 @Composable
-fun LobbyScreen(waterSortCleared: Int, onOpen: (Screen) -> Unit) {
+fun LobbyScreen(
+    waterSortCleared: Int,
+    version: String,
+    onOpen: (Screen) -> Unit,
+    onCheckUpdate: () -> Unit,
+) {
     val sound = LocalSound.current
     PlayBackground {
         Column(
@@ -87,6 +92,20 @@ fun LobbyScreen(waterSortCleared: Int, onOpen: (Screen) -> Unit) {
                 Spacer(Modifier.height(16.dp))
             }
             ComingSoonCard()
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "版本 v$version　·　檢查更新",
+                color = Color.White.copy(alpha = 0.55f),
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(RoundedCornerShape(50))
+                    .clickable {
+                        sound.play(Sfx.CLICK)
+                        onCheckUpdate()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
         }
     }
 }

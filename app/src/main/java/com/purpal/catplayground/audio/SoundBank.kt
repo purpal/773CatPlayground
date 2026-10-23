@@ -38,7 +38,7 @@ object SoundBank {
 
     /** 咕嚕咕嚕的水泡聲加上低通濾波的水流聲。 */
     private fun pour(): ShortArray {
-        val seconds = 0.38
+        val seconds = 0.3
         val b = Synth.buffer(seconds)
         val random = Random(7)
         var t = 0.0
