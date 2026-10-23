@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/purpal/773CatPlayground/compare/v0.4.2...v0.5.0) (2026-10-23)
+
+
+### Features
+
+* add 喵星萌王爭霸戰, a cat-themed vertical shooter ([a371353](https://github.com/purpal/773CatPlayground/commit/a371353eedc17a0e99b52ffc9f8508c949acfe65))
+
 ## [0.4.2](https://github.com/purpal/773CatPlayground/compare/v0.4.1...v0.4.2) (2026-10-23)
 
 
