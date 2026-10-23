@@ -27,20 +27,26 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # 自動合併 Release PR。用 GITHUB_TOKEN 合併不會再觸發這個 workflow，
+      # 自動合併 Release PR（PR 沒變動時 release-please 不會輸出 pr，所以直接用 label 找）。
+      # 用 GITHUB_TOKEN 合併不會再觸發這個 workflow，
       # 所以合併後在同一個 job 內再跑一次 release-please 來建立 tag 與 Release。
       - name: Auto-merge release PR
-        if: ${{ steps.release.outputs.pr }}
+        id: automerge
+        if: ${{ !steps.release.outputs.release_created }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         run: |
-          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+          prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main \
+            --label "autorelease: pending" --json number --jq '.[].number')
+          for pr in $prs; do
+            gh pr merge "$pr" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          done
           sleep 5
 
       - uses: googleapis/release-please-action@v4
         id: release-after-merge
-        if: ${{ steps.release.outputs.pr }}
+        if: ${{ steps.automerge.outputs.merged == 'true' }}
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
