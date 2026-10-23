@@ -203,4 +203,117 @@ class WorldTest {
         assertEquals(26f, far.hp, 0.001f)
         assertTrue(w.beam.top > 850f)
     }
+
+    @Test
+    fun weaponCapsulesCycleThroughTheirGroup() {
+        val main = Item(0f, 0f, ItemType.SPREAD)
+        val seen = mutableListOf(main.type)
+        repeat(3) {
+            repeat(((Item.CYCLE_TIME + 0.01f) / STEP).toInt() + 1) { main.updateCycle(STEP) }
+            seen += main.type
+        }
+        assertEquals(listOf(ItemType.SPREAD, ItemType.FOCUS, ItemType.SPECIAL, ItemType.SPREAD), seen)
+
+        val sub = Item(0f, 0f, ItemType.HOMING)
+        repeat(((Item.CYCLE_TIME + 0.01f) / STEP).toInt() + 1) { sub.updateCycle(STEP) }
+        assertEquals(ItemType.SONIC, sub.type)
+
+        val repair = Item(0f, 0f, ItemType.REPAIR)
+        repeat(300) { repair.updateCycle(STEP) }
+        assertEquals(ItemType.REPAIR, repair.type)
+    }
+
+    @Test
+    fun weaponCapsulesHaveHalfTheMagnetRange() {
+        val w = worldInStage()
+        w.player.x = 500f
+        w.player.y = 1400f
+        val weapon = Item(500f, 1250f, ItemType.FOCUS)
+        val repair = Item(500f, 1250f, ItemType.REPAIR)
+        w.items += weapon
+        w.items += repair
+        w.update(STEP)
+        // 150 單位外：修理道具會被吸過來，武器膠囊不會（往下飄的速度比較慢）。
+        assertTrue("repair should be pulled in", repair.y - 1250f > 5f)
+        assertTrue("weapon should only drift", weapon.y - 1250f < 3f)
+    }
+
+    @Test
+    fun meleeOnlyHitsTheExtendedPart() {
+        val w = worldInStage()
+        w.player.x = 500f
+        w.player.y = 900f
+        val fork = Laser(500f, 100f, HALF_PI, 1000f, 40f, warnTime = 0.2f, activeTime = 1f, color = Tint.PINK, damage = 30f, style = HazardStyle.FORK, extendTime = 0.4f)
+        w.lasers += fork
+        val armor = w.player.armor
+        repeat((0.3f / STEP).toInt()) { w.update(STEP) }
+        assertTrue("still extending: reach ${fork.reach}", fork.reach < 800f)
+        assertEquals(armor, w.player.armor, 0.001f)
+        repeat((0.4f / STEP).toInt()) { w.update(STEP) }
+        assertTrue(w.player.armor < armor)
+    }
+
+    @Test
+    fun bossLosesItsPropsWhenItStartsCrying() {
+        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+        w.godMode = true
+        autoplayUntil(w) { it.phase == Phase.BOSS }
+        val boss = w.boss!!
+        assertEquals(HazardStyle.FORK, boss.heldProp(boss.phase))
+        boss.hp = boss.maxHp * 0.2f
+        w.update(STEP)
+        assertEquals(2, boss.phase)
+        assertEquals(null, boss.heldProp(boss.phase))
+        val props = w.particles.filter { it.kind == ParticleKind.PROP }.map { it.tag }.toSet()
+        assertEquals(setOf(LostProp.CROWN, LostProp.FORK), props)
+    }
+
+    @Test
+    fun cancelledBulletsTurnIntoCandyThatFliesToThePlayer() {
+        val w = worldInStage()
+        repeat(20) { w.shoot(100f + it * 40f, 300f, HALF_PI, 10f, BulletStyle.ORB, Tint.RED) }
+        val score = w.score
+        assertTrue(w.requestUltimate())
+        repeat(60 * 4) { w.update(STEP) }
+        assertTrue(w.bullets.isEmpty())
+        assertTrue(w.items.none { it.type == ItemType.CANDY })
+        assertTrue("candies add score", w.score >= score + 20 * World.CANDY_SCORE)
+    }
+
+    @Test
+    fun loadoutCarriesWeaponsBombsAndArmor() {
+        val w = worldInStage()
+        w.player.mainWeapon = MainWeapon.SPECIAL
+        w.player.mainLevel = 4
+        w.player.subWeapon = SubWeapon.SONIC
+        w.player.subLevel = 2
+        w.player.bombs = 1
+        w.damagePlayer(40f)
+        val saved = Loadout.decode(w.loadout().encode())!!
+        assertEquals(w.loadout(), saved)
+
+        val next = World(Stages.dog, CatType.ORANGE, 2000f, loadout = saved)
+        assertEquals(MainWeapon.SPECIAL, next.player.mainWeapon)
+        assertEquals(4, next.player.mainLevel)
+        assertEquals(SubWeapon.SONIC, next.player.subWeapon)
+        assertEquals(2, next.player.subLevel)
+        assertEquals(1, next.player.bombs)
+        assertEquals(w.player.armorRatio, next.player.armorRatio, 0.001f)
+
+        assertEquals(null, Loadout.decode("garbage"))
+        // 護甲至少留 20%
+        val low = World(Stages.dog, CatType.BLACK, 2000f, loadout = saved.copy(armorRatio = 0.01f))
+        assertEquals(0.2f, low.player.armorRatio, 0.001f)
+    }
+
+    @Test
+    fun elitesAlwaysDropAWeaponCapsule() {
+        val w = worldInStage()
+        val elite = EliteMouse(500f)
+        w.spawn(elite)
+        repeat(60) { w.update(STEP) }
+        w.damageEnemy(elite, 9999f)
+        assertFalse(elite.alive)
+        assertTrue(w.items.any { it.cycle == Item.MAIN_CYCLE })
+    }
 }

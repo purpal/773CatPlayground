@@ -9,3 +9,4 @@ captures/
 # 簽署金鑰絕對不要進版控
 *.jks
 *.keystore
+__pycache__/

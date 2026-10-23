@@ -21,12 +21,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.text.font.FontWeight
 import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Music
 import com.purpal.catplayground.audio.SoundManager
 import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.lobby.LobbyScreen
+import com.purpal.catplayground.shooter.model.Loadout
+import com.purpal.catplayground.shooter.model.Stages
 import com.purpal.catplayground.shooter.ui.ShooterGameScreen
 import com.purpal.catplayground.shooter.ui.ShooterMenuScreen
 import com.purpal.catplayground.ui.CatPlaygroundTheme
@@ -37,6 +41,9 @@ import com.purpal.catplayground.update.UpdateInfo
 import com.purpal.catplayground.watersort.ui.LevelSelectScreen
 import com.purpal.catplayground.watersort.ui.WaterSortScreen
 import kotlinx.coroutines.launch
+
+/** 系統字體縮放的上限。 */
+private const val MAX_FONT_SCALE = 1.15f
 
 class MainActivity : ComponentActivity() {
 
@@ -51,8 +58,11 @@ class MainActivity : ComponentActivity() {
         val updater = AppUpdater(applicationContext)
         val debug = DebugLaunch.from(this, intent)
         setContent {
+            // 系統字體設定得很大時，限制放大倍率，避免文字被擠成兩行或截斷。
+            val density = LocalDensity.current
+            val capped = Density(density.density, minOf(density.fontScale, MAX_FONT_SCALE))
             CatPlaygroundTheme {
-                CompositionLocalProvider(LocalSound provides sound) {
+                CompositionLocalProvider(LocalSound provides sound, LocalDensity provides capped) {
                     AppRoot(prefs, updater, debug, onExit = { finish() })
                 }
             }
@@ -83,6 +93,17 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     var stack by remember { mutableStateOf(debug?.initialStack() ?: listOf<Screen>(Screen.Lobby)) }
     var waterSortCleared by remember { mutableIntStateOf(prefs.waterSortCleared) }
     var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
+    var carryStage by remember { mutableIntStateOf(prefs.shooterCarryStage) }
+
+    /** 取出保留給這一關的機體狀態（只能用一次）。 */
+    fun takeCarry(stage: Int): Loadout? {
+        if (prefs.shooterCarryStage != stage) return null
+        val loadout = Loadout.decode(prefs.shooterCarry)
+        prefs.shooterCarry = null
+        prefs.shooterCarryStage = 0
+        carryStage = 0
+        return loadout
+    }
     var confirmExit by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateDismissed by remember { mutableStateOf(false) }
@@ -154,8 +175,9 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
             Screen.ShooterMenu -> ShooterMenuScreen(
                 prefs = prefs,
                 cleared = shooterCleared,
+                carryStage = carryStage,
                 onBack = { pop() },
-                onPlay = { stage, cat -> push(Screen.ShooterPlay(stage, cat)) },
+                onPlay = { stage, cat -> push(Screen.ShooterPlay(stage, cat, takeCarry(stage))) },
             )
 
             is Screen.ShooterPlay -> ShooterGameScreen(
@@ -164,14 +186,21 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                 autotest = debug?.autotest == true,
                 ultimateOnLeft = prefs.shooterUltimateOnLeft,
                 bestScore = prefs.shooterBest(screen.stage),
-                onCleared = { stage, score ->
+                loadout = screen.loadout,
+                onCleared = { stage, score, loadout ->
                     prefs.setShooterBest(stage, score)
                     if (stage > shooterCleared) {
                         shooterCleared = stage
                         prefs.shooterCleared = stage
                     }
+                    // 破關時的機體狀態先存起來：直接進下一關會用掉，回列表的話下次挑戰下一關時用。
+                    if (Stages.get(stage + 1) != null) {
+                        prefs.shooterCarry = loadout.encode()
+                        prefs.shooterCarryStage = stage + 1
+                        carryStage = stage + 1
+                    }
                 },
-                onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat)) },
+                onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat, takeCarry(screen.stage + 1))) },
                 onExit = { pop() },
             )
         }

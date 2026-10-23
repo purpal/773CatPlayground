@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -58,6 +60,7 @@ import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.audio.SoundManager
 import com.purpal.catplayground.shooter.model.CatType
 import com.purpal.catplayground.shooter.model.EnemyKind
+import com.purpal.catplayground.shooter.model.Loadout
 import com.purpal.catplayground.shooter.model.MainWeapon
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.STEP
@@ -71,6 +74,8 @@ import com.purpal.catplayground.shooter.render.SpriteCache
 import com.purpal.catplayground.shooter.render.drawUltimateCinematic
 import com.purpal.catplayground.shooter.render.drawWorld
 import com.purpal.catplayground.shooter.render.viewportFor
+import com.purpal.catplayground.ui.ArtImage
+import com.purpal.catplayground.ui.FitText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
@@ -130,7 +135,8 @@ fun ShooterGameScreen(
     autotest: Boolean = false,
     ultimateOnLeft: Boolean,
     bestScore: Int,
-    onCleared: (stage: Int, score: Int) -> Unit,
+    loadout: Loadout? = null,
+    onCleared: (stage: Int, score: Int, loadout: Loadout) -> Unit,
     onNextStage: () -> Unit,
     onExit: () -> Unit,
 ) {
@@ -159,9 +165,12 @@ fun ShooterGameScreen(
         val gameHeightPx = constraints.maxHeight - with(density) { hudHeight.toPx() }
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
         val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
-        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit) }
+        val context = LocalContext.current
+        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit, context.assets) }
         val world = remember(attempt, stageNumber, worldHeight) {
-            World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt).also { it.godMode = autotest }
+            // 上一關帶過來的狀態只用一次：重新開始本關時回到初始裝備。
+            World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt, loadout = if (attempt == 0) loadout else null)
+                .also { it.godMode = autotest }
         }
 
         LaunchedEffect(sprites, cat, stageNumber) {
@@ -202,7 +211,7 @@ fun ShooterGameScreen(
                 if (world.phase != lastPhase) {
                     if (world.phase == Phase.CLEAR) {
                         sound.play(Sfx.WIN)
-                        onCleared(stageNumber, world.score)
+                        onCleared(stageNumber, world.score, world.loadout())
                     }
                     lastPhase = world.phase
                 }
@@ -299,9 +308,15 @@ fun ShooterGameScreen(
 private val HUD_HEIGHT = 96.dp
 
 private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
-    1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.BOSS_MOUSE)
-    2 -> listOf(EnemyKind.PUPPY, EnemyKind.FRISBEE, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_RUNNER, EnemyKind.BALLOON, EnemyKind.BOSS_DOG)
-    else -> listOf(EnemyKind.BEE, EnemyKind.HONEY_POT, EnemyKind.BEAR_CUB, EnemyKind.BEEHIVE, EnemyKind.CHEESE_DRONE, EnemyKind.PUPPY, EnemyKind.BALLOON, EnemyKind.BOSS_BEAR)
+    1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_MOUSE)
+    2 -> listOf(
+        EnemyKind.PUPPY, EnemyKind.FRISBEE, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_RUNNER, EnemyKind.BALLOON,
+        EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_DOG,
+    )
+    else -> listOf(
+        EnemyKind.BEE, EnemyKind.HONEY_POT, EnemyKind.BEAR_CUB, EnemyKind.BEEHIVE, EnemyKind.CHEESE_DRONE, EnemyKind.PUPPY,
+        EnemyKind.BALLOON, EnemyKind.ELITE_BEE, EnemyKind.ELITE_DOG, EnemyKind.BOSS_BEAR,
+    )
 }
 
 private val random = Random(0)
@@ -325,6 +340,8 @@ private fun playCues(world: World, sound: SoundManager) {
             SoundCue.MISSILE -> sound.play(Sfx.MISSILE, 0.4f)
             SoundCue.LASER -> sound.play(Sfx.LASER, 0.7f)
             SoundCue.BEAM -> sound.play(Sfx.BEAM, 0.35f)
+            SoundCue.CANDY -> sound.play(Sfx.ITEM, 0.35f, 1.3f + random.nextFloat() * 0.3f)
+            SoundCue.SWING -> sound.play(Sfx.SONIC, 0.7f, 0.6f)
         }
     }
     world.cues.clear()
@@ -355,8 +372,8 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Text("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                FitText("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                FitText("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             }
             // 武器資訊放在分數右邊，HUD 只有兩列，任何字體大小都放得下。
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -391,7 +408,7 @@ internal fun BossBar(hud: HudState, modifier: Modifier = Modifier) {
             .background(Color.Black.copy(alpha = 0.35f))
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
-        Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        FitText(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.widthIn(max = 120.dp))
         Spacer(Modifier.width(8.dp))
         Box(
             Modifier
@@ -414,7 +431,7 @@ internal fun BossBar(hud: HudState, modifier: Modifier = Modifier) {
 @Composable
 private fun Gauge(label: String, value: Float, color: Color, modifier: Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-        Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(30.dp))
+        FitText(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(30.dp))
         Box(
             Modifier
                 .weight(1f)
@@ -435,12 +452,11 @@ private fun Gauge(label: String, value: Float, color: Color, modifier: Modifier)
 
 @Composable
 private fun Chip(text: String, color: Color) {
-    Text(
+    FitText(
         text,
         color = Color.White,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        maxLines = 1,
         modifier = Modifier
             .background(color.copy(alpha = 0.85f), RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 2.dp),
@@ -459,7 +475,13 @@ internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modif
                 .pointerInput(onPress) { detectTapGestures(onPress = { onPress() }) },
             contentAlignment = Alignment.Center,
         ) {
-            Text(if (cat == CatType.ORANGE) "🐯" else "🐆", fontSize = 38.sp)
+            // 橘貓變身猛虎、黑貓變身黑豹
+            ArtImage(
+                if (cat == CatType.ORANGE) "icon_tiger" else "icon_panther",
+                Modifier.size(64.dp),
+                contentDescription = cat.ultimateName,
+                alpha = if (ready) 1f else 0.45f,
+            )
         }
         Spacer(Modifier.height(4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -45,36 +45,6 @@ internal object Shapes {
         close()
     }
 
-    /** 尖端朝下的火焰。 */
-    val flame: Path = Path().apply {
-        moveTo(0f, 1.2f)
-        cubicTo(0.7f, 0.4f, 0.8f, -0.3f, 0.5f, -0.8f)
-        quadraticTo(0f, -1.1f, -0.5f, -0.8f)
-        cubicTo(-0.8f, -0.3f, -0.7f, 0.4f, 0f, 1.2f)
-        close()
-    }
-
-    /** 尖端朝上的三角形（貓耳）。 */
-    val triangle: Path = Path().apply {
-        moveTo(0f, -1f)
-        lineTo(1f, 1f)
-        lineTo(-1f, 1f)
-        close()
-    }
-}
-
-internal inline fun DrawScope.at(
-    x: Float,
-    y: Float,
-    scale: Float = 1f,
-    rotationDegrees: Float = 0f,
-    crossinline block: DrawScope.() -> Unit,
-) {
-    withTransform({
-        translate(x, y)
-        if (rotationDegrees != 0f) rotate(rotationDegrees, Offset.Zero)
-        if (scale != 1f) scale(scale, scale, Offset.Zero)
-    }) { block() }
 }
 
 internal fun DrawScope.shape(path: Path, x: Float, y: Float, size: Float, color: Color, rotationDegrees: Float = 0f, sx: Float = 1f, sy: Float = 1f) {
@@ -96,3 +66,6 @@ internal fun DrawScope.line(x1: Float, y1: Float, x2: Float, y2: Float, color: C
 internal fun rectOf(cx: Float, cy: Float, w: Float, h: Float) = Rect(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)
 
 internal fun Long.toColor() = Color(this)
+
+/** 往深紫色調暗（陰影用）。 */
+internal fun Color.shade(amount: Float = 0.3f) = androidx.compose.ui.graphics.lerp(this, Color(0xFF3A2050), amount)

@@ -30,8 +30,9 @@ private fun span(t: Float, from: Float, to: Float) = ((t - from) / (to - from)).
 
 /**
  * 大絕動畫（螢幕座標，畫在遊戲畫布裡，不經過重組，所以會很順）：
- * 畫面變暗、集中線 → 斜光帶彈進來，老虎／黑豹大頭在上面咆哮、震動、放出衝擊環 →
- * 「吼喔喔喔——！」與招式名稱彈出 → 光帶飛走 → 白光，接著世界裡的衝擊波開始擴散。
+ * 畫面變暗、集中線 → 漫畫分格般的斜光帶彈進來，寫實漫畫風的猛虎／黑豹大頭衝出格子咆哮、
+ * 震動、放出衝擊環 → 「吼～！」與招式名稱彈出 → 光帶飛走 → 白光，接著世界裡的衝擊波開始擴散。
+ * 平常是軟萌的麻糬貓，這裡刻意用寫實畫風做出變身的反差。
  */
 fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMeasurer) {
     if (w.ultimateCinematic <= 0f) return
@@ -67,8 +68,11 @@ fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMe
     rotate(-9f, Offset(cx, cy)) {
         val left = -size.width + slide
         drawRect(Brush.verticalGradient(listOf(main.shade(0.3f), main, accent, main, main.shade(0.3f)), cy - bandHeight / 2f, cy + bandHeight / 2f), Offset(left, cy - bandHeight / 2f), Size(size.width * 3f, bandHeight))
-        drawRect(Color.White, Offset(left, cy - bandHeight / 2f - 10f), Size(size.width * 3f, 8f))
-        drawRect(Color.White, Offset(left, cy + bandHeight / 2f + 2f), Size(size.width * 3f, 8f))
+        // 漫畫分格的框線：外黑內白
+        drawRect(Color(0xFF140D12), Offset(left, cy - bandHeight / 2f - 22f), Size(size.width * 3f, 14f))
+        drawRect(Color(0xFF140D12), Offset(left, cy + bandHeight / 2f + 8f), Size(size.width * 3f, 14f))
+        drawRect(Color.White, Offset(left, cy - bandHeight / 2f - 8f), Size(size.width * 3f, 8f))
+        drawRect(Color.White, Offset(left, cy + bandHeight / 2f), Size(size.width * 3f, 8f))
         // 光帶上流動的光條
         for (k in 0 until 6) {
             val x = ((t * 3000f + k * 260f) % (size.width * 1.6f)) - size.width * 0.3f + slide
@@ -78,9 +82,10 @@ fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMe
         // 咆哮的大頭
         val roar = span(t, 0.26f, 0.62f)
         val shake = if (roar > 0f && roar < 1f) sin(t * 400f) * 9f else 0f
-        val faceScale = bandHeight / 150f * (1.25f + 0.08f * sin(roar * PI.toFloat()))
+        // 大頭比光帶還高，衝出格子外
+        val faceSize = minOf(bandHeight * 1.55f, size.width * 0.95f) * (1f + 0.06f * sin(roar * PI.toFloat()))
         val faceX = cx + slide * 0.55f + shake
-        val faceY = cy + bandHeight * 0.06f
+        val faceY = cy - bandHeight * 0.02f
         if (roar > 0f) {
             for (ring in 0..2) {
                 val r = span(t, 0.28f + ring * 0.1f, 0.6f + ring * 0.1f)
@@ -89,10 +94,12 @@ fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMe
                 }
             }
         }
-        val face = sprites.bigCat(w.player.cat, ((t * 20f).toInt()) % 2)
+        val face = sprites.ultimate(w.player.cat)
+        val k = faceSize / face.image.width
         withTransform({
             translate(faceX, faceY)
-            scale(faceScale / face.pxPerUnit, faceScale / face.pxPerUnit, Offset.Zero)
+            rotate(9f, Offset.Zero) // 抵銷光帶的傾斜，讓臉正對鏡頭
+            scale(k, k, Offset.Zero)
         }) {
             drawImage(face.image, Offset(-face.image.width / 2f, -face.image.height / 2f))
         }
@@ -101,23 +108,29 @@ fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMe
     // 文字
     val pop = BackOut.transform(span(t, 0.26f, 0.4f))
     if (pop > 0f) {
-        val roarText = text.measure(
-            "吼喔喔喔——！",
-            TextStyle(color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.Black, shadow = Shadow(main.shade(0.5f), Offset(0f, 8f), 6f)),
-        )
+        val roarSprite = sprites.roar()
+        val roarWidth = size.width * 0.62f
+        val roarHeight = roarWidth * roarSprite.image.height / roarSprite.image.width
         val nameText = text.measure(
             w.player.cat.ultimateName,
             TextStyle(color = accent, fontSize = 26.sp, fontWeight = FontWeight.Black, shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 5f), 6f)),
         )
         val textY = cy + bandHeight * 0.62f
         val scale = 2.2f - pop * 1.2f
-        withTransform({ scale(scale, scale, Offset(cx, textY + roarText.size.height / 2f)) }) {
-            drawText(roarText, topLeft = Offset(cx - roarText.size.width / 2f, textY), alpha = pop.coerceIn(0f, 1f) * (1f - leave))
+        withTransform({
+            translate(cx, textY + roarHeight / 2f)
+            scale(scale * roarWidth / roarSprite.image.width, scale * roarWidth / roarSprite.image.width, Offset.Zero)
+        }) {
+            drawImage(
+                roarSprite.image,
+                Offset(-roarSprite.image.width / 2f, -roarSprite.image.height / 2f),
+                alpha = pop.coerceIn(0f, 1f) * (1f - leave),
+            )
         }
         val nameIn = span(t, 0.36f, 0.48f)
         drawText(
             nameText,
-            topLeft = Offset(cx - nameText.size.width / 2f + (1f - nameIn) * 120f, textY + roarText.size.height + 6f),
+            topLeft = Offset(cx - nameText.size.width / 2f + (1f - nameIn) * 120f, textY + roarHeight + 6f),
             alpha = nameIn * (1f - leave),
         )
     }

@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -54,13 +53,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Sfx
-import com.purpal.catplayground.shooter.model.EnemyKind
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.Speaker
 import com.purpal.catplayground.shooter.model.StageTheme
 import com.purpal.catplayground.shooter.model.World
-import com.purpal.catplayground.shooter.render.drawBossPortrait
-import com.purpal.catplayground.shooter.render.drawCatShip
+import com.purpal.catplayground.shooter.model.CatType
+import com.purpal.catplayground.ui.ArtImage
+import com.purpal.catplayground.ui.FitText
 import com.purpal.catplayground.ui.PlayColors
 import kotlinx.coroutines.delay
 
@@ -90,11 +89,14 @@ fun StageOverlays(
     }
 }
 
-private fun bossKind(theme: StageTheme) = when (theme) {
-    StageTheme.CHEESE_BARN -> EnemyKind.BOSS_MOUSE
-    StageTheme.PARK -> EnemyKind.BOSS_DOG
-    StageTheme.HONEY_FOREST -> EnemyKind.BOSS_BEAR
+/** Boss 頭像：警告時是逞強的樣子（m0），被打倒後的對話是哭哭的樣子（m2）。 */
+private fun bossArt(theme: StageTheme, mood: Int) = when (theme) {
+    StageTheme.CHEESE_BARN -> "boss_mouse_m${mood}_0"
+    StageTheme.PARK -> "boss_dog_m${mood}_0"
+    StageTheme.HONEY_FOREST -> "boss_bear_m${mood}_0"
 }
+
+private fun catArt(cat: CatType) = if (cat == CatType.ORANGE) "cat_orange_front" else "cat_black_front"
 
 @Composable
 private fun StageTitle(world: World) {
@@ -114,8 +116,8 @@ private fun StageTitle(world: World) {
                 translationX = (1f - alpha.value) * 60.dp.toPx()
             },
     ) {
-        Text("STAGE ${world.stage.number}", style = titleStyle(52.sp))
-        Text("${world.stage.animal}的${world.stage.title}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        FitText("STAGE ${world.stage.number}", style = titleStyle(52.sp))
+        FitText("${world.stage.animal}的${world.stage.title}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(18.dp))
         Text(
             "按住畫面下方：自動射擊\n手指移動：貓咪跟著移動",
@@ -172,27 +174,21 @@ private fun Warning(world: World) {
                     .background(Color(0xE6140A26))
                     .padding(vertical = 14.dp),
             ) {
-                Text("WARNING", style = titleStyle(54.sp, Color(0xFFFF1744).copy(alpha = blink), Color.White))
+                FitText("WARNING", style = titleStyle(54.sp, Color(0xFFFF1744).copy(alpha = blink), Color.White))
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Canvas(
+                    Box(
                         Modifier
-                            .size(84.dp)
-                            .background(Color(0xFF3A1D5C), CircleShape)
-                            .border(3.dp, Gold, CircleShape)
-                            .clip(CircleShape),
-                    ) {
-                        withTransform({
-                            translate(size.width / 2f, size.height * 0.62f)
-                            val s = size.width / 230f
-                            scale(s, s, Offset.Zero)
-                        }) { drawBossPortrait(bossKind(world.stage.theme), phase = 1, time = world.time) }
-                    }
+                            .size(92.dp)
+                            .background(Color(0xFFFDEFF5), CircleShape)
+                            .border(3.dp, Gold, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) { ArtImage(bossArt(world.stage.theme, 0), Modifier.size(84.dp)) }
                     Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("STAGE ${world.stage.number}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
-                        Text(world.stage.bossName, style = titleStyle(34.sp, Color.White))
-                        Text("接近中！", color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Column(Modifier.weight(1f, fill = false)) {
+                        FitText("STAGE ${world.stage.number}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                        FitText(world.stage.bossName, style = titleStyle(34.sp, Color.White))
+                        FitText("接近中！", color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -267,31 +263,24 @@ private fun Dialogue(world: World) {
                 .padding(14.dp),
         ) {
             val isCat = line.speaker == Speaker.CAT
-            Canvas(
+            Box(
                 Modifier
                     .size(76.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (isCat) Color(0xFFFFE0B2) else Color(0xFFE1BEE7)),
+                    .background(if (isCat) Color(0xFFFFE0B2) else Color(0xFFE1BEE7), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center,
             ) {
-                withTransform({
-                    translate(size.width / 2f, size.height * (if (isCat) 0.62f else 0.64f))
-                    val s = if (isCat) size.width / 90f else size.width / 250f
-                    scale(s, s, Offset.Zero)
-                }) {
-                    if (isCat) drawCatShip(world.player.cat, 0f, 0f, transformed = false)
-                    else drawBossPortrait(bossKind(world.stage.theme), phase = 0, time = 0f)
-                }
+                ArtImage(if (isCat) catArt(world.player.cat) else bossArt(world.stage.theme, 2), Modifier.size(70.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(
+                FitText(
                     if (isCat) world.player.cat.shortName else world.stage.bossName,
                     color = if (isCat) Color(0xFFFFB74D) else Color(0xFFCE93D8),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(line.text.take(visible), color = Color.White, fontSize = 17.sp, modifier = Modifier.heightIn(min = 48.dp))
-                Text("點一下繼續 ▼", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, modifier = Modifier.align(Alignment.End))
+                FitText("點一下繼續 ▼", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, modifier = Modifier.align(Alignment.End))
             }
         }
     }
@@ -302,18 +291,19 @@ private fun ContinuePanel(world: World, onRestart: () -> Unit, onExit: () -> Uni
     val sound = LocalSound.current
     CenterPanel {
         Text("😿", fontSize = 56.sp)
-        Text("${world.player.cat.shortName}被打倒了…", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        FitText("${world.player.cat.shortName}被打倒了…", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         if (world.continuesLeft > 0) {
-            Text("要接關嗎？（剩 ${world.continuesLeft} 次）", color = Gold, fontSize = 17.sp)
-            Text("接關後分數會歸零、主武器降一級", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+            FitText("要接關嗎？（剩 ${world.continuesLeft} 次）", color = Gold, fontSize = 17.sp)
+            FitText("接關後分數會歸零、主武器降一級", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
             Spacer(Modifier.height(18.dp))
             BigButton("💪 接關！", Gold, PlayColors.Night) {
                 sound.play(Sfx.POWER_UP)
                 world.useContinue()
             }
         } else {
-            Text("接關次數用完了，從這一關開頭再挑戰吧！", color = Gold, fontSize = 16.sp, textAlign = TextAlign.Center)
+            FitText("接關次數用完了", color = Gold, fontSize = 16.sp)
+            FitText("從這一關開頭再挑戰吧！", color = Gold, fontSize = 16.sp)
             Spacer(Modifier.height(18.dp))
             BigButton("🔄 重新開始本關", Gold, PlayColors.Night, onRestart)
         }
@@ -325,17 +315,18 @@ private fun ContinuePanel(world: World, onRestart: () -> Unit, onExit: () -> Uni
 @Composable
 private fun ClearPanel(world: World, bestScore: Int, hasNextStage: Boolean, onNextStage: () -> Unit, onExit: () -> Unit) {
     CenterPanel {
-        Text("STAGE CLEAR!", style = titleStyle(40.sp))
-        Text("打倒了${world.stage.bossName}！", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        FitText("STAGE CLEAR!", style = titleStyle(40.sp))
+        FitText("打倒了${world.stage.bossName}！", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
-        Text("SCORE ${world.score}", color = Gold, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        if (world.score > bestScore) Text("🎉 新紀錄！", color = PlayColors.Mint, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        else Text("最高分 $bestScore", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+        FitText("SCORE ${world.score}", color = Gold, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        if (world.score > bestScore) FitText("🎉 新紀錄！", color = PlayColors.Mint, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        else FitText("最高分 $bestScore", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
         Spacer(Modifier.height(20.dp))
         if (hasNextStage) {
             BigButton("下一關 ▶", Gold, PlayColors.Night, onNextStage)
+            FitText("武器等級與機體狀態會帶到下一關", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         } else {
-            Text("下一關製作中，敬請期待！", color = Color.White, fontSize = 15.sp)
+            FitText("下一關製作中，敬請期待！", color = Color.White, fontSize = 15.sp)
         }
         Spacer(Modifier.height(10.dp))
         BigButton("📋 關卡選單", Color(0xFF3949AB), Color.White, onExit)
@@ -345,7 +336,7 @@ private fun ClearPanel(world: World, bestScore: Int, hasNextStage: Boolean, onNe
 @Composable
 fun PauseMenu(onResume: () -> Unit, onRestart: () -> Unit, onExit: () -> Unit) {
     CenterPanel {
-        Text("暫停", style = titleStyle(40.sp, Color.White))
+        FitText("暫停", style = titleStyle(40.sp, Color.White))
         Spacer(Modifier.height(20.dp))
         BigButton("▶ 繼續", Gold, PlayColors.Night, onResume)
         Spacer(Modifier.height(10.dp))
@@ -390,7 +381,7 @@ private fun BigButton(text: String, background: Color, contentColor: Color, onCl
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = contentColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        FitText(text, color = contentColor, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp))
     }
 }
 

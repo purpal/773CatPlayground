@@ -26,6 +26,7 @@ enum class EnemyKind {
     PUPPY, FRISBEE, BALL_TURRET,
     BEE, HONEY_POT, BEAR_CUB, BEEHIVE,
     BALLOON,
+    ELITE_MOUSE, ELITE_DOG, ELITE_BEE,
     BOSS_MOUSE, BOSS_DOG, BOSS_BEAR,
 }
 
@@ -43,10 +44,12 @@ abstract class Enemy(
     var drop: ItemType? = null
     abstract val kind: EnemyKind
     open val isBoss: Boolean get() = false
+    /** 菁英怪：比較硬、攻擊比較兇，一定會掉武器膠囊。 */
+    open val isElite: Boolean get() = false
     /** Boss 進場中等情況不能被打。 */
     open val invulnerable: Boolean get() = false
     /** 撞到玩家造成的傷害。 */
-    open val contactDamage: Float get() = 15f
+    open val contactDamage: Float get() = 20f
 
     abstract fun update(w: World, dt: Float)
 
@@ -74,6 +77,8 @@ class Balloon(x: Float, item: ItemType) : Enemy(x, -60f, 26f, 52f, 200) {
         age += dt
         y += 95f * dt
         x = baseX + sin(age * 2f) * 40f
+        // 掛著的武器膠囊也會輪流切換類型。
+        if (every(age, dt, Item.CYCLE_TIME, offset = Item.CYCLE_TIME)) drop = drop?.let { Item.next(it) }
         leaveIfOffscreen(w)
     }
 }
@@ -274,6 +279,89 @@ class Beehive(x: Float, y: Float, private val vx: Float) : Enemy(x, y, 30f, 40f,
             alive = false
             w.puff(x, y, Tint.HONEY)
         }
+    }
+}
+
+// ───────────── 菁英怪 ─────────────
+
+abstract class Elite(x: Float, hp: Float, radius: Float, score: Int, item: ItemType) : Enemy(x, -90f, hp, radius, score) {
+    override val isElite = true
+    override val contactDamage = 30f
+
+    init {
+        drop = item
+    }
+}
+
+/** 起司騎士：左右巡邏，扇形種子彈＋起司圈。 */
+class EliteMouse(x: Float, private val stopY: Float = 330f) : Elite(x, 420f, 64f, 2000, ItemType.SPREAD) {
+    override val kind = EnemyKind.ELITE_MOUSE
+    private val baseX = x
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.6f -> y = approach(y, stopY, 2.5f, dt)
+            age < 11f -> {
+                x = baseX + sin((age - 1.6f) * 0.9f) * 160f
+                if (every(age, dt, 1.4f, offset = 1.8f)) w.fan(x, y + 40f, w.aimAt(x, y), 5, 44f * DEG, 300f, BulletStyle.SEED, Tint.SEED)
+                if (every(age, dt, 3f, offset = 2.6f)) w.ring(x, y, 16, 200f, age, BulletStyle.CHEESE, Tint.CHEESE)
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 牧羊犬教官：吹哨叫小狗來幫忙，丟回力鏢骨頭，叫聲變成音符圈。 */
+class EliteDog(x: Float, private val stopY: Float = 320f) : Elite(x, 480f, 66f, 2400, ItemType.HOMING) {
+    override val kind = EnemyKind.ELITE_DOG
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.6f -> y = approach(y, stopY, 2.5f, dt)
+            age < 12f -> {
+                x = approach(x, w.player.x.coerceIn(150f, WORLD_WIDTH - 150f), 0.5f, dt)
+                if (every(age, dt, 1.1f, offset = 1.8f)) {
+                    for (side in listOf(-1f, 1f)) {
+                        w.shoot(x, y + 40f, HALF_PI + side * 55f * DEG, 280f, BulletStyle.BONE, Tint.BONE).turn = -side * 1.4f
+                    }
+                }
+                if (every(age, dt, 2.6f, offset = 2.4f)) w.ring(x, y, 20, 190f, age, BulletStyle.NOTE, Tint.NOTE)
+                if (crossed(age, dt, 3f) || crossed(age, dt, 7.5f)) {
+                    w.spawn(Puppy((x - 180f).coerceIn(80f, WORLD_WIDTH - 80f), y + 80f))
+                    w.spawn(Puppy((x + 180f).coerceIn(80f, WORLD_WIDTH - 80f), y + 80f))
+                }
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 蜂后：繞 8 字飛行，召喚蜜蜂，三向星星彈。 */
+class EliteBee(x: Float) : Elite(x, 380f, 60f, 2200, ItemType.FOCUS) {
+    override val kind = EnemyKind.ELITE_BEE
+    private val baseX = x
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.4f -> y = approach(y, 300f, 2.5f, dt)
+            age < 11f -> {
+                val t = age - 1.4f
+                x = baseX + sin(t * 0.9f) * 220f
+                y = 300f + sin(t * 1.8f) * 70f
+                if (every(age, dt, 0.9f, offset = 1.8f)) w.fan(x, y + 30f, w.aimAt(x, y), 3, 24f * DEG, 320f, BulletStyle.STAR, Tint.STAR)
+                if (every(age, dt, 1.8f, offset = 2.2f)) {
+                    w.spawn(Bee(x - 60f, 0.2f).also { it.y = y })
+                    w.spawn(Bee(x + 60f, 0.4f).also { it.y = y })
+                }
+            }
+            else -> y += 260f * dt
+        }
+        leaveIfOffscreen(w)
     }
 }
 

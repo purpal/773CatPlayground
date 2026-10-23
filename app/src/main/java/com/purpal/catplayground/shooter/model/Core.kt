@@ -30,12 +30,12 @@ enum class MainWeapon(val label: String) { SPREAD("散射"), FOCUS("集中"), SP
 
 enum class SubWeapon(val label: String) { NONE("無"), HOMING("追蹤彈"), SONIC("聲波彈") }
 
-enum class ItemType { SPREAD, FOCUS, SPECIAL, HOMING, SONIC, REPAIR, BOMB, COIN }
+enum class ItemType { SPREAD, FOCUS, SPECIAL, HOMING, SONIC, REPAIR, BOMB, COIN, CANDY }
 
 /** 給畫面播放音效用的事件。 */
 enum class SoundCue {
     SHOT, SHOT_HEAVY, ENEMY_HIT, EXPLODE_SMALL, EXPLODE_BIG, ITEM, POWER_UP, PLAYER_HIT,
-    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM,
+    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM, CANDY, SWING,
 }
 
 enum class Phase {

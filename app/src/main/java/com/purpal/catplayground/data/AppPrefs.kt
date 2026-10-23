@@ -32,6 +32,16 @@ class AppPrefs(context: Context) {
         get() = prefs.getBoolean("shooter_ultimate_left", false)
         set(value) = prefs.edit().putBoolean("shooter_ultimate_left", value).apply()
 
+    /** 破關時保留下來、下一關可以用一次的機體狀態（[com.purpal.catplayground.shooter.model.Loadout] 的編碼）。 */
+    var shooterCarry: String?
+        get() = prefs.getString("shooter_carry", null)
+        set(value) = prefs.edit().putString("shooter_carry", value).apply()
+
+    /** [shooterCarry] 給哪一關用；0 表示沒有。 */
+    var shooterCarryStage: Int
+        get() = prefs.getInt("shooter_carry_stage", 0)
+        set(value) = prefs.edit().putInt("shooter_carry_stage", value).apply()
+
     fun shooterBest(stage: Int): Int = prefs.getInt("shooter_best_$stage", 0)
 
     fun setShooterBest(stage: Int, score: Int) {

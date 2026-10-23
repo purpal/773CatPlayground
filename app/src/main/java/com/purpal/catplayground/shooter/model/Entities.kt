@@ -88,7 +88,16 @@ class EnemyBullet(
     val spin = (style == BulletStyle.BONE || style == BulletStyle.STAR || style == BulletStyle.CHEESE)
 }
 
-/** 雷射：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。 */
+/**
+ * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或道具的近身攻擊
+ * （叉子突刺、骨頭橫掃、蜂蜜棒重擊、尾巴鞭打、爪擊）。
+ */
+enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW }
+
+/**
+ * 雷射／近身攻擊：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。
+ * 道具類攻擊會在 [extendTime] 內從發射者伸出去，只有伸到的部分有判定。
+ */
 class Laser(
     var x: Float,
     var y: Float,
@@ -105,6 +114,8 @@ class Laser(
     val owner: Enemy? = null,
     val offsetX: Float = 0f,
     val offsetY: Float = 0f,
+    val style: HazardStyle = HazardStyle.BEAM,
+    val extendTime: Float = 0f,
 ) {
     var age = 0f
     var alive = true
@@ -112,12 +123,29 @@ class Laser(
     val endX: Float get() = x + cos(angle) * length
     val endY: Float get() = y + sin(angle) * length
 
-    /** 點到雷射線段的距離平方。 */
+    /** 目前伸出去的比例（0～1）：發射時伸出，結束前 0.15 秒收回。 */
+    val extension: Float
+        get() {
+            if (age < warnTime) return 0f
+            val out = if (extendTime <= 0f) 1f else ((age - warnTime) / extendTime).coerceAtMost(1f)
+            val back = if (extendTime <= 0f) 1f else ((warnTime + activeTime - age) / RETRACT).coerceIn(0f, 1f)
+            return minOf(out, back)
+        }
+    val reach: Float get() = length * extension
+    val tipX: Float get() = x + cos(angle) * reach
+    val tipY: Float get() = y + sin(angle) * reach
+
+    /** 點到「已伸出部分」的距離平方。 */
     fun distance2To(px: Float, py: Float): Float {
-        val dx = endX - x
-        val dy = endY - y
+        val dx = tipX - x
+        val dy = tipY - y
+        if (dx * dx + dy * dy < 1f) return dist2(px, py, x, y)
         val t = (((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy)).coerceIn(0f, 1f)
         return dist2(px, py, x + dx * t, y + dy * t)
+    }
+
+    companion object {
+        const val RETRACT = 0.15f
     }
 }
 
@@ -139,13 +167,86 @@ class SonicWall(val x: Float, val y: Float, val radius: Float, val halfAngle: Fl
     }
 }
 
-class Item(var x: Float, var y: Float, val type: ItemType) {
+/** 道具。武器膠囊會在同一組類型之間輪流切換（主武器 3 種、副武器 2 種）。 */
+class Item(var x: Float, var y: Float, type: ItemType) {
+    var type = type
+        private set
     var age = 0f
     var alive = true
-    val radius = if (type == ItemType.COIN) 20f else 30f
+    var cycleTime = 0f
+    /** 糖果的顏色。 */
+    var variant = 0
+    /** 消彈變成的糖果：先往外彈開，再飛向貓咪。 */
+    var vx = 0f
+    var vy = 0f
+    val radius = when (type) {
+        ItemType.COIN -> 20f
+        ItemType.CANDY -> 16f
+        else -> 30f
+    }
+    val cycle: List<ItemType>? = when (type) {
+        in MAIN_CYCLE -> MAIN_CYCLE
+        in SUB_CYCLE -> SUB_CYCLE
+        else -> null
+    }
+    /** 切換到下一種的進度（0～1），畫面用來畫倒數圈。 */
+    val cycleProgress: Float get() = cycleTime / CYCLE_TIME
+
+    fun updateCycle(dt: Float) {
+        val list = cycle ?: return
+        cycleTime += dt
+        if (cycleTime >= CYCLE_TIME) {
+            cycleTime -= CYCLE_TIME
+            type = list[(list.indexOf(type) + 1) % list.size]
+        }
+    }
+
+    companion object {
+        const val CYCLE_TIME = 1.6f
+        val MAIN_CYCLE = listOf(ItemType.SPREAD, ItemType.FOCUS, ItemType.SPECIAL)
+        val SUB_CYCLE = listOf(ItemType.HOMING, ItemType.SONIC)
+
+        fun next(type: ItemType): ItemType {
+            val list = when (type) {
+                in MAIN_CYCLE -> MAIN_CYCLE
+                in SUB_CYCLE -> SUB_CYCLE
+                else -> return type
+            }
+            return list[(list.indexOf(type) + 1) % list.size]
+        }
+    }
 }
 
-enum class ParticleKind { SPARK, STAR, RING, HEART, SMOKE, FLASH, FIRE }
+/** Boss 被打掉的道具（畫面用來畫飛出去的樣子）。 */
+object LostProp {
+    const val CROWN = 1
+    const val HAT = 2
+    const val POT = 3
+    const val FORK = 4
+}
+
+/** 畫面上的音效字。 */
+object SfxText {
+    const val POKO = 0
+    const val PAAN = 1
+    const val DOON = 2
+    const val SWEET = 3
+    const val ELITE = 4
+}
+
+enum class ParticleKind {
+    SPARK, STAR, RING, HEART, SMOKE, FLASH, FIRE,
+    /** 彩色紙片，會受重力往下飄。 */
+    CONFETTI,
+    /** 被打飛的 Boss 道具，tag 為 [LostProp]。 */
+    PROP,
+    /** 漫畫音效字，tag 為 [SfxText]。 */
+    SFX,
+    /** 彈跳的分數，tag 為分數。 */
+    SCORE,
+    /** 命中處開出的小花。 */
+    FLOWER,
+}
 
 class Particle(
     var x: Float,
@@ -156,7 +257,11 @@ class Particle(
     val size: Float,
     val color: Long,
     val kind: ParticleKind,
+    val tag: Int = 0,
 ) {
     var age = 0f
+    /** 旋轉角度（度）與每秒轉速，紙片與道具用。 */
+    var rotation = 0f
+    var spin = 0f
     val progress: Float get() = (age / life).coerceIn(0f, 1f)
 }
