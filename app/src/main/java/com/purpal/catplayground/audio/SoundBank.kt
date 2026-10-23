@@ -7,6 +7,9 @@ import kotlin.random.Random
 
 enum class Sfx { CLICK, SELECT, POUR, COMPLETE, WIN, RANK_UP, INVALID }
 
+/** 勝利音效中「轟」的時間點，要和勝利橫幅落地的動畫對齊。 */
+const val VICTORY_IMPACT_SEC = 0.33
+
 /** 所有音效與背景音樂都在這裡即時合成，不需要任何音檔。 */
 object SoundBank {
 
@@ -35,7 +38,7 @@ object SoundBank {
 
     /** 咕嚕咕嚕的水泡聲加上低通濾波的水流聲。 */
     private fun pour(): ShortArray {
-        val seconds = 0.5
+        val seconds = 0.38
         val b = Synth.buffer(seconds)
         val random = Random(7)
         var t = 0.0
@@ -61,32 +64,43 @@ object SoundBank {
         return Synth.toPcm(b, 0.6f)
     }
 
+    /** 勝利橫幅落下時的「轟」一聲：低頻下滑的正弦波加一段噪音爆裂。 */
+    private fun impact(b: FloatArray, at: Double) {
+        addTone(b, at, 0.7, 110.0, 38.0, 1.0, attackSec = 0.002)
+        addTone(b, at, 0.25, 220.0, 60.0, 0.4, Wave.TRIANGLE, attackSec = 0.002)
+        addTone(b, at, 0.18, 0.0, volume = 0.35, wave = Wave.NOISE, attackSec = 0.001)
+    }
+
     private fun win(): ShortArray {
-        val b = Synth.buffer(1.6)
-        val notes = intArrayOf(72, 76, 79, 84)
+        val b = Synth.buffer(2.4)
+        impact(b, VICTORY_IMPACT_SEC)
+        val start = VICTORY_IMPACT_SEC + 0.15
+        val notes = intArrayOf(67, 72, 76, 79)
         notes.forEachIndexed { i, n ->
-            addTone(b, i * 0.11, 0.35, midiToFreq(n), volume = 0.5, wave = Wave.TRIANGLE)
+            addTone(b, start + i * 0.1, 0.35, midiToFreq(n), volume = 0.45, wave = Wave.TRIANGLE)
         }
-        for (n in intArrayOf(72, 76, 79, 84, 88)) {
-            addTone(b, 0.5, 1.1, midiToFreq(n), volume = 0.25, wave = Wave.TRIANGLE)
+        for (n in intArrayOf(60, 72, 76, 79, 84, 88)) {
+            addTone(b, start + 0.42, 1.5, midiToFreq(n), volume = 0.24, wave = Wave.TRIANGLE)
         }
-        addTone(b, 0.5, 1.1, midiToFreq(96), volume = 0.1)
-        return Synth.toPcm(b, 0.75f)
+        addTone(b, start + 0.42, 1.5, midiToFreq(96), volume = 0.08)
+        return Synth.toPcm(b, 0.85f)
     }
 
     private fun rankUp(): ShortArray {
-        val b = Synth.buffer(2.2)
+        val b = Synth.buffer(3.0)
+        impact(b, VICTORY_IMPACT_SEC)
+        val start = VICTORY_IMPACT_SEC + 0.15
         val melody = intArrayOf(67, 72, 76, 79, 84, 79, 84, 88)
         melody.forEachIndexed { i, n ->
-            addTone(b, i * 0.1, 0.3, midiToFreq(n), volume = 0.45, wave = Wave.TRIANGLE)
+            addTone(b, start + i * 0.1, 0.3, midiToFreq(n), volume = 0.42, wave = Wave.TRIANGLE)
         }
-        for (n in intArrayOf(60, 72, 76, 79, 84, 91)) {
-            addTone(b, 0.85, 1.3, midiToFreq(n), volume = 0.22, wave = Wave.TRIANGLE)
+        for (n in intArrayOf(48, 60, 72, 76, 79, 84, 91)) {
+            addTone(b, start + 0.85, 1.6, midiToFreq(n), volume = 0.2, wave = Wave.TRIANGLE)
         }
-        for (i in 0 until 10) {
-            addTone(b, 0.9 + i * 0.09, 0.15, midiToFreq(96 + (i % 3) * 4), volume = 0.08)
+        for (i in 0 until 12) {
+            addTone(b, start + 0.9 + i * 0.09, 0.15, midiToFreq(96 + (i % 3) * 4), volume = 0.07)
         }
-        return Synth.toPcm(b, 0.8f)
+        return Synth.toPcm(b, 0.85f)
     }
 
     private fun invalid(): ShortArray {
