@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/purpal/773CatPlayground/compare/v0.3.0...v0.4.0) (2026-10-23)
+
+
+### Features
+
+* in-app updates, exit confirmation and faster pouring ([d28397f](https://github.com/purpal/773CatPlayground/commit/d28397f4889feeabbef40bc42462a00850a82b55))
+
 ## [0.3.0](https://github.com/purpal/773CatPlayground/compare/v0.2.0...v0.3.0) (2026-10-23)
 
 
