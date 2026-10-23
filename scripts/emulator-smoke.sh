@@ -14,6 +14,9 @@ shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 uptime_ms() { adb shell cat /proc/uptime | awk '{printf "%d", $1 * 1000}'; }
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+# 模擬器是軟體繪圖，降低解析度讓幀耗時比較有參考價值（仍不等於真機）。
+adb shell wm size 720x1600
+adb shell wm density 300
 adb shell settings put system screen_off_timeout 1800000
 adb shell svc power stayon true
 size=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1)
@@ -32,7 +35,7 @@ shot 02_menu
 # 3. 實際遊玩（autotest：無敵、自動放大絕、記錄幀耗時）
 adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true > /dev/null
 REC_START=$(uptime_ms)
-adb shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 &
+adb shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
 sleep 1
 adb shell dumpsys gfxinfo $PKG reset > /dev/null
 sleep 1.5
@@ -45,6 +48,7 @@ adb shell input motionevent DOWN $cx $cy
 start=$(date +%s)
 i=0
 last=-1
+burst_done=0
 while true; do
   elapsed=$(( $(date +%s) - start ))
   [ "$elapsed" -ge "$PLAY_SECONDS" ] && break
@@ -54,6 +58,11 @@ while true; do
   y=$(( cy - ((i / 16) % 2) * H / 12 ))
   adb shell input motionevent MOVE $x $y
   i=$((i + 1))
+  # 大絕一開始就連拍，記錄動畫過程（錄影失敗時也有影格可看）
+  if [ "$burst_done" -lt 2 ] && [ "$(adb logcat -d -s ShooterPerf:I | grep -c ULTIMATE)" -gt "$burst_done" ]; then
+    burst_done=$((burst_done + 1))
+    for k in 0 1 2 3 4 5 6 7 8 9; do adb exec-out screencap -p > "$OUT/frames/ult${burst_done}_$k.png"; done
+  fi
   if [ $((elapsed % 15)) -eq 0 ] && [ "$elapsed" -ne "$last" ] && [ "$elapsed" -gt 0 ]; then
     shot "$(printf '10_play_%03ds' "$elapsed")"
     last=$elapsed
@@ -65,7 +74,9 @@ shot 90_end
 adb shell dumpsys gfxinfo $PKG > "$OUT/gfxinfo.txt"
 adb shell pkill -INT screenrecord || true
 sleep 4
-adb pull /sdcard/run.mp4 "$OUT/run.mp4" > /dev/null || true
+adb shell ls -l /sdcard/run.mp4 > "$OUT/video-diagnostics.txt" 2>&1 || true
+adb pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
+which ffmpeg >> "$OUT/video-diagnostics.txt" 2>&1 || echo "no ffmpeg" >> "$OUT/video-diagnostics.txt"
 adb logcat -d -s ShooterPerf:I > "$OUT/perf.txt"
 adb logcat -d | grep -E -A20 "FATAL EXCEPTION|ANR in" > "$OUT/crashes.txt" || true
 

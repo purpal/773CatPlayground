@@ -296,7 +296,7 @@ fun ShooterGameScreen(
     }
 }
 
-private val HUD_HEIGHT = 104.dp
+private val HUD_HEIGHT = 96.dp
 
 private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
     1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.BOSS_MOUSE)
@@ -355,27 +355,27 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                Text("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
             }
+            // 武器資訊放在分數右邊，HUD 只有兩列，任何字體大小都放得下。
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Chip("${hud.mainWeapon.label} Lv${hud.mainLevel}", Color(0xFFFF9100))
+                if (hud.subWeapon != SubWeapon.NONE) Chip("${hud.subWeapon.label} Lv${hud.subLevel}", Color(0xFF7C4DFF))
+            }
+            Spacer(Modifier.width(8.dp))
             Box(
                 Modifier
                     .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.35f))
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape)
                     .pointerInput(Unit) { detectTapGestures { onPause() } },
                 contentAlignment = Alignment.Center,
             ) { Text("⏸", fontSize = 20.sp, color = Color.White) }
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Gauge("護甲", hud.armor / 100f, Color(0xFFFF5252), Modifier.weight(1f))
             Gauge("速度", hud.speed / 100f, Color(0xFF40C4FF), Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Chip("${hud.mainWeapon.label} Lv${hud.mainLevel}", Color(0xFFFF9100))
-            if (hud.subWeapon != SubWeapon.NONE) Chip("${hud.subWeapon.label} Lv${hud.subLevel}", Color(0xFF7C4DFF))
         }
     }
 }
@@ -440,10 +440,10 @@ private fun Chip(text: String, color: Color) {
         color = Color.White,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
+        maxLines = 1,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.8f))
-            .padding(horizontal = 10.dp, vertical = 3.dp),
+            .background(color.copy(alpha = 0.85f), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 2.dp),
     )
 }
 
