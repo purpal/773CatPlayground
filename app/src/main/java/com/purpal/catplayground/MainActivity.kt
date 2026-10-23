@@ -49,10 +49,11 @@ class MainActivity : ComponentActivity() {
         prefs = AppPrefs(applicationContext)
         sound = SoundManager(applicationContext, prefs)
         val updater = AppUpdater(applicationContext)
+        val debug = DebugLaunch.from(this, intent)
         setContent {
             CatPlaygroundTheme {
                 CompositionLocalProvider(LocalSound provides sound) {
-                    AppRoot(prefs, updater, onExit = { finish() })
+                    AppRoot(prefs, updater, debug, onExit = { finish() })
                 }
             }
         }
@@ -75,18 +76,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
+private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, onExit: () -> Unit) {
     val context = LocalContext.current
     val sound = LocalSound.current
     val scope = rememberCoroutineScope()
-    var stack by remember { mutableStateOf(listOf<Screen>(Screen.Lobby)) }
+    var stack by remember { mutableStateOf(debug?.initialStack() ?: listOf<Screen>(Screen.Lobby)) }
     var waterSortCleared by remember { mutableIntStateOf(prefs.waterSortCleared) }
     var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
     var confirmExit by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateDismissed by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { update = updater.check() }
+    // 自動測試時不跳更新視窗，以免擋住畫面。
+    LaunchedEffect(Unit) { if (debug == null) update = updater.check() }
 
     fun checkForUpdate() {
         scope.launch {
@@ -159,6 +161,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
             is Screen.ShooterPlay -> ShooterGameScreen(
                 stageNumber = screen.stage,
                 cat = screen.cat,
+                autotest = debug?.autotest == true,
                 ultimateOnLeft = prefs.shooterUltimateOnLeft,
                 bestScore = prefs.shooterBest(screen.stage),
                 onCleared = { stage, score ->

@@ -127,6 +127,7 @@ data class HudState(
 fun ShooterGameScreen(
     stageNumber: Int,
     cat: CatType,
+    autotest: Boolean = false,
     ultimateOnLeft: Boolean,
     bestScore: Int,
     onCleared: (stage: Int, score: Int) -> Unit,
@@ -159,7 +160,9 @@ fun ShooterGameScreen(
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
         val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
         val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit) }
-        val world = remember(attempt, stageNumber, worldHeight) { World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt) }
+        val world = remember(attempt, stageNumber, worldHeight) {
+            World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt).also { it.godMode = autotest }
+        }
 
         LaunchedEffect(sprites, cat, stageNumber) {
             withContext(Dispatchers.Default) { sprites.prewarm(cat, kindsFor(stageNumber)) }
@@ -169,8 +172,10 @@ fun ShooterGameScreen(
             var last = withFrameNanos { it }
             var accumulator = 0f
             var lastPhase = world.phase
+            val perf = if (autotest) AutotestProbe() else null
             while (true) {
                 val now = withFrameNanos { it }
+                perf?.frame((now - last) / 1_000_000f, world)
                 val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
                 last = now
                 if (!paused && world.running) {
