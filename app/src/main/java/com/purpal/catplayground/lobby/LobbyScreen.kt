@@ -42,12 +42,14 @@ import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.ui.PillButton
 import com.purpal.catplayground.ui.PlayBackground
 import com.purpal.catplayground.ui.PlayColors
+import com.purpal.catplayground.shooter.model.Stages
 import com.purpal.catplayground.watersort.Ranks
 import com.purpal.catplayground.watersort.model.LevelGenerator
 
 @Composable
 fun LobbyScreen(
     waterSortCleared: Int,
+    shooterCleared: Int,
     version: String,
     onOpen: (Screen) -> Unit,
     onCheckUpdate: () -> Unit,
@@ -86,7 +88,7 @@ fun LobbyScreen(
             for (game in GameRegistry.games) {
                 GameCard(
                     game = game,
-                    status = statusFor(game.id, waterSortCleared),
+                    status = statusFor(game.id, waterSortCleared, shooterCleared),
                     onClick = { onOpen(game.start) },
                 )
                 Spacer(Modifier.height(16.dp))
@@ -110,11 +112,12 @@ fun LobbyScreen(
     }
 }
 
-private fun statusFor(id: String, waterSortCleared: Int): String? = when (id) {
+private fun statusFor(id: String, waterSortCleared: Int, shooterCleared: Int): String? = when (id) {
     GameRegistry.WATER_SORT -> {
         val rank = Ranks.forCleared(waterSortCleared)
         "${rank.emoji} ${rank.title}　已過 $waterSortCleared / ${LevelGenerator.LEVEL_COUNT} 關"
     }
+    GameRegistry.SHOOTER -> "已過 $shooterCleared / ${Stages.all.size} 關"
     else -> null
 }
 

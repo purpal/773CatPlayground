@@ -5,7 +5,13 @@ import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 import kotlin.random.Random
 
-enum class Sfx { CLICK, SELECT, POUR, COMPLETE, WIN, RANK_UP, INVALID }
+enum class Sfx {
+    CLICK, SELECT, POUR, COMPLETE, WIN, RANK_UP, INVALID,
+
+    // 射擊遊戲
+    SHOT, SHOT_HEAVY, ENEMY_HIT, EXPLODE_SMALL, EXPLODE_BIG, ITEM, POWER_UP, PLAYER_HIT,
+    ROAR_TIGER, ROAR_PANTHER, BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, DIALOG,
+}
 
 /** 勝利音效中「轟」的時間點，要和勝利橫幅落地的動畫對齊。 */
 const val VICTORY_IMPACT_SEC = 0.33
@@ -21,6 +27,23 @@ object SoundBank {
         Sfx.WIN -> win()
         Sfx.RANK_UP -> rankUp()
         Sfx.INVALID -> invalid()
+        Sfx.SHOT -> ShooterSounds.shot()
+        Sfx.SHOT_HEAVY -> ShooterSounds.shotHeavy()
+        Sfx.ENEMY_HIT -> ShooterSounds.enemyHit()
+        Sfx.EXPLODE_SMALL -> ShooterSounds.explode(big = false)
+        Sfx.EXPLODE_BIG -> ShooterSounds.explode(big = true)
+        Sfx.ITEM -> ShooterSounds.item()
+        Sfx.POWER_UP -> ShooterSounds.powerUp()
+        Sfx.PLAYER_HIT -> ShooterSounds.playerHit()
+        Sfx.ROAR_TIGER -> ShooterSounds.roar(tiger = true)
+        Sfx.ROAR_PANTHER -> ShooterSounds.roar(tiger = false)
+        Sfx.BLAST -> ShooterSounds.blast()
+        Sfx.WARNING -> ShooterSounds.warning()
+        Sfx.BOSS_DOWN -> ShooterSounds.bossDown()
+        Sfx.SONIC -> ShooterSounds.sonic()
+        Sfx.MISSILE -> ShooterSounds.missile()
+        Sfx.LASER -> ShooterSounds.laser()
+        Sfx.DIALOG -> ShooterSounds.dialog()
     }
 
     private fun click(): ShortArray {

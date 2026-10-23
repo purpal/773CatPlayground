@@ -20,6 +20,7 @@ data class GameEntry(
 
 object GameRegistry {
     const val WATER_SORT = "water_sort"
+    const val SHOOTER = "shooter"
 
     val games = listOf(
         GameEntry(
@@ -29,6 +30,14 @@ object GameRegistry {
             emoji = "🧪",
             colors = listOf(Color(0xFF4FC3F7), Color(0xFF7B1FA2)),
             start = Screen.WaterSortLevels,
+        ),
+        GameEntry(
+            id = SHOOTER,
+            title = "喵星萌王爭霸戰",
+            description = "貓咪射擊！打倒可愛動物成為萌王",
+            emoji = "🐯",
+            colors = listOf(Color(0xFFFF9100), Color(0xFFD81B60)),
+            start = Screen.ShooterMenu,
         ),
     )
 }

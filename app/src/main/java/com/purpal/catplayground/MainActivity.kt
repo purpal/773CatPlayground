@@ -23,9 +23,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.purpal.catplayground.audio.LocalSound
+import com.purpal.catplayground.audio.Music
 import com.purpal.catplayground.audio.SoundManager
 import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.lobby.LobbyScreen
+import com.purpal.catplayground.shooter.ui.ShooterGameScreen
+import com.purpal.catplayground.shooter.ui.ShooterMenuScreen
 import com.purpal.catplayground.ui.CatPlaygroundTheme
 import com.purpal.catplayground.ui.PlayColors
 import com.purpal.catplayground.update.AppUpdater
@@ -44,7 +47,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         prefs = AppPrefs(applicationContext)
-        sound = SoundManager(prefs)
+        sound = SoundManager(applicationContext, prefs)
         val updater = AppUpdater(applicationContext)
         setContent {
             CatPlaygroundTheme {
@@ -74,9 +77,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
     val context = LocalContext.current
+    val sound = LocalSound.current
     val scope = rememberCoroutineScope()
     var stack by remember { mutableStateOf(listOf<Screen>(Screen.Lobby)) }
     var waterSortCleared by remember { mutableIntStateOf(prefs.waterSortCleared) }
+    var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
     var confirmExit by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateDismissed by remember { mutableStateOf(false) }
@@ -107,6 +112,11 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
         if (stack.size > 1) stack = stack.dropLast(1)
     }
 
+    // 射擊遊戲自己管理背景音樂，其他畫面都用大廳音樂。
+    LaunchedEffect(stack.last()) {
+        if (stack.last() !is Screen.ShooterPlay) sound.playMusic(Music.LOBBY)
+    }
+
     BackHandler(enabled = stack.size > 1) { pop() }
     BackHandler(enabled = stack.size == 1) { confirmExit = true }
 
@@ -114,6 +124,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
         when (screen) {
             Screen.Lobby -> LobbyScreen(
                 waterSortCleared = waterSortCleared,
+                shooterCleared = shooterCleared,
                 version = updater.currentVersion,
                 onOpen = { push(it) },
                 onCheckUpdate = ::checkForUpdate,
@@ -136,6 +147,29 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, onExit: () -> Unit) {
                 },
                 onNextLevel = { replaceTop(Screen.WaterSortPlay(screen.level + 1)) },
                 onBack = { pop() },
+            )
+
+            Screen.ShooterMenu -> ShooterMenuScreen(
+                prefs = prefs,
+                cleared = shooterCleared,
+                onBack = { pop() },
+                onPlay = { stage, cat -> push(Screen.ShooterPlay(stage, cat)) },
+            )
+
+            is Screen.ShooterPlay -> ShooterGameScreen(
+                stageNumber = screen.stage,
+                cat = screen.cat,
+                ultimateOnLeft = prefs.shooterUltimateOnLeft,
+                bestScore = prefs.shooterBest(screen.stage),
+                onCleared = { stage, score ->
+                    prefs.setShooterBest(stage, score)
+                    if (stage > shooterCleared) {
+                        shooterCleared = stage
+                        prefs.shooterCleared = stage
+                    }
+                },
+                onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat)) },
+                onExit = { pop() },
             )
         }
     }

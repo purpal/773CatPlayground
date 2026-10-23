@@ -17,4 +17,24 @@ class AppPrefs(context: Context) {
     var waterSortCleared: Int
         get() = prefs.getInt("water_sort_cleared", 0)
         set(value) = prefs.edit().putInt("water_sort_cleared", value).apply()
+
+    /** 射擊遊戲已通過的最高關卡。 */
+    var shooterCleared: Int
+        get() = prefs.getInt("shooter_cleared", 0)
+        set(value) = prefs.edit().putInt("shooter_cleared", value).apply()
+
+    var shooterCat: String
+        get() = prefs.getString("shooter_cat", "ORANGE") ?: "ORANGE"
+        set(value) = prefs.edit().putString("shooter_cat", value).apply()
+
+    /** 大絕按鈕放在左下角（預設右下角）。 */
+    var shooterUltimateOnLeft: Boolean
+        get() = prefs.getBoolean("shooter_ultimate_left", false)
+        set(value) = prefs.edit().putBoolean("shooter_ultimate_left", value).apply()
+
+    fun shooterBest(stage: Int): Int = prefs.getInt("shooter_best_$stage", 0)
+
+    fun setShooterBest(stage: Int, score: Int) {
+        if (score > shooterBest(stage)) prefs.edit().putInt("shooter_best_$stage", score).apply()
+    }
 }

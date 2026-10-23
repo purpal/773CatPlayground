@@ -12,7 +12,7 @@ import kotlin.random.Random
 object Synth {
     const val SAMPLE_RATE = 22050
 
-    enum class Wave { SINE, TRIANGLE, SQUARE, NOISE }
+    enum class Wave { SINE, TRIANGLE, SQUARE, SAW, NOISE }
 
     fun buffer(seconds: Double) = FloatArray((seconds * SAMPLE_RATE).toInt())
 
@@ -48,11 +48,39 @@ object Synth {
                 Wave.SINE -> sin(2 * PI * p)
                 Wave.TRIANGLE -> 4 * abs(p - 0.5) - 1
                 Wave.SQUARE -> if (p < 0.5) 1.0 else -1.0
+                Wave.SAW -> 2 * p - 1
                 Wave.NOISE -> noise.nextDouble() * 2 - 1
             }
             val attack = min(1.0, i / (attackSec * SAMPLE_RATE))
             val release = if (pluck) (1 - progress).pow(2) else min(1.0, (length - i) / fadeOut)
             out[index] += (sample * attack * release * volume).toFloat()
+        }
+    }
+
+    /**
+     * 疊加一段低通濾波的噪音（爆炸、水流、呼吸聲）。
+     * smoothing 越小聲音越悶，0.02 很低沉、0.5 接近白噪音。
+     */
+    fun addNoise(
+        out: FloatArray,
+        startSec: Double,
+        durationSec: Double,
+        volume: Double,
+        smoothing: Double,
+        seed: Int = 1,
+        attackSec: Double = 0.002,
+    ) {
+        val start = (startSec * SAMPLE_RATE).toInt()
+        val length = (durationSec * SAMPLE_RATE).toInt()
+        val random = Random(seed)
+        var low = 0.0
+        for (i in 0 until length) {
+            val index = start + i
+            if (index >= out.size) break
+            low += smoothing * (random.nextDouble() * 2 - 1 - low)
+            val progress = i.toDouble() / length
+            val attack = min(1.0, i / (attackSec * SAMPLE_RATE))
+            out[index] += (low * attack * (1 - progress).pow(2) * volume).toFloat()
         }
     }
 
