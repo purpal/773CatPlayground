@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700" viewBox="0 0 1200 1700">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0" stop-color="#FFFBF2"/>
+      <stop offset="0.6" stop-color="#FDEFF2"/>
+      <stop offset="1" stop-color="#F6DCE6"/>
+    </radialGradient>
+    <!-- 紙張紋理 -->
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.35  0 0 0 0 0.35  0 0 0 0.07 0"/>
+    </filter>
+    <!-- 線條手繪感的輕微抖動 -->
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <radialGradient id="mochi" cx="42%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#F7F2FB"/>
+      <stop offset="1" stop-color="#E6DCF0"/>
+    </radialGradient>
+    <linearGradient id="cheese" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#FFF1A8"/>
+      <stop offset="1" stop-color="#FFD15C"/>
+    </linearGradient>
+    <radialGradient id="blush" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FF8FB1" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#FF8FB1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9F3FF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#9ADBFF" stop-opacity="0.85"/>
+    </linearGradient>
+    <path id="sparkle" d="M0,-1 C0.12,-0.12 0.12,-0.12 1,0 C0.12,0.12 0.12,0.12 0,1 C-0.12,0.12 -0.12,0.12 -1,0 C-0.12,-0.12 -0.12,-0.12 0,-1 Z"/>
+    <path id="heart" d="M0,0.9 C-1.3,0 -0.9,-1.1 0,-0.45 C0.9,-1.1 1.3,0 0,0.9 Z"/>
+  </defs>
+
+  <!-- 背景：乾淨粉彩＋柔和圓點＋紙紋 -->
+  <rect width="1200" height="1700" fill="url(#bg)"/>
+  <g opacity="0.55" filter="url(#soft)">
+    <circle cx="220" cy="300" r="120" fill="#FFE6A7"/>
+    <circle cx="1000" cy="420" r="150" fill="#D8ECFF"/>
+    <circle cx="160" cy="1180" r="140" fill="#E5DBFF"/>
+    <circle cx="1040" cy="1150" r="120" fill="#FFD6E2"/>
+  </g>
+  <g fill="#FFC94A">
+    <use href="#sparkle" transform="translate(250 520) scale(20)"/>
+    <use href="#sparkle" transform="translate(960 260) scale(26)"/>
+    <use href="#sparkle" transform="translate(1010 760) scale(16)"/>
+  </g>
+  <g fill="#FFB3C8">
+    <use href="#heart" transform="translate(180 860) scale(22) rotate(-12)"/>
+    <use href="#heart" transform="translate(1030 960) scale(26) rotate(14)"/>
+  </g>
+
+  <!-- 地面影子 -->
+  <ellipse cx="600" cy="1235" rx="280" ry="34" fill="#C9A9C0" opacity="0.45" filter="url(#shadow)"/>
+
+  <g filter="url(#wobble)" stroke="#6B4C52" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 尾巴 -->
+    <path d="M845,1080 C960,1100 1000,1010 960,960 C930,925 970,890 1000,910" fill="none" stroke-width="15"/>
+    <path d="M845,1080 C960,1100 1000,1010 960,960 C930,925 970,890 1000,910" fill="none" stroke="#FFC6D6" stroke-width="7"/>
+
+    <!-- 小腳 -->
+    <ellipse cx="520" cy="1200" rx="48" ry="26" fill="#FFF7FB" stroke-width="5"/>
+    <ellipse cx="680" cy="1200" rx="48" ry="26" fill="#FFF7FB" stroke-width="5"/>
+
+    <!-- 麻糬身體（頭身一體） -->
+    <path d="M600,560 C800,560 905,700 910,900 C915,1100 790,1200 600,1200 C410,1200 285,1100 290,900 C295,700 400,560 600,560 Z" fill="url(#mochi)" stroke-width="6"/>
+    <path d="M330,980 C380,1120 480,1170 600,1172 C720,1170 820,1120 870,980 C820,1090 720,1140 600,1142 C480,1140 380,1090 330,980 Z" fill="#E3D4EC" stroke="none" opacity="0.8"/>
+
+    <!-- 起司頭套 -->
+    <path d="M300,880 C285,760 360,640 450,560 C520,500 600,420 660,360 C700,440 780,520 850,600 C905,670 925,780 905,890 C880,780 800,700 600,690 C410,700 320,780 300,880 Z" fill="url(#cheese)" stroke-width="6"/>
+    <g fill="#F7B93A" stroke="none">
+      <ellipse cx="560" cy="560" rx="26" ry="18"/>
+      <ellipse cx="700" cy="520" rx="18" ry="13"/>
+      <ellipse cx="380" cy="760" rx="16" ry="22"/>
+      <ellipse cx="840" cy="760" rx="15" ry="20"/>
+      <ellipse cx="640" cy="620" rx="12" ry="8"/>
+    </g>
+    <path d="M520,470 C580,430 620,400 655,372" fill="none" stroke="#FFFBE0" stroke-width="10" opacity="0.9"/>
+
+    <!-- 從頭套洞裡冒出來的耳朵 -->
+    <ellipse cx="440" cy="620" rx="52" ry="18" fill="#E8A92E" stroke-width="5"/>
+    <ellipse cx="785" cy="620" rx="52" ry="18" fill="#E8A92E" stroke-width="5"/>
+    <circle cx="440" cy="560" r="72" fill="url(#mochi)" stroke-width="6"/>
+    <circle cx="440" cy="565" r="46" fill="#FFCADA" stroke="none"/>
+    <circle cx="785" cy="560" r="72" fill="url(#mochi)" stroke-width="6"/>
+    <circle cx="785" cy="565" r="46" fill="#FFCADA" stroke="none"/>
+
+    <!-- 歪掉的紙皇冠 -->
+    <g transform="rotate(-14 660 370)">
+      <path d="M612,382 L612,320 L640,350 L662,300 L684,350 L712,320 L712,382 Z" fill="#FFE07A" stroke-width="5"/>
+      <circle cx="662" cy="362" r="9" fill="#FF8FB1" stroke-width="3"/>
+    </g>
+
+    <!-- 臉 -->
+    <!-- 困擾小眉 -->
+    <path d="M496,820 L536,808" fill="none" stroke-width="6"/>
+    <path d="M664,808 L704,820" fill="none" stroke-width="6"/>
+    <!-- 豆豆眼 -->
+    <ellipse cx="520" cy="868" rx="17" ry="22" fill="#2E2128" stroke="none"/>
+    <ellipse cx="680" cy="868" rx="17" ry="22" fill="#2E2128" stroke="none"/>
+    <circle cx="526" cy="859" r="7" fill="#FFFFFF" stroke="none"/>
+    <circle cx="686" cy="859" r="7" fill="#FFFFFF" stroke="none"/>
+    <circle cx="514" cy="878" r="3" fill="#FFFFFF" stroke="none"/>
+    <circle cx="674" cy="878" r="3" fill="#FFFFFF" stroke="none"/>
+    <!-- 眼眶裡的淚 -->
+    <path d="M492,888 Q520,904 548,888 Q546,908 520,910 Q494,908 492,888 Z" fill="url(#tear)" stroke="#7FC4E8" stroke-width="3"/>
+    <path d="M652,888 Q680,904 708,888 Q706,908 680,910 Q654,908 652,888 Z" fill="url(#tear)" stroke="#7FC4E8" stroke-width="3"/>
+    <path d="M498,906 Q492,930 500,948" fill="none" stroke="#9ADBFF" stroke-width="6" opacity="0.9"/>
+    <circle cx="501" cy="955" r="6" fill="#BDE8FF" stroke="none"/>
+    <!-- 腮紅＋斜線 -->
+    <ellipse cx="448" cy="925" rx="44" ry="26" fill="url(#blush)" stroke="none"/>
+    <ellipse cx="752" cy="925" rx="44" ry="26" fill="url(#blush)" stroke="none"/>
+    <g stroke="#FF7FA6" stroke-width="4">
+      <line x1="430" y1="935" x2="440" y2="915"/><line x1="446" y1="937" x2="456" y2="917"/><line x1="462" y1="935" x2="472" y2="915"/>
+      <line x1="728" y1="935" x2="738" y2="915"/><line x1="744" y1="937" x2="754" y2="917"/><line x1="760" y1="935" x2="770" y2="915"/>
+    </g>
+    <!-- 小鼻子、發抖的嘴、門牙 -->
+    <ellipse cx="600" cy="898" rx="9" ry="7" fill="#FF9DB8" stroke-width="3"/>
+    <path d="M568,930 Q576,920 584,930 Q592,940 600,930 Q608,920 616,930 Q624,940 632,930" fill="none" stroke-width="5"/>
+    <path d="M592,934 L592,948 L608,948 L608,934" fill="#FFFFFF" stroke-width="3"/>
+    <!-- 鬍鬚 -->
+    <g stroke="#9C8590" stroke-width="3" fill="none">
+      <path d="M560,906 Q520,900 482,904"/><path d="M560,916 Q522,920 486,930"/>
+      <path d="M640,906 Q680,900 718,904"/><path d="M640,916 Q678,920 714,930"/>
+    </g>
+
+    <!-- 舉牌「手下留情…」 -->
+    <rect x="470" y="985" width="260" height="140" rx="16" fill="#FFFDF7" stroke-width="5" transform="rotate(-4 600 1055)"/>
+    <ellipse cx="452" cy="1060" rx="32" ry="28" fill="url(#mochi)" stroke-width="5"/>
+    <ellipse cx="752" cy="1040" rx="32" ry="28" fill="url(#mochi)" stroke-width="5"/>
+  </g>
+  <text x="600" y="1072" text-anchor="middle" font-family="WenQuanYi Zen Hei" font-size="42" font-weight="bold" fill="#6B4C52" transform="rotate(-4 600 1055)">手下留情…</text>
+  <text x="600" y="1104" text-anchor="middle" font-family="WenQuanYi Zen Hei" font-size="22" fill="#B48A95" transform="rotate(-4 600 1055)">（起司分你一半）</text>
+
+  <!-- 發抖符號 ぷるぷる -->
+  <g stroke="#B48A95" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M262,860 q-14,14 0,28 q14,14 0,28"/>
+    <path d="M232,880 q-12,12 0,24"/>
+    <path d="M938,860 q14,14 0,28 q14,14 0,28"/>
+    <path d="M968,880 q12,12 0,24"/>
+  </g>
+  <text x="900" y="640" font-family="WenQuanYi Zen Hei" font-size="44" font-weight="bold" fill="#B48A95" transform="rotate(12 900 640)">ぷるぷる</text>
+  <text x="200" y="420" font-family="WenQuanYi Zen Hei" font-size="58" font-weight="bold" fill="#F28AAA" transform="rotate(-10 200 420)">嗚…</text>
+
+  <!-- 紙紋覆蓋 -->
+  <rect width="1200" height="1700" filter="url(#paper)" opacity="1"/>
+
+  <!-- 設定說明 -->
+  <g font-family="WenQuanYi Zen Hei">
+    <rect x="50" y="1310" width="1100" height="360" rx="34" fill="#FFFFFF" opacity="0.88" stroke="#E7C3D2" stroke-width="4"/>
+    <text x="90" y="1370" font-size="38" font-weight="bold" fill="#6B4C52">STAGE 1 BOSS ｜ 起司鼠王「小起司」 v2</text>
+    <text x="90" y="1420" font-size="24" fill="#7D6470">‧ 參考 2026 人氣角色共通點：ちいかわ（角色大賞三連霸）、mofusand、布丁狗／大耳狗</text>
+    <text x="90" y="1460" font-size="24" fill="#7D6470">‧ 麻糬圓身＋豆豆眼＋小嘴：用最少的線條讓表情最有感</text>
+    <text x="90" y="1500" font-size="24" fill="#7D6470">‧ 扮裝反差萌：穿起司頭套、耳朵從洞裡冒出來、紙皇冠戴歪</text>
+    <text x="90" y="1540" font-size="24" fill="#7D6470">‧ 含淚舉牌「手下留情…」：讓成年玩家產生保護欲與共感</text>
+    <text x="90" y="1580" font-size="24" fill="#7D6470">‧ 粉彩配色＋暖棕細線（手繪微抖），取代黑色粗線與閃亮大眼</text>
+    <g stroke="#6B4C52" stroke-width="3">
+      <circle cx="930" cy="1622" r="20" fill="#F7F2FB"/><circle cx="980" cy="1622" r="20" fill="#FFCADA"/>
+      <circle cx="1030" cy="1622" r="20" fill="#FFE07A"/><circle cx="1080" cy="1622" r="20" fill="#BDE8FF"/>
+    </g>
+  </g>
+</svg>
