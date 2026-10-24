@@ -14,7 +14,7 @@ on:
         description: 遊玩秒數
         default: "110"
       probe:
-        description: 除錯用，關掉部分繪圖功能（noprepare,plainfx,plainhud）；結果推到 emulator-results-<probe>
+        description: 除錯用，關掉部分繪圖功能（noprepare,plainfx,plainhud,notrail,noarc,noconfetti,nostretch）；結果推到 emulator-results-<probe>
         default: ""
 
 permissions:
