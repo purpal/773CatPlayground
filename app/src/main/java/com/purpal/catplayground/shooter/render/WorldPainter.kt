@@ -562,6 +562,8 @@ private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
 
 private val pawPoint = FloatArray(2)
 private val pawZig = Path()
+private val pawOutline = Path()
+private val pawTrail = Path()
 
 /**
  * 黑貓專武「肉球閃電」：淡淡的貓掌全輪廓＋閃電殘影（從淡到亮，沒有判定）＋閃電本體（鋸齒狀、有判定）。
@@ -575,26 +577,48 @@ private fun DrawScope.drawPawBolt(w: World, sprites: SpriteCache) {
     val ys = PawPath.ys
     fun px(i: Int) = b.x + xs[i] * b.size
     fun py(i: Int) = b.y + ys[i] * b.size
-    // 1) 全輪廓：讓貓掌形狀一直看得出來
+    // 1) 全輪廓：讓貓掌形狀一直看得出來（整條路徑一次畫完）
+    pawOutline.reset()
+    var open = false
     for (i in 0 until n) {
-        if (PawPath.jump[i]) continue
         val j = (i + 1) % n
-        drawLine(Cyan.copy(alpha = 0.22f), Offset(px(i), py(i)), Offset(px(j), py(j)), 3f, StrokeCap.Round)
+        if (PawPath.jump[i]) {
+            open = false
+            continue
+        }
+        if (!open) pawOutline.moveTo(px(i), py(i))
+        pawOutline.lineTo(px(j), py(j))
+        open = true
     }
-    // 2) 殘影：閃電頭後面 75% 的路徑，越接近頭越亮越粗
+    drawPath(pawOutline, Navy.copy(alpha = 0.35f), style = Stroke(8f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawPath(pawOutline, Cyan.copy(alpha = 0.4f), style = Stroke(3.5f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    // 2) 殘影：閃電頭後面 75% 的路徑分成幾段，越接近頭越亮越粗（沒有判定）
     val head = ((b.progress % 1f) + 1f) % 1f
     val headSeg = PawPath.segmentAt(head)
     val trailSegs = (n * 0.75f).toInt()
-    for (k in trailSegs downTo 1) {
-        val i = (headSeg - k + n) % n
-        if (PawPath.jump[i]) continue
-        val j = (i + 1) % n
-        val f = 1f - k / trailSegs.toFloat()
-        if (FxSettings.high && f > 0.5f) {
-            drawLine(Cyan.copy(alpha = 0.25f * f), Offset(px(i), py(i)), Offset(px(j), py(j)), 14f * f, StrokeCap.Round, blendMode = BlendMode.Plus)
+    val bands = 6
+    for (band in 0 until bands) {
+        pawTrail.reset()
+        var drawing = false
+        val from = trailSegs - trailSegs * band / bands
+        val to = trailSegs - trailSegs * (band + 1) / bands
+        for (k in from downTo to + 1) {
+            val i = (headSeg - k + n) % n
+            if (PawPath.jump[i]) {
+                drawing = false
+                continue
+            }
+            val j = (i + 1) % n
+            if (!drawing) pawTrail.moveTo(px(i), py(i))
+            pawTrail.lineTo(px(j), py(j))
+            drawing = true
         }
-        drawLine(Cyan.copy(alpha = 0.25f + 0.6f * f), Offset(px(i), py(i)), Offset(px(j), py(j)), 2.5f + 4f * f, StrokeCap.Round)
-        if (f > 0.6f) drawLine(Color.White.copy(alpha = f), Offset(px(i), py(i)), Offset(px(j), py(j)), 1.5f + 1.5f * f, StrokeCap.Round)
+        val f = (band + 1f) / bands
+        if (FxSettings.high && f > 0.5f) {
+            drawPath(pawTrail, Cyan.copy(alpha = 0.3f * f), style = Stroke(18f * f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+        }
+        drawPath(pawTrail, Cyan.copy(alpha = 0.35f + 0.6f * f), style = Stroke(3f + 5f * f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        if (f > 0.5f) drawPath(pawTrail, Color.White.copy(alpha = f), style = Stroke(1.5f + 2f * f, cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
     // 3) 閃電本體：頭前後一小段畫成跳動的鋸齒
     val rnd = Random((w.time / 0.035f).toInt())

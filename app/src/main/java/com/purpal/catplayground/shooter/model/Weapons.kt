@@ -14,7 +14,7 @@ object Weapons {
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
     /** 肉球閃電：輪廓大小、每秒繞幾圈、每次命中的傷害、閃電頭的判定半徑。 */
-    private val pawBoltSize = floatArrayOf(90f, 104f, 118f, 132f, 148f)
+    private val pawBoltSize = floatArrayOf(125f, 140f, 155f, 170f, 185f)
     private val pawBoltLaps = floatArrayOf(0.9f, 1.15f, 1.4f, 1.7f, 2f)
     private val pawBoltDamage = floatArrayOf(24f, 30f, 36f, 44f, 52f)
     private val pawBoltReach = floatArrayOf(30f, 34f, 38f, 42f, 46f)
