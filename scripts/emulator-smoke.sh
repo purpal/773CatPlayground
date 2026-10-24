@@ -75,8 +75,12 @@ while true; do
     burst_done=$((burst_done + 1))
     for k in 0 1 2 3 4 5 6 7 8 9; do adb exec-out screencap -p > "$OUT/frames/ult${burst_done}_$k.png"; done
   fi
-  if [ $((elapsed % 15)) -eq 0 ] && [ "$elapsed" -ne "$last" ] && [ "$elapsed" -gt 0 ]; then
+  # 每 5 秒截圖、每 15 秒記錄一次記憶體（含 GPU／圖形記憶體），模擬器中途掛掉時看得出當下狀態。
+  if [ $((elapsed % 5)) -eq 0 ] && [ "$elapsed" -ne "$last" ] && [ "$elapsed" -gt 0 ]; then
     shot "$(printf '10_play_%03ds' "$elapsed")"
+    if [ $((elapsed % 15)) -eq 0 ]; then
+      { echo "== ${elapsed}s"; adb shell dumpsys meminfo $PKG | grep -E "TOTAL PSS|Graphics|GL mtrack|EGL mtrack|Native Heap|Java Heap"; } >> "$OUT/meminfo.txt" 2>&1
+    fi
     last=$elapsed
   fi
 done

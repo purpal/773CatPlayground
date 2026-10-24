@@ -12,7 +12,7 @@ import com.purpal.catplayground.shooter.model.World
 internal class AutotestProbe {
     private val frames = ArrayList<Float>()
     private var windowStart = SystemClock.elapsedRealtime()
-    private val ultimateAt = floatArrayOf(22f, 60f)
+    private val ultimateAt = floatArrayOf(22f, 40f)
     private var nextUltimate = 0
 
     fun frame(ms: Float, world: World) {
