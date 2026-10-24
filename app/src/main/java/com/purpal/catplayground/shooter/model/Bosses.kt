@@ -456,9 +456,9 @@ class BearBoss : Boss(hp = 14000f, radius = 140f, score = 40000, homeY = 360f) {
 }
 
 /**
- * 第 4 關：溫泉大王 卡皮（卡皮巴拉）。泡在檜木桶裡悠哉地放空，攻擊也慢吞吞（泡泡、滾柚子、蒸氣）。
+ * 第 4 關：溫泉大王 卡皮（卡皮巴拉）。泡在檜木桶裡悠哉地放空，攻擊也慢吞吞（泡泡、滾橘子、蒸氣）。
  * 卡皮巴拉淡定、什麼都無所謂，打到一半（50%）才慢慢「裝甲」：戴上護目鏡、裝上肩甲，
- * 拿出柚子砲——高壓溫泉水柱掃射、柚子飛彈連發。
+ * 拿出橘子砲——高壓溫泉水柱掃射、橘子飛彈連發。
  */
 class CapyBoss : Boss(hp = 16000f, radius = 140f, score = 50000, homeY = 360f) {
     override val kind = EnemyKind.BOSS_CAPY
@@ -490,7 +490,7 @@ class CapyBoss : Boss(hp = 16000f, radius = 140f, score = 50000, homeY = 360f) {
             w.shoot(x, y + 60f, a, 120f, BulletStyle.BUBBLE, Tint.CYAN)
         }
     }
-    /** 頭上的柚子一顆顆滾下來，左右彈跳。 */
+    /** 頭上的橘子一顆顆滾下來，左右彈跳。 */
     private val yuzuRoll = Attack(4f) { w, t, dt ->
         if (every(t, dt, 0.7f)) {
             val side = if ((t * 10).toInt() % 2 == 0) 1f else -1f
@@ -507,7 +507,7 @@ class CapyBoss : Boss(hp = 16000f, radius = 140f, score = 50000, homeY = 360f) {
             for (i in 0 until 5) w.spawn(Duckling(120f + i * 190f, i * 0.15f))
         }
     }
-    /** 裝甲後：柚子砲的高壓溫泉水柱，從一側掃到另一側。 */
+    /** 裝甲後：橘子砲的高壓溫泉水柱，從一側掃到另一側。 */
     private val waterJet = Attack(4.2f) { w, t, dt ->
         if (crossed(t, dt, 0.01f)) {
             val playerLeft = w.player.x < x
@@ -518,7 +518,7 @@ class CapyBoss : Boss(hp = 16000f, radius = 140f, score = 50000, homeY = 360f) {
         }
         if (every(t, dt, 1f, offset = 1f)) w.ring(x, y + 30f, 12, 170f, t, BulletStyle.BUBBLE, Tint.CYAN)
     }
-    /** 裝甲後：柚子飛彈連發，先往上飛再轉向玩家。 */
+    /** 裝甲後：橘子飛彈連發，先往上飛再轉向玩家。 */
     private val yuzuMissiles = Attack(3.6f) { w, t, dt ->
         if (every(t, dt, 0.3f, offset = 0.2f)) {
             val side = if ((t * 10).toInt() % 2 == 0) 1f else -1f

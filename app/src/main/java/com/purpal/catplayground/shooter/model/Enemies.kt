@@ -303,7 +303,7 @@ class Duckling(x: Float, private val delay: Float) : Enemy(x, -50f - delay * 200
     }
 }
 
-/** 一邊轉一邊飄下來的柚子，停下來後爆出一圈柚子籽。 */
+/** 一邊轉一邊飄下來的橘子，停下來後爆出一圈橘子籽。 */
 class YuzuDrone(x: Float, private val stopY: Float) : Enemy(x, -60f, 40f, 40f, 160) {
     override val kind = EnemyKind.YUZU
     val spin: Float get() = age * 3f

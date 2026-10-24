@@ -482,20 +482,23 @@ internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modif
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
             Modifier
-                .size(78.dp)
-                .background(if (ready) Color(0xFFFF6D00).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.4f), CircleShape)
-                .border(3.dp, Color.White.copy(alpha = if (ready) 0.9f else 0.3f), CircleShape)
+                .size(84.dp)
                 .pointerInput(onPress) { detectTapGestures(onPress = { onPress() }) },
             contentAlignment = Alignment.Center,
         ) {
-            // 橘貓變身猛虎、黑貓變身黑豹
+            // 貓吼剪影按鈕：橘貓是橘金色、黑貓是紫色
             if (com.purpal.catplayground.DebugFlags.plainHud) {
-                Text(if (cat == CatType.ORANGE) "🐯" else "🐈‍⬛", fontSize = 38.sp)
+                Box(
+                    Modifier
+                        .size(78.dp)
+                        .background(if (ready) Color(0xFFFF6D00).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Text(if (cat == CatType.ORANGE) "🐯" else "🐈‍⬛", fontSize = 38.sp) }
             } else ArtImage(
-                if (cat == CatType.ORANGE) "icon_tiger" else "icon_panther",
-                Modifier.size(64.dp),
+                if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black",
+                Modifier.size(84.dp),
                 contentDescription = cat.ultimateName,
-                alpha = if (ready) 1f else 0.45f,
+                alpha = if (ready) 1f else 0.4f,
             )
         }
         Spacer(Modifier.height(4.dp))

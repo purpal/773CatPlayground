@@ -90,7 +90,7 @@ class EnemyBullet(
 
 /**
  * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或科技道具的攻擊
- * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、柚子砲的高壓溫泉水柱）。
+ * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱）。
  */
 enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER }
 

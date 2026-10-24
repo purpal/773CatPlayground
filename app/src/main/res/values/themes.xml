@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="night">#FF1B1446</color>
+    <!-- 啟動時先出現的是開發商品牌頁，視窗底色和它一致才不會閃一下紫色 -->
+    <color name="brand_background">#FFF2F3F5</color>
     <style name="Theme.CatPlayground" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/night</item>
+        <item name="android:windowBackground">@color/brand_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

@@ -103,13 +103,13 @@ def capy(mood=0):
     for s in (-1, 1):
         b += ellipse(s * 92, 84, 26, 15, FUR, INK, 4) + ellipse(s * 92, 88, 12, 6, MUZZLE, "none")
     if mood == 2:
-        # 被打哭：柚子滾到水裡
+        # 被打哭：橘子滾到水裡
         b += v1.yuzu(170, 96, 22)
     return g(wob(b))
 
 
 def cannon(x, y, s=1.0):
-    """借用遊戲裡的科技柚子砲（scifi.prop_yuzu_head）。"""
+    """借用遊戲裡的科技橘子砲（scifi.prop_yuzu_head）。"""
     sp = scifi.yuzu_cannon()
     return (f'<svg x="{x}" y="{y}" width="{270 * s}" height="{140 * s}" viewBox="{sp.view}" overflow="visible">'
             f'<defs>{sp.defs}</defs>{sp.body}</svg>')
@@ -148,19 +148,19 @@ if __name__ == "__main__":
     out.append(callout(*at(118, -158), 960, 220, "小圓耳在頭頂兩側角落、深色"))
     out.append(callout(*at(130, -110), 960, 300, "頭是圓角方塊，和身體一樣寬"))
     out.append(callout(*at(150, 30), 960, 470, "頭身一體的豆子形，沒有脖子"))
-    out.append(callout(*at(18, -214), 960, 160, "頭頂一顆柚子（柚子湯）"))
+    out.append(callout(*at(18, -214), 960, 160, "頭頂一顆橘子（橘子湯）"))
     out.append(callout(*at(92, 84), 960, 560, "短短小手搭在桶邊，深色掌心"))
 
     # 裝甲模式：學參考圖拿著誇張的科技水槍
     out.append('<rect x="980" y="620" width="380" height="300" rx="20" fill="#FFFFFF" opacity="0.8" stroke="#E0C9D0" stroke-width="2"/>')
-    out.append(label(1170, 656, "裝甲模式：拿出科技柚子砲", 20, "#B48A95", "middle"))
+    out.append(label(1170, 656, "裝甲模式：拿出科技橘子砲", 20, "#B48A95", "middle"))
     out.append(f'<g transform="translate(1110 790) scale(0.5)">{g(wob(capy_body(1)))}</g>')
     out.append(cannon(1100, 812, 0.62))
     out.append(g(wob(ellipse(1118, 834, 14, 11, FUR, INK, 4) + ellipse(1176, 834, 14, 11, FUR, INK, 4)), width=4))
     out.append(label(1170, 905, "外表萌萌，出手是硬派科幻武器", 17, "#B48A95", "middle"))
 
     out.append(label(60, 950, "表情與裝甲：", 22, INK))
-    for i, (m, name) in enumerate(((0, "放空（裝甲前）"), (1, "裝甲：護目鏡＋肩甲"), (2, "裝甲被打哭：鏡片裂、柚子掉"))):
+    for i, (m, name) in enumerate(((0, "放空（裝甲前）"), (1, "裝甲：護目鏡＋肩甲"), (2, "裝甲被打哭：鏡片裂、橘子掉"))):
         x = 300 + i * 340
         out.append(f'<g transform="translate({x} 1000) scale(0.3)">{capy(m)}</g>')
         out.append(label(x, 1085, name, 18, "#7D6470", "middle"))

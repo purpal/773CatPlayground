@@ -27,7 +27,9 @@ def front(kind):
     # 麻糬身體
     b += path(mochi_path(0, 4, 168, 150), p["fur"], ink, 5)
     b += path("M-70,40 C-46,74 46,74 70,40 C46,62 -46,62 -70,40 Z", p["shade"], "none", None, 'opacity="0.55"')
-    b += ellipse(0, 46, 40, 24, p["belly"], "none", None, 'opacity="0.95"')
+    # 黑貓是整隻黑：沒有白肚子
+    if kind != "black":
+        b += ellipse(0, 46, 40, 24, p["belly"], "none", None, 'opacity="0.95"')
     if p["stripe"]:
         for k in (-1, 0, 1):
             b += path(f"M{k * 14 - 5},-70 L{k * 14 + 5},-70 L{k * 14},{-52 + abs(k) * 5} Z", p["stripe"], "none")
@@ -41,14 +43,14 @@ def front(kind):
         b += color_eye(-30, 2, 13, p["eye"], slit=True) + color_eye(30, 2, 13, p["eye"], slit=True)
     else:
         b += dot_eye(-30, 2, 9) + dot_eye(30, 2, 9)
-    b += ellipse(0, 18, 6, 4.5, "#FF9DB8", ink, 2.5)
-    b += omega_mouth(0, 27, 9)
+    # 黑貓沒有嘴巴（像大絕按鈕原本的黑貓剪影），只留眼睛
+    if kind != "black":
+        b += ellipse(0, 18, 6, 4.5, "#FF9DB8", ink, 2.5)
+        b += omega_mouth(0, 27, 9)
     b += blush(-52, 26, 16) + blush(52, 26, 16)
     whisker = "#D8D2EE" if kind == "black" else "#9C8590"
     for s in (-1, 1):
         b += path(f"M{s * 40},20 Q{s * 66},14 {s * 88},18 M{s * 40},28 Q{s * 64},30 {s * 86},38", "none", whisker, 2.5)
-    if kind == "black":
-        b += path("M-10,38 L0,50 L10,38", p["belly"], "none")
     return Sprite(f"cat_{kind}_front", 320, 320, "-110 -110 220 220", g(wob(b), ink=ink))
 
 

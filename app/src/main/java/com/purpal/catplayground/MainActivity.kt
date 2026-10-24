@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +34,7 @@ import com.purpal.catplayground.shooter.model.Loadout
 import com.purpal.catplayground.shooter.model.Stages
 import com.purpal.catplayground.shooter.ui.ShooterGameScreen
 import com.purpal.catplayground.shooter.ui.ShooterMenuScreen
+import com.purpal.catplayground.ui.BrandSplash
 import com.purpal.catplayground.ui.CatPlaygroundTheme
 import com.purpal.catplayground.ui.PlayColors
 import com.purpal.catplayground.update.AppUpdater
@@ -104,6 +106,8 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
         carryStage = 0
         return loadout
     }
+    // 啟動時先顯示開發商品牌頁（自動測試時略過）；旋轉螢幕不會重播。
+    var showBrand by rememberSaveable { mutableStateOf(debug == null) }
     var confirmExit by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateDismissed by remember { mutableStateOf(false) }
@@ -207,9 +211,11 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     }
 
     val pendingUpdate = update
-    if (pendingUpdate != null && !updateDismissed && stack.last() == Screen.Lobby) {
+    if (pendingUpdate != null && !updateDismissed && !showBrand && stack.last() == Screen.Lobby) {
         UpdateDialog(pendingUpdate, updater, onDismiss = { updateDismissed = true })
     }
+
+    if (showBrand) BrandSplash(onFinished = { showBrand = false })
 
     if (confirmExit) {
         AlertDialog(

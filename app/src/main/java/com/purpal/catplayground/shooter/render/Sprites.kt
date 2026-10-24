@@ -131,7 +131,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     fun cheeseWheel() = art("min_cheese_wheel", 120f)
     fun barrel() = art("min_barrel", 140f)
 
-    /** 科技道具的頭（電漿叉頭、硬光骨頭的一端、熱熔鑽頭、柚子砲），朝 +x，寬度即世界長度。 */
+    /** 科技道具的頭（電漿叉頭、硬光骨頭的一端、熱熔鑽頭、橘子砲），朝 +x，寬度即世界長度。 */
     fun propHead(style: HazardStyle): Sprite? = when (style) {
         HazardStyle.FORK -> art("prop_fork_head", 140f)
         HazardStyle.BONE -> art("prop_bone_end", 75f)

@@ -1,21 +1,25 @@
 """第 4 關：溫泉河畔的卡皮巴拉（Capybara）。
 
-設計依據：日本動物園讓卡皮巴拉泡溫泉（冬至還會泡柚子湯），Bandai「カピバラさん」悠哉、
+設計依據：日本動物園讓卡皮巴拉泡溫泉（冬至還會泡柚子湯；遊戲裡頭上頂的是橘子），Bandai「カピバラさん」悠哉、
 愛泡溫泉、常放空的個性，以及 2022 年後「淡定走進畫面」迷因帶來的療癒、無所謂形象。
-→ 麻糬土司形身體、面無表情的放空臉、頭上頂毛巾和柚子、坐在檜木桶裡泡湯。
-Boss 在半血進入「裝甲」：淡定地戴上護目鏡、裝上肩甲，拿出柚子砲。
+→ 造型 v4（參考卡皮巴拉玩偶與「卡皮巴拉小黃豚」，見 docs/art/capybara-v4-concept.png）：
+頭身一體的豆子形、一大塊深色方口鼻（「)(」鼻孔＋「人」字嘴）、很小的瞇瞇眼、頭頂兩側深色小圓耳，
+頭上頂一顆橘子、坐在檜木桶裡泡湯。
+Boss 在半血進入「裝甲」：淡定地戴上護目鏡、裝上肩甲，拿出橘子砲。
 """
 from common import *
 
-CAPY = "#A8744F"
-CAPY_D = "#8A5B3B"
-MUZZLE = "#C79A70"
-NOSE = "#4E3022"
+CAPY = "#D39A5B"
+CAPY_D = "#B47B41"
+CAPY_L = "#E6B77E"
+MUZZLE = "#8E5A33"
+MUZZLE_D = "#5E3A22"
 WOOD = "#E9C48E"
 WOOD_D = "#C99A5E"
 WATER = "#8EDBD4"
-YUZU = "#FFC233"
-YUZU_D = "#F2A516"
+# 頭上的是橘子（沿用 yuzu 這個名字，貼圖名稱不變）
+YUZU = "#FF9A2E"
+YUZU_D = "#E5761A"
 LEAF = "#7ED957"
 TOWEL = "#FFFFFF"
 STEEL = "#5B6378"
@@ -30,7 +34,7 @@ def yuzu(cx, cy, r=26):
     for dx, dy in ((-8, -6), (6, -10), (10, 4), (-4, 8), (-12, 4), (2, -2)):
         out += ellipse(cx + dx * r / 26, cy + dy * r / 26, 1.6, 1.6, YUZU_D, "none")
     out += path(f"M{cx - 2},{cy - r * 0.85} Q{cx + 8},{cy - r * 1.5} {cx + r * 0.9},{cy - r * 1.2} Q{cx + 10},{cy - r} {cx + 2},{cy - r * 0.8} Z", LEAF, INK, 3)
-    out += path(f"M{cx - r * 0.5},{cy - r * 0.35} Q{cx - r * 0.3},{cy - r * 0.6} {cx},{cy - r * 0.62}", "none", "#FFE89A", 4)
+    out += path(f"M{cx - r * 0.5},{cy - r * 0.35} Q{cx - r * 0.3},{cy - r * 0.6} {cx},{cy - r * 0.62}", "none", "#FFD3A0", 4)
     return out
 
 
@@ -50,67 +54,76 @@ def steam(frame, x0=0, spread=1.0):
     return out
 
 
-def capy_face(m, ey=-22, dx=0):
-    """m0 放空、m1 裝甲（護目鏡）、m2 裝甲被打哭（鏡片裂開）。"""
-    out = ""
-    # 口鼻
-    out += path(f"M{dx - 78},20 Q{dx - 80},-10 {dx - 46},-12 L{dx + 46},-12 Q{dx + 80},-10 {dx + 78},20 Q{dx + 76},70 {dx},74 Q{dx - 76},70 {dx - 78},20 Z", MUZZLE, INK, 4)
-    out += path(f"M{dx - 38},6 Q{dx - 40},-8 {dx - 20},-8 L{dx + 20},-8 Q{dx + 40},-8 {dx + 38},6 Q{dx + 34},22 {dx},24 Q{dx - 34},22 {dx - 38},6 Z", NOSE, INK, 3)
-    out += ellipse(dx - 18, 6, 7, 5, "#2E1C14", "none") + ellipse(dx + 18, 6, 7, 5, "#2E1C14", "none")
-    out += path(f"M{dx - 26},-2 Q{dx - 14},-6 {dx - 6},-2", "none", "#8A6A5C", 3)
+def capy_body(m, arms=True):
+    """正面、頭身一體的卡皮巴拉（v4），中心 (0,0)，頭頂約 y=-184、屁股約 y=134。
+    m0 放空、m1 裝甲（護目鏡）、m2 裝甲被打哭（鏡片裂開）。"""
+    b = ""
+    # 頭頂兩側角落的深色小圓耳
+    for s in (-1, 1):
+        b += ellipse(s * 118, -158, 22, 20, MUZZLE, INK, 4) + ellipse(s * 116, -154, 10, 9, MUZZLE_D, "none")
+    # 豆子形：圓角方頭直接接到圓圓的身體（沒有脖子）
+    b += path("M-138,-110 C-140,-160 -100,-182 -40,-184 L40,-184 C100,-182 140,-160 138,-110 "
+              "C136,-60 150,-10 156,40 C162,100 110,132 0,134 C-110,132 -162,100 -156,40 C-150,-10 -136,-60 -138,-110 Z", CAPY, INK, 5)
+    b += path("M-110,-160 C-60,-180 60,-180 110,-160 C60,-170 -60,-170 -110,-160 Z", CAPY_D, "none", None, 'opacity="0.6"')
+    b += ellipse(0, 70, 90, 56, CAPY_L, "none", None, 'opacity="0.7"')
+    # 一大塊深色方口鼻：眼睛下方蓋到下巴
+    b += path("M-56,-118 C-24,-128 24,-128 56,-118 C80,-110 84,-76 82,-48 C80,-18 56,-4 0,-4 C-56,-4 -80,-18 -82,-48 C-84,-76 -80,-110 -56,-118 Z",
+              MUZZLE, INK, 4)
+    # 鼻孔「)(」＋「人」字嘴
+    b += path("M-24,-106 Q-12,-98 -18,-86 M24,-106 Q12,-98 18,-86", "none", MUZZLE_D, 5)
+    b += path("M0,-82 L0,-50", "none", MUZZLE_D, 4)
     if m == 2:
-        out += wavy_mouth(dx, 44, 14)
+        b += path("M-20,-30 Q-10,-46 0,-50 Q10,-46 20,-30", "none", MUZZLE_D, 4)
     else:
-        out += path(f"M{dx - 10},40 L{dx + 10},40", "none", None, 4)
+        b += path("M-22,-36 Q-8,-38 0,-50 Q8,-38 22,-36", "none", MUZZLE_D, 4)
+    ey = -128
     if m == 0:
-        # 放空的半閉眼
+        # 很小的瞇瞇眼，長在頭的上側、離得很開
         for s in (-1, 1):
-            out += path(f"M{dx + s * 62},{ey} Q{dx + s * 50},{ey + 6} {dx + s * 38},{ey}", "none", None, 5)
-            out += path(f"M{dx + s * 64},{ey - 4} L{dx + s * 36},{ey - 4}", "none", None, 3, 'opacity="0.6"')
+            b += path(f"M{s * 84},{ey} L{s * 112},{ey - 2}", "none", None, 5)
     else:
-        # 科技護目鏡
-        out += path(f"M{dx - 96},{ey - 18} L{dx + 96},{ey - 18} L{dx + 90},{ey + 16} L{dx - 90},{ey + 16} Z", STEEL, INK, 4)
-        out += path(f"M{dx - 84},{ey - 10} L{dx + 84},{ey - 10} L{dx + 80},{ey + 9} L{dx - 80},{ey + 9} Z", CORAL, "none")
-        out += path(f"M{dx - 70},{ey - 6} L{dx - 20},{ey - 6}", "none", "#FFE0CC", 4)
+        # 科技潛水護目鏡：鋼框＋暖色鏡片
+        b += path(f"M-140,{ey} L140,{ey}", "none", STEEL, 12)
+        for s in (-1, 1):
+            b += path(f"M{s * 66},{ey - 24} L{s * 132},{ey - 22} L{s * 128},{ey + 22} L{s * 70},{ey + 22} Z", STEEL, INK, 4)
+            b += path(f"M{s * 74},{ey - 16} L{s * 124},{ey - 15} L{s * 121},{ey + 14} L{s * 77},{ey + 14} Z", CORAL, "none")
+            b += path(f"M{s * 80},{ey - 9} L{s * 100},{ey - 10}", "none", "#FFE0CC", 4)
+        b += path(f"M-66,{ey - 4} Q0,{ey - 16} 66,{ey - 4}", "none", STEEL, 6)
         if m == 2:
-            out += path(f"M{dx + 20},{ey - 10} L{dx + 30},{ey + 2} L{dx + 22},{ey + 9} M{dx + 30},{ey + 2} L{dx + 46},{ey - 6}", "none", "#FFFFFF", 2.5)
-            out += tears(dx - 56, ey + 16, 40, -1) + tears(dx + 56, ey + 16, 40, 1)
-    out += blush(dx - 98, 26, 20) + blush(dx + 98, 26, 20)
-    return out
+            b += path(f"M86,{ey - 15} L98,{ey} L88,{ey + 13} M98,{ey} L118,{ey - 8}", "none", "#FFFFFF", 2.5)
+            b += tears(-100, ey + 22, 50, -1) + tears(100, ey + 22, 50, 1)
+    b += blush(-112, -72, 22) + blush(112, -72, 22)
+    for s in ((-1, 1) if arms else ()):
+        b += path(f"M{s * 138},10 C{s * 150},28 {s * 140},48 {s * 116},46 C{s * 104},38 {s * 112},18 {s * 126},10 Z", CAPY, INK, 4)
+        b += ellipse(s * 122, 40, 12, 9, MUZZLE, "none")
+    return b
 
 
 def boss_capy(m, frame):
-    b = steam(frame)
-    # 檜木桶後緣＋水面
-    b += ellipse(0, 108, 170, 40, WOOD_D, INK, 5)
-    b += ellipse(0, 108, 154, 30, WATER, "none")
-    # 小耳朵
-    for s in (-1, 1):
-        b += ellipse(s * 100, -112, 20, 16, CAPY, INK, 4) + ellipse(s * 100, -110, 10, 8, CAPY_D, "none")
-    # 土司形身體（頭身一體）
-    b += path("M-132,-70 Q-132,-130 -60,-134 L60,-134 Q132,-130 132,-70 L136,90 L-136,90 Z", CAPY, INK, 5)
-    b += path("M-112,-110 Q-60,-126 0,-124", "none", "#C08A62", 8, 'opacity="0.7"')
-    b += capy_face(m)
-    # 裝甲：肩甲
-    if m >= 1:
-        for s in (-1, 1):
-            b += path(f"M{s * 108},40 L{s * 150},30 L{s * 160},86 L{s * 112},92 Z", STEEL, INK, 4)
-            b += path(f"M{s * 118},48 L{s * 146},42", "none", CORAL, 5)
-    # 頭上的毛巾＋柚子（被打哭時柚子掉了）
-    b += towel(-6, -136, 96)
+    b = ellipse(0, 72, 220, 46, WOOD_D, INK, 5) + ellipse(0, 72, 202, 34, WATER, "none")
+    b += capy_body(m, arms=False)
     if m < 2:
-        b += yuzu(4, -162, 26)
+        b += yuzu(0, -206, 28)
+    if m >= 1:
+        # 裝甲：肩甲
+        for s in (-1, 1):
+            b += path(f"M{s * 100},-30 L{s * 160},-40 L{s * 168},20 L{s * 112},22 Z", STEEL, INK, 4)
+            b += path(f"M{s * 112},-20 L{s * 154},-28", "none", CORAL, 5)
+    b += path("M-220,72 Q-190,62 -160,72 T-100,72 T-40,72 T20,72 T80,72 T140,72 T200,72 T230,72", "none", "#6CC5BE", 6)
     # 桶子前緣
-    b += path("M-170,108 Q0,156 170,108 L164,150 Q0,192 -164,150 Z", WOOD, INK, 5)
-    for x in (-110, -55, 0, 55, 110):
-        b += path(f"M{x},{126 + abs(x) * -0.05} L{x},{168 - abs(x) * 0.12}", "none", WOOD_D, 4)
-    b += path("M-166,128 Q0,174 166,128", "none", "#8A6A40", 5)
-    # 前腳搭在桶邊
+    b += path("M-226,76 Q0,140 226,76 L216,140 Q0,206 -216,140 Z", WOOD, INK, 5)
+    for x in (-140, -70, 0, 70, 140):
+        b += path(f"M{x},{100 + abs(x) * 0.02} L{x},{170 - abs(x) * 0.12}", "none", WOOD_D, 4)
+    b += path("M-222,104 Q0,170 222,104", "none", "#8A6A40", 5)
+    # 小手搭在桶邊
     for s in (-1, 1):
-        b += ellipse(s * 70, 112, 26, 15, CAPY, INK, 4)
-    body = f'<g transform="translate(0 16) scale(0.93)">{g(wob(b))}</g>'
+        b += ellipse(s * 92, 84, 26, 15, CAPY, INK, 4) + ellipse(s * 92, 88, 12, 6, MUZZLE, "none")
+    if m == 2:
+        b += yuzu(170, 96, 22)  # 被打哭：橘子滾到水裡
+    body = f'<g transform="translate(0 6) scale(0.72)">{g(wob(b))}</g>'
     if frame == 1:
         body = f'<g transform="translate(0 4) scale(1.02 0.98)">{body}</g>'
+    body = g(steam(frame, spread=1.1)) + body
     return Sprite(f"boss_capy_m{m}_{frame}", *SIZE, VIEW, body)
 
 
@@ -127,15 +140,15 @@ def mini(name, body, size=180, view="-60 -60 120 120"):
 def baby_capy(frame):
     b = ellipse(0, 30, 50, 16, "#FF8FB1", INK, 4) + ellipse(0, 30, 34, 9, WATER, "none")  # 游泳圈
     for s in (-1, 1):
-        b += ellipse(s * 30, -38, 9, 7, CAPY, INK, 3)
-    b += path("M-40,-20 Q-40,-46 -16,-46 L16,-46 Q40,-46 40,-20 L42,26 L-42,26 Z", CAPY, INK, 4)
-    b += path("M-28,4 Q-28,-8 -14,-8 L14,-8 Q28,-8 28,4 Q26,22 0,22 Q-26,22 -28,4 Z", MUZZLE, INK, 3)
-    b += path("M-12,0 Q-12,-6 -4,-6 L4,-6 Q12,-6 12,0 Q10,8 0,8 Q-10,8 -12,0 Z", NOSE, "none")
-    b += path("M-24,-24 Q-18,-20 -12,-24 M12,-24 Q18,-20 24,-24", "none", None, 3.5)
-    b += blush(-32, 4, 8, lines=False) + blush(32, 4, 8, lines=False)
+        b += ellipse(s * 32, -40, 8, 7, MUZZLE, INK, 3)
+    b += path("M-38,-26 C-38,-44 -26,-48 -12,-48 L12,-48 C26,-48 38,-44 38,-26 C38,-10 42,10 42,26 L-42,26 C-42,10 -38,-10 -38,-26 Z", CAPY, INK, 4)
+    b += path("M-16,-30 C-6,-33 6,-33 16,-30 C23,-27 24,-16 23,-8 C22,0 16,4 0,4 C-16,4 -22,0 -23,-8 C-24,-16 -23,-27 -16,-30 Z", MUZZLE, INK, 3)
+    b += path("M-7,-27 Q-3,-24 -5,-20 M7,-27 Q3,-24 5,-20 M0,-18 L0,-10 M-6,-6 Q-2,-7 0,-10 Q2,-7 6,-6", "none", MUZZLE_D, 2.5)
+    b += path("M-31,-34 L-23,-35 M31,-34 L23,-35", "none", None, 3.5)
+    b += blush(-30, -14, 8, lines=False) + blush(30, -14, 8, lines=False)
     b += path("M-60,36 Q-50,30 -40,36 M40,36 Q50,30 60,36", "none", "#BDE8FF", 4) if frame else path("M-58,38 Q-48,34 -38,38 M38,38 Q48,34 58,38", "none", "#BDE8FF", 4)
-    b += yuzu(14, -54, 10)
-    return mini(f"min_babycapy_{frame}", b)
+    b += yuzu(0, -56, 10)
+    return mini(f"min_babycapy_{frame}", b, view="-64 -72 128 128")
 
 
 def duck(frame):

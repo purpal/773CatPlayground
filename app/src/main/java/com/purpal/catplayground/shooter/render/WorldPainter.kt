@@ -398,7 +398,7 @@ private fun DrawScope.drawHoneycomb(x: Float, y: Float) {
 }
 
 
-/** 溫泉河：兩岸的石頭、水面波紋、漂浮的柚子。 */
+/** 溫泉河：兩岸的石頭、水面波紋、漂浮的橘子。 */
 private fun DrawScope.onsenRow(y: Float, random: Random, row: Int, time: Float) {
     if (row % 2 == 0) drawRect(Color(0xFF86D6CB), Offset(0f, y), Size(WORLD_WIDTH, TILE / 2f))
     // 兩岸
@@ -419,12 +419,12 @@ private fun DrawScope.onsenRow(y: Float, random: Random, row: Int, time: Float) 
         val r = 30f + (sin(time * 1.5f + it + row) + 1f) * 10f
         drawOval(Color.White.copy(alpha = 0.35f), Offset(wx - r, wy - r * 0.35f), Size(r * 2f, r * 0.7f), style = Stroke(3f))
     }
-    // 漂浮的柚子
+    // 漂浮的橘子
     if (random.nextInt(3) == 0) {
         val fx = 180f + random.nextFloat() * (WORLD_WIDTH - 360f)
         val fy = y + random.nextFloat() * TILE
-        circle(fx, fy, 16f, Color(0xFFFFC233))
-        circle(fx - 5f, fy - 5f, 5f, Color(0xFFFFE89A))
+        circle(fx, fy, 16f, Color(0xFFFF9A2E))
+        circle(fx - 5f, fy - 5f, 5f, Color(0xFFFFD3A0))
         oval(fx + 8f, fy - 16f, 12f, 6f, Color(0xFF7ED957))
     }
 }
@@ -634,7 +634,7 @@ private fun DrawScope.drawProp(
             sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 57f, tipY - dy * 57f, 1f, angle * RAD) }
         }
         HazardStyle.WATER -> {
-            // 柚子砲在手上，伸出去的是高壓溫泉水柱
+            // 橘子砲在手上，伸出去的是高壓溫泉水柱
             if (active && length > 130f) {
                 val mx = x0 + dx * 126f
                 val my = y0 + dy * 126f
