@@ -11,7 +11,8 @@ OUT=emulator-results-out
 mkdir -p "$OUT/frames"
 
 # 每個 adb 指令最多等 30 秒：模擬器掛掉時才不會整個工作卡到逾時。
-adb() { timeout 30 command adb "$@"; }
+ADB_BIN=$(command -v adb)
+adb() { timeout 30 "$ADB_BIN" "$@"; }
 alive() { adb get-state > /dev/null 2>&1; }
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 uptime_ms() { adb shell cat /proc/uptime | awk '{printf "%d", $1 * 1000}'; }
@@ -27,7 +28,7 @@ W=${size%x*}
 H=${size#*x}
 adb logcat -c
 # 從頭到尾把 logcat 存下來，模擬器中途消失也看得到最後發生什麼事。
-command adb logcat -v time > "$OUT/logcat-full.txt" 2>&1 &
+"$ADB_BIN" logcat -v time > "$OUT/logcat-full.txt" 2>&1 &
 LOGCAT_PID=$!
 
 # 1. 大廳、2. 射擊遊戲選單
@@ -41,7 +42,7 @@ shot 02_menu
 # 3. 實際遊玩（autotest：無敵、自動放大絕、記錄幀耗時）
 adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true > /dev/null
 REC_START=$(uptime_ms)
-command adb shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
+"$ADB_BIN" shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
 sleep 1
 adb shell dumpsys gfxinfo $PKG reset > /dev/null
 sleep 1.5
@@ -85,7 +86,7 @@ adb shell dumpsys gfxinfo $PKG > "$OUT/gfxinfo.txt"
 adb shell pkill -INT screenrecord || true
 sleep 4
 adb shell ls -l /sdcard/run.mp4 > "$OUT/video-diagnostics.txt" 2>&1 || true
-timeout 120 command adb pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
+timeout 120 "$ADB_BIN" pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
 which ffmpeg >> "$OUT/video-diagnostics.txt" 2>&1 || echo "no ffmpeg" >> "$OUT/video-diagnostics.txt"
 adb logcat -d -s ShooterPerf:I > "$OUT/perf.txt"
 kill "$LOGCAT_PID" 2> /dev/null || true
