@@ -9,6 +9,7 @@ import com.purpal.catplayground.shooter.model.CatType
  * 只在 debug 版有效的啟動參數，給模擬器自動測試用（見 scripts/emulator-smoke.sh）：
  *   --es open shooter_menu|shooter_play --ei stage 1 --es cat ORANGE --ez autotest true
  * autotest 會讓射擊遊戲無敵、自動放大絕，並在 logcat（ShooterPerf）記錄每幀耗時。
+ * probe 可關掉部分繪圖功能來找模擬器當掉的原因（見 [DebugFlags]）。
  */
 data class DebugLaunch(val open: String, val stage: Int, val cat: CatType, val autotest: Boolean) {
 
@@ -27,7 +28,7 @@ data class DebugLaunch(val open: String, val stage: Int, val cat: CatType, val a
                 stage = intent.getIntExtra("stage", 1),
                 cat = runCatching { CatType.valueOf(intent.getStringExtra("cat") ?: "") }.getOrDefault(CatType.ORANGE),
                 autotest = intent.getBooleanExtra("autotest", false),
-            )
+            ).also { DebugFlags.apply(intent.getStringExtra("probe") ?: "") }
         }
     }
 }

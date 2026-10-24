@@ -476,7 +476,9 @@ internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modif
             contentAlignment = Alignment.Center,
         ) {
             // 橘貓變身猛虎、黑貓變身黑豹
-            ArtImage(
+            if (com.purpal.catplayground.DebugFlags.plainHud) {
+                Text(if (cat == CatType.ORANGE) "🐯" else "🐈‍⬛", fontSize = 38.sp)
+            } else ArtImage(
                 if (cat == CatType.ORANGE) "icon_tiger" else "icon_panther",
                 Modifier.size(64.dp),
                 contentDescription = cat.ultimateName,

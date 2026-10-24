@@ -6,6 +6,7 @@ set -u
 STAGE="${1:-1}"
 CAT="${2:-ORANGE}"
 PLAY_SECONDS="${3:-110}"
+PROBE="${4:-}"
 PKG=com.purpal.catplayground
 OUT=emulator-results-out
 mkdir -p "$OUT/frames"
@@ -40,7 +41,7 @@ sleep 5
 shot 02_menu
 
 # 3. 實際遊玩（autotest：無敵、自動放大絕、記錄幀耗時）
-adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true > /dev/null
+adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true ${PROBE:+--es probe "$PROBE"} > /dev/null
 REC_START=$(uptime_ms)
 echo "$REC_START" > "$OUT/rec-start.txt"
 "$ADB_BIN" shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
@@ -102,7 +103,7 @@ gzip -f "$OUT/logcat-full.txt"
 
 {
   echo "# Emulator smoke test"
-  echo "- stage $STAGE, cat $CAT, played ${PLAY_SECONDS}s, screen ${W}x${H}"
+  echo "- stage $STAGE, cat $CAT, played ${PLAY_SECONDS}s, screen ${W}x${H}, probe '$PROBE'"
   echo "- crashes: $( [ -s "$OUT/crashes.txt" ] && echo YES || echo none )"
   [ -f "$OUT/device-lost.txt" ] && echo "- $(cat "$OUT/device-lost.txt")"
   [ -s "$OUT/memory.txt" ] && echo "- memory kills: $(wc -l < "$OUT/memory.txt")"

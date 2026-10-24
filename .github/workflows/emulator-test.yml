@@ -13,6 +13,9 @@ on:
       seconds:
         description: 遊玩秒數
         default: "110"
+      probe:
+        description: 除錯用，關掉部分繪圖功能（noprepare,plainfx,plainhud）；結果推到 emulator-results-<probe>
+        default: ""
 
 permissions:
   contents: write
@@ -48,7 +51,7 @@ jobs:
           ram-size: 4096M
           disable-animations: false
           emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash scripts/emulator-smoke.sh "${{ inputs.stage }}" "${{ inputs.cat }}" "${{ inputs.seconds }}"
+          script: bash scripts/emulator-smoke.sh "${{ inputs.stage }}" "${{ inputs.cat }}" "${{ inputs.seconds }}" "${{ inputs.probe }}"
 
       # 模擬器結束後才裝 ffmpeg 抽影格：先裝的話，兩次測試模擬器都在遊玩途中整個消失。
       - name: Extract video frames
@@ -59,14 +62,18 @@ jobs:
 
       - name: Publish results
         if: always()
+        env:
+          PROBE: ${{ inputs.probe }}
         run: |
+          branch=emulator-results
+          if [ -n "$PROBE" ]; then branch="emulator-results-$(echo "$PROBE" | tr -c 'a-z0-9\n' '-' | tr -d '\n')"; fi
           mkdir -p emulator-results-out
           cd emulator-results-out
-          echo "commit ${{ github.sha }}, run ${{ github.run_id }}" > RUN.txt
+          echo "commit ${{ github.sha }}, run ${{ github.run_id }}, probe '$PROBE'" > RUN.txt
           git init -q
-          git checkout -q -b emulator-results
+          git checkout -q -b "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -qm "Emulator results for ${{ github.sha }}"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" emulator-results
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$branch"

@@ -54,6 +54,7 @@ fun viewportFor(size: Size, worldHeight: Float): Viewport {
 }
 
 private val WhiteFlash = ColorFilter.tint(Color.White, BlendMode.SrcIn)
+private val plainFx: Boolean get() = com.purpal.catplayground.DebugFlags.plainFx
 private const val RAD = 57.29578f
 
 fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
@@ -119,7 +120,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
     // 被打中時果凍般壓扁一下並閃白；持續被光束照射時改成閃爍，避免整隻一直泛白。
     val hit = e.hitFlash > 0f
     val flash = hit && ((w.time * 20f).toInt() % 2 == 0)
-    val squash = if (hit) 1.07f else 1f
+    val squash = if (hit && !plainFx) 1.07f else 1f
     fun sprite(s: Sprite, scale: Float = 1f, rotation: Float = 0f, flipX: Boolean = false, dy: Float = 0f) {
         drawSprite(s, e.x, e.y + dy, scale, rotation, flipX = flipX, stretch = squash)
         if (flash) drawSprite(s, e.x, e.y + dy, scale, rotation, alpha = 0.45f, flipX = flipX, colorFilter = WhiteFlash, stretch = squash)
@@ -198,7 +199,7 @@ private fun DrawScope.drawItem(item: Item, sprites: SpriteCache) {
         drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 0.9f + sin(item.age * 6f) * 0.15f, alpha = 0.35f, blendMode = BlendMode.Plus)
     }
     drawSprite(sprites.item(item.type), item.x, item.y + bob, 0.95f)
-    if (item.cycle != null) {
+    if (item.cycle != null && !plainFx) {
         // 倒數圈：繞一圈就換成下一種武器。
         val r = 44f
         drawArc(
@@ -392,6 +393,7 @@ private fun DrawScope.drawShot(s: PlayerShot, w: World, sprites: SpriteCache) {
 
 /** 子彈後方的拖尾：外層半透明粗線＋內層白線。 */
 private fun DrawScope.trail(s: PlayerShot, color: Color, width: Float, seconds: Float) {
+    if (plainFx) return
     val start = Offset(s.x, s.y)
     val end = Offset(s.x - s.vx * seconds, s.y - s.vy * seconds)
     drawLine(color.copy(alpha = 0.45f), start, end, width, StrokeCap.Round)
@@ -446,7 +448,7 @@ private fun DrawScope.drawHazard(l: Laser, w: World, sprites: SpriteCache) {
     if (l.age < l.warnTime) {
         val blink = if ((l.age * 12f).toInt() % 2 == 0) 0.95f else 0.45f
         val warn = Color(0xFFFF3D8B)
-        val dash = PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -l.age * 200f)
+        val dash = if (plainFx) null else PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -l.age * 200f)
         drawLine(warn.copy(alpha = blink), Offset(l.x, l.y), Offset(l.endX, l.endY), 7f, StrokeCap.Round, pathEffect = dash)
         if (l.sweep != 0f) {
             val endAngle = l.angle + l.sweep * l.activeTime
@@ -598,7 +600,7 @@ private fun DrawScope.drawParticle(p: Particle, sprites: SpriteCache) {
         ParticleKind.STAR -> drawSprite(sprites.star(), p.x, p.y, p.size / 22f * (1f - t * 0.4f), t * 360f, alpha = 1f - t * t)
         ParticleKind.HEART -> drawSprite(sprites.heart(), p.x, p.y, p.size / 18f * (1f - t * 0.3f), alpha = 1f - t)
         ParticleKind.RING -> drawCircle(p.color.toColor().copy(alpha = 1f - t), p.size * (0.2f + t), Offset(p.x, p.y), style = Stroke(14f * (1f - t) + 1f))
-        ParticleKind.CONFETTI -> withTransform({
+        ParticleKind.CONFETTI -> if (!plainFx) withTransform({
             translate(p.x, p.y)
             rotate(p.rotation, Offset.Zero)
             // 紙片翻面：寬度隨轉動忽寬忽窄

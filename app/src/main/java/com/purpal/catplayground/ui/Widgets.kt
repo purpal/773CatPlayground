@@ -80,9 +80,14 @@ fun FitText(
     textAlign: TextAlign? = null,
     style: TextStyle = LocalTextStyle.current,
 ) {
-    var scale by remember(text, fontSize) { mutableFloatStateOf(1f) }
-    var ready by remember(text, fontSize) { mutableStateOf(false) }
     val size = if (fontSize == TextUnit.Unspecified) style.fontSize else fontSize
+    if (com.purpal.catplayground.DebugFlags.plainHud) {
+        Text(text, modifier, color = color, fontSize = size, fontWeight = fontWeight, textAlign = textAlign, maxLines = 1, style = style)
+        return
+    }
+    // 縮放比例只在第一次量好前隱藏；之後文字改變（例如分數每幀變動）不再隱藏，只在放不下時再縮小。
+    var scale by remember(fontSize) { mutableFloatStateOf(1f) }
+    var ready by remember(fontSize) { mutableStateOf(false) }
     Text(
         text,
         modifier = modifier.drawWithContent { if (ready) drawContent() },

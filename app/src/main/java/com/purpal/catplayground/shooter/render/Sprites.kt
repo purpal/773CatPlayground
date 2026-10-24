@@ -75,7 +75,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             val h = (bitmap.height * target / bitmap.width.toFloat()).roundToInt().coerceAtLeast(1)
             bitmap = Bitmap.createScaledBitmap(bitmap, target, h, true)
         }
-        bitmap.prepareToDraw()
+        if (!com.purpal.catplayground.DebugFlags.noPrepare) bitmap.prepareToDraw()
         return Sprite(bitmap.asImageBitmap(), bitmap.width / worldWidth)
     }
 
