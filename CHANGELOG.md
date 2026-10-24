@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/purpal/773CatPlayground/compare/v0.7.0...v0.8.0) (2026-10-24)
+
+
+### Features
+
+* sci-fi weapon effects, boss disarm/armor phases, capybara stage 4, new app icon ([5776cdd](https://github.com/purpal/773CatPlayground/commit/5776cdd057c3be60bc8d2a2f514f6658d375e25f))
+
+
+### Bug Fixes
+
+* keep HUD callouts inside the screen edges ([51048a8](https://github.com/purpal/773CatPlayground/commit/51048a8db6345200a0e464d2350d8f98e1f9da2c))
+
 ## [0.7.0](https://github.com/purpal/773CatPlayground/compare/v0.6.1...v0.7.0) (2026-10-24)
 
 
