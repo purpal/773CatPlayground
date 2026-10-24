@@ -753,7 +753,8 @@ class World(
 
     /** 漫畫音效字。 */
     fun sfx(x: Float, y: Float, which: Int) {
-        particles += Particle(x, y, 0f, -50f, 0.8f, 1f, 0, ParticleKind.SFX, which)
+        // 字樣最寬約 380，靠邊時往內收，避免被畫面切掉
+        particles += Particle(x.coerceIn(200f, WORLD_WIDTH - 200f), y.coerceAtLeast(60f), 0f, -50f, 0.8f, 1f, 0, ParticleKind.SFX, which)
     }
 
     /** 擊破時「數位分解」：衝擊環＋往外飛散的體素方塊（敵人的粉彩色混著青色資料色）。 */
