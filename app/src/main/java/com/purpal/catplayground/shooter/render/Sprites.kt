@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -94,6 +95,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         val index = when (kind) {
             EnemyKind.BOSS_DOG -> 1
             EnemyKind.BOSS_BEAR -> 2
+            EnemyKind.BOSS_CAPY -> 3
             else -> 0
         }
         return art(BOSS[index][mood.coerceIn(0, 2)][frame and 1], BOSS_WIDTH)
@@ -116,18 +118,25 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.ELITE_MOUSE -> art(ELITE_MOUSE[f], ELITE_WIDTH)
             EnemyKind.ELITE_DOG -> art(ELITE_DOG[f], ELITE_WIDTH)
             EnemyKind.ELITE_BEE -> art(ELITE_BEE[f], ELITE_WIDTH)
-            EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR -> boss(kind, 0, f)
+            EnemyKind.ELITE_MONKEY -> art(ELITE_MONKEY[f], ELITE_WIDTH)
+            EnemyKind.DUCKLING -> art(DUCK[f], 76f)
+            EnemyKind.YUZU -> art("min_yuzu", 84f)
+            EnemyKind.BUCKET -> art("min_bucket", 96f)
+            EnemyKind.BABY_CAPY -> art(BABY_CAPY[f], 118f)
+            EnemyKind.THROWN_BONE -> art("lost_bone", 200f)
+            EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY -> boss(kind, 0, f)
         }
     }
 
     fun cheeseWheel() = art("min_cheese_wheel", 120f)
     fun barrel() = art("min_barrel", 140f)
 
-    /** 道具的頭（叉頭、骨頭的一端、蜂蜜棒頭），朝 +x，寬度即世界長度。 */
+    /** 科技道具的頭（電漿叉頭、硬光骨頭的一端、熱熔鑽頭、柚子砲），朝 +x，寬度即世界長度。 */
     fun propHead(style: HazardStyle): Sprite? = when (style) {
         HazardStyle.FORK -> art("prop_fork_head", 140f)
-        HazardStyle.BONE -> art("prop_bone_end", 70f)
-        HazardStyle.DIPPER -> art("prop_dipper_head", 120f)
+        HazardStyle.BONE -> art("prop_bone_end", 75f)
+        HazardStyle.DIPPER -> art("prop_dipper_head", 125f)
+        HazardStyle.WATER -> art("prop_yuzu_head", 135f)
         else -> null
     }
 
@@ -135,31 +144,38 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         LostProp.CROWN -> art("lost_crown", 100f)
         LostProp.HAT -> art("lost_hat", 170f)
         LostProp.POT -> art("lost_pot", 170f)
-        else -> art("prop_fork_head", 140f)
+        LostProp.BONE -> art("lost_bone", 200f)
+        LostProp.DIPPER -> art("lost_dipper", 200f)
+        LostProp.YUZU -> art("lost_yuzu", 70f)
+        else -> art("lost_fork", 200f)
     }
 
     // ── 道具 ──
 
     fun item(type: ItemType): Sprite = when (type) {
         ItemType.COIN -> art("item_coin", 46f)
-        ItemType.CANDY -> candy(0)
+        ItemType.DATA -> art("item_data", 26f)
         else -> art(ITEMS[type.ordinal], ITEM_WIDTH)
     }
 
-    fun candy(variant: Int) = art(CANDY[variant % CANDY.size], 44f)
+    // ── 武器與特效（v3 科技風，每種武器各留一個貓咪萌點） ──
 
-    // ── 武器與特效 ──
-
-    fun pawShot(cat: CatType) = art(if (cat == CatType.ORANGE) "shot_paw_orange" else "shot_paw_violet", 40f)
-    fun bigPaw() = art("shot_paw_big", 120f)
-    fun claw() = art("shot_claw", 56f)
-    fun fish() = art("shot_fish", 52f)
-    fun flower() = art("fx_flower", 120f)
+    fun plasma() = art("shot_plasma", 24f)
+    fun casing() = art("fx_casing", 24f)
+    fun catHolo() = art("fx_catholo", 110f)
+    fun graviton() = art("shot_graviton", 120f)
+    fun monoClaw() = art("shot_monoclaw", 60f)
+    fun fishMissile() = art("shot_fish2", 64f)
+    fun reticle() = art("fx_reticle", 110f)
+    fun hexPaw() = art("fx_hexpaw", 52f)
+    fun hitMark() = art("fx_hitmark", 34f)
+    fun pawStamp() = art("fx_pawstamp", 260f)
     fun star() = art("fx_star", 52f)
     fun heart() = art("fx_heart", 52f)
     fun sfx(id: Int) = art(SFX[id.coerceIn(0, SFX.size - 1)], SFX_WIDTH[id.coerceIn(0, SFX.size - 1)])
-    fun comboLabel() = art("sfx_combo", 150f)
+    fun comboLabel() = art("sfx_chain", 130f)
     fun roar() = art("sfx_roar", 420f)
+    fun overdrive() = art("sfx_overdrive", 560f)
     fun digit(d: Int) = art(DIGITS[d], DIGIT_WIDTH)
     fun plus() = art("fx_plus", DIGIT_WIDTH)
     fun times() = art("fx_x", DIGIT_WIDTH)
@@ -172,11 +188,11 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         return get(id, r * 4f, r * 4f) { drawBulletArt(style, r) }
     }
 
-    /** 爆炸時的粉彩煙團。 */
+    /** 爆炸時的能量閃光團（白→青）。 */
     fun puff() = get(100, 100f, 100f) {
         drawCircle(
             Brush.radialGradient(
-                0f to Color.White, 0.35f to Color(0xFFFFF6C8), 0.65f to Color(0xFFFFC2DA).copy(alpha = 0.8f), 1f to Color.Transparent,
+                0f to Color.White, 0.35f to Color(0xFFBFF8FF), 0.65f to Color(0xFF00E5FF).copy(alpha = 0.55f), 1f to Color.Transparent,
                 radius = 50f, center = Offset.Zero,
             ),
             50f,
@@ -192,9 +208,13 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         drawCircle(Brush.radialGradient(listOf(Color.White, Color(color), Color(color).copy(alpha = 0f)), Offset.Zero, 50f), 50f, Offset.Zero)
     }
 
+    /** 槍口：V 形噴焰＋青色光暈。 */
     fun muzzle() = get(102, 90f, 90f) {
-        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFFFF0F6), Color(0x00FFB3D1)), Offset.Zero, 45f), 45f, Offset.Zero)
-        shape(Shapes.star, 0f, 0f, 36f, Color(0xAAFFFFFF))
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFF80F0FF), Color(0x0000E5FF)), Offset.Zero, 45f), 45f, Offset.Zero)
+        val v = androidx.compose.ui.graphics.Path().apply {
+            moveTo(-16f, 14f); lineTo(0f, -26f); lineTo(16f, 14f); lineTo(0f, 2f); close()
+        }
+        drawPath(v, Color.White)
     }
 
     /** 先在背景執行緒把這一關會用到的圖都載入好，避免開打時卡頓。 */
@@ -202,7 +222,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {
             for (f in 0..1) {
-                if (kind == EnemyKind.BOSS_MOUSE || kind == EnemyKind.BOSS_DOG || kind == EnemyKind.BOSS_BEAR) {
+                if (kind == EnemyKind.BOSS_MOUSE || kind == EnemyKind.BOSS_DOG || kind == EnemyKind.BOSS_BEAR || kind == EnemyKind.BOSS_CAPY) {
                     for (mood in 0..2) boss(kind, mood, f)
                 } else {
                     enemy(kind, f)
@@ -211,10 +231,10 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         }
         cheeseWheel(); barrel()
         HazardStyle.entries.forEach { propHead(it) }
-        listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT).forEach { lostProp(it) }
+        listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT, LostProp.FORK, LostProp.BONE, LostProp.DIPPER, LostProp.YUZU).forEach { lostProp(it) }
         ItemType.entries.forEach { item(it) }
-        CANDY.indices.forEach { candy(it) }
-        pawShot(cat); bigPaw(); claw(); fish(); flower(); star(); heart(); comboLabel(); roar()
+        plasma(); casing(); catHolo(); graviton(); monoClaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
+        star(); heart(); comboLabel(); roar(); overdrive()
         SFX.indices.forEach { sfx(it) }
         for (d in 0..9) digit(d)
         plus(); times()
@@ -238,7 +258,10 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         const val ULT_WIDTH = 760f
         const val DIGIT_WIDTH = 30f
 
-        val GLOWS = longArrayOf(0xFFFFFFFFL, 0xFF80F0FFL, 0xFFFFC107L, 0xFFB388FFL, 0xFFFF8FB1L, 0xFFFFE07AL, 0xFFC9B8FFL)
+        val GLOWS = longArrayOf(
+            0xFFFFFFFFL, 0xFF80F0FFL, 0xFFFFC107L, 0xFFB388FFL, 0xFFFF8FB1L, 0xFFFFE07AL, 0xFFC9B8FFL,
+            0xFF00E5FFL, 0xFFFF7A45L, 0xFFFF2BD6L, 0xFFFF3D5AL, 0xFFFFB300L,
+        )
         private fun glowIndex(color: Long): Int {
             for (i in GLOWS.indices) if (GLOWS[i] == color) return i
             return GLOWS.size
@@ -247,7 +270,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val CAT_KINDS = listOf("orange", "black", "tiger", "panther")
         private val POSES = listOf("c", "l", "r")
         private val RUN = Array(4) { k -> Array(3) { p -> Array(4) { f -> "run_${CAT_KINDS[k]}_${POSES[p]}_$f" } } }
-        private val BOSS = Array(3) { b -> Array(3) { m -> Array(2) { f -> "boss_${listOf("mouse", "dog", "bear")[b]}_m${m}_$f" } } }
+        private val BOSS = Array(4) { b -> Array(3) { m -> Array(2) { f -> "boss_${listOf("mouse", "dog", "bear", "capy")[b]}_m${m}_$f" } } }
         private fun frames(base: String) = Array(2) { "${base}_$it" }
         private val MOUSE = frames("min_mouse")
         private val PLANE = frames("min_plane")
@@ -258,23 +281,28 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val ELITE_MOUSE = frames("elite_mouse")
         private val ELITE_DOG = frames("elite_dog")
         private val ELITE_BEE = frames("elite_bee")
+        private val ELITE_MONKEY = frames("elite_monkey")
+        private val DUCK = frames("min_duck")
+        private val BABY_CAPY = frames("min_babycapy")
         private val ITEMS = ItemType.entries.map { "item_${it.name.lowercase()}" }.toTypedArray()
-        private val CANDY = Array(5) { "candy_$it" }
-        private val SFX = arrayOf("sfx_poko", "sfx_paan", "sfx_doon", "sfx_sweet", "sfx_elite")
-        private val SFX_WIDTH = floatArrayOf(180f, 180f, 230f, 220f, 200f)
+        private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor")
+        private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f)
         private val DIGITS = Array(10) { "fx_d$it" }
     }
 }
 
-private val BulletInk = Color(0xFF5B1E46)
-private val HotPink = Color(0xFFFF3D8B)
-private val CandyPink = Color(0xFFFF6FB5)
+private val BulletInk = Color(0xFF3A0A1E)
+private val WarnRed = Color(0xFFFF3D5A)
+private val WarnMagenta = Color(0xFFFF2BD6)
 
-/** 子彈圖，中心 (0,0)，r 為視覺半徑。瞄準型用桃紅、花式彈幕用糖果粉，形狀依種類。 */
+/**
+ * 子彈圖，中心 (0,0)，r 為視覺半徑。敵彈一律暖色（警示紅／洋紅）＋白核心＋深色硬邊，
+ * 和玩家的冷色火力永遠分得開；形狀依種類保留動物特色。
+ */
 private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
     val color = when (style) {
-        BulletStyle.RICE, BulletStyle.SEED, BulletStyle.ORB -> HotPink
-        else -> CandyPink
+        BulletStyle.RICE, BulletStyle.SEED, BulletStyle.ORB -> WarnRed
+        else -> WarnMagenta
     }
     drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.5f), color.copy(alpha = 0f)), Offset.Zero, r * 2f), r * 2f, Offset.Zero)
     when (style) {
@@ -315,6 +343,12 @@ private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
             shape(Shapes.drop, 0f, 0f, r + 2.5f, BulletInk)
             shape(Shapes.drop, 0f, 0f, r, color)
             drawCircle(Color.White, r * 0.3f, Offset(-r * 0.25f, 0f))
+        }
+        BulletStyle.BUBBLE -> {
+            drawCircle(BulletInk, r + 2.5f, Offset.Zero)
+            drawCircle(color, r, Offset.Zero)
+            drawCircle(color.copy(alpha = 0.35f).compositeOver(Color.White), r * 0.72f, Offset.Zero)
+            drawCircle(Color.White, r * 0.28f, Offset(-r * 0.32f, -r * 0.32f))
         }
         BulletStyle.STAR -> {
             shape(Shapes.star, 0f, 0f, r * 1.3f + 3.5f, BulletInk)

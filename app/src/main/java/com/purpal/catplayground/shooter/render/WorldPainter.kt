@@ -10,10 +10,12 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
+import com.purpal.catplayground.DebugFlags
 import com.purpal.catplayground.shooter.model.BallTurret
 import com.purpal.catplayground.shooter.model.Balloon
 import com.purpal.catplayground.shooter.model.Boss
@@ -37,8 +39,10 @@ import com.purpal.catplayground.shooter.model.PlayerShot
 import com.purpal.catplayground.shooter.model.ShotStyle
 import com.purpal.catplayground.shooter.model.SonicWall
 import com.purpal.catplayground.shooter.model.StageTheme
+import com.purpal.catplayground.shooter.model.ThrownBone
 import com.purpal.catplayground.shooter.model.WORLD_WIDTH
 import com.purpal.catplayground.shooter.model.World
+import com.purpal.catplayground.shooter.model.YuzuDrone
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.floor
@@ -54,8 +58,17 @@ fun viewportFor(size: Size, worldHeight: Float): Viewport {
 }
 
 private val WhiteFlash = ColorFilter.tint(Color.White, BlendMode.SrcIn)
-private val plainFx: Boolean get() = com.purpal.catplayground.DebugFlags.plainFx
 private const val RAD = 57.29578f
+
+/*
+ * v3 特效：「外表萌萌，出手是硬派科幻」。玩家火力一律冷色（青／藍／白），
+ * 敵人與 Boss 道具一律暖色（紅／洋紅／琥珀／珊瑚）；每種玩家武器各留一個貓咪萌點。
+ */
+private val Cyan = Color(0xFF00E5FF)
+private val Navy = Color(0xFF0A1630)
+private val Steel = Color(0xFF4A5370)
+private val Violet = Color(0xFFB388FF)
+private val Amber = Color(0xFFFFB300)
 
 fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
     drawRect(themeEdge(w.stage.theme))
@@ -66,18 +79,19 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
     }) {
         clipRect(0f, 0f, WORLD_WIDTH, w.height) {
             drawBackground(w.stage.theme, w.scroll, w.height, w.time)
-            // 背景稍微壓暗，讓角色、子彈與特效更突出。
-            drawRect(Color(0xFF140A26).copy(alpha = 0.24f), size = Size(WORLD_WIDTH, w.height))
+            // 背景壓暗一些，讓霓虹般的火力更突出。
+            drawRect(Color(0xFF0A0E24).copy(alpha = 0.3f), size = Size(WORLD_WIDTH, w.height))
             for (wall in w.walls) drawSonicWall(wall)
             for (item in w.items) drawItem(item, sprites)
             for (e in w.enemies) drawEnemy(e, w, sprites)
+            drawLockOns(w, sprites)
             for (s in w.playerShots) drawShot(s, w, sprites)
             drawBeam(w, sprites)
             drawPlayer(w, sprites)
             for (l in w.lasers) drawHazard(l, w, sprites)
             for (b in w.bullets) drawBullet(b, sprites)
             for (p in w.particles) drawParticle(p, sprites)
-            if (w.blastRadius >= 0f) drawBlast(w)
+            if (w.blastRadius >= 0f) drawBlast(w, sprites)
             drawCombo(w, sprites)
         }
     }
@@ -89,7 +103,7 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
     if (!p.alive || w.phase == Phase.PLAYER_DOWN || w.phase == Phase.CONTINUE) return
     val beast = p.transformed > 0f
     if (beast) {
-        val aura = if (p.cat == CatType.ORANGE) 0xFFFFC107L else 0xFFB388FFL
+        val aura = if (p.cat == CatType.ORANGE) 0xFFFFB300L else 0xFFB388FFL
         drawSprite(sprites.glow(aura), p.x, p.y, 2.4f + sin(w.time * 12f) * 0.2f, alpha = 0.7f, blendMode = BlendMode.Plus)
     }
     val blink = p.invulnerable > 0f && !beast && (w.time * 14f).toInt() % 2 == 0
@@ -105,7 +119,7 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
     val shooting = w.firing && (w.phase == Phase.STAGE || w.phase == Phase.BOSS || w.phase == Phase.WARNING)
     if (shooting && p.mainWeapon != MainWeapon.FOCUS) {
         val flicker = 0.4f + ((w.time * 30f).toInt() % 3) * 0.1f
-        drawSprite(sprites.muzzle(), p.x, p.y - 64f, flicker, w.time * 600f, blendMode = BlendMode.Plus)
+        drawSprite(sprites.muzzle(), p.x, p.y - 64f, flicker)
     }
     // 判定點
     if (w.firing) {
@@ -117,10 +131,10 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
 private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
     val slow = ((w.time * 4f).toInt() + e.id) and 1
     val fast = ((w.time * 14f).toInt() + e.id) and 1
-    // 被打中時果凍般壓扁一下並閃白；持續被光束照射時改成閃爍，避免整隻一直泛白。
+    // 被打中時壓扁一下並閃白；持續被光束照射時改成閃爍，避免整隻一直泛白。
     val hit = e.hitFlash > 0f
     val flash = hit && ((w.time * 20f).toInt() % 2 == 0)
-    val squash = if (hit && !com.purpal.catplayground.DebugFlags.noStretch) 1.07f else 1f
+    val squash = if (hit && !DebugFlags.noStretch) 1.07f else 1f
     fun sprite(s: Sprite, scale: Float = 1f, rotation: Float = 0f, flipX: Boolean = false, dy: Float = 0f) {
         drawSprite(s, e.x, e.y + dy, scale, rotation, flipX = flipX, stretch = squash)
         if (flash) drawSprite(s, e.x, e.y + dy, scale, rotation, alpha = 0.45f, flipX = flipX, colorFilter = WhiteFlash, stretch = squash)
@@ -131,6 +145,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
             sprite(sprites.enemy(e.kind, 0))
         }
         EnemyKind.FRISBEE -> sprite(sprites.enemy(e.kind, 0), rotation = (e as Frisbee).spin * RAD)
+        EnemyKind.YUZU -> sprite(sprites.enemy(e.kind, 0), rotation = (e as YuzuDrone).spin * RAD * 0.4f)
         EnemyKind.BALL_TURRET -> {
             sprite(sprites.barrel(), rotation = (e as BallTurret).aim * RAD)
             sprite(sprites.enemy(e.kind, 0))
@@ -138,31 +153,43 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.BEEHIVE -> sprite(sprites.enemy(e.kind, 0), rotation = e.age * 200f)
         EnemyKind.MOUSE_PLANE -> sprite(sprites.enemy(e.kind, fast), flipX = (e as MousePlane).facing < 0f)
         EnemyKind.MINI_MOUSE -> sprite(sprites.enemy(e.kind, fast), 0.8f)
-        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY -> sprite(sprites.enemy(e.kind, fast))
+        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY, EnemyKind.DUCKLING -> sprite(sprites.enemy(e.kind, fast))
         EnemyKind.BALLOON -> {
             // 氣球本體在判定圓上，道具掛在線的下端。
             sprite(sprites.enemy(e.kind, 0), dy = 30f)
             val drop = (e as Balloon).drop
             if (drop != null) drawSprite(sprites.item(drop), e.x, e.y + 104f, 0.85f)
         }
-        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE -> {
+        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> {
             val pulse = 3.4f + sin(w.time * 6f + e.id) * 0.3f
-            drawSprite(sprites.glow(0xFFFFE07AL), e.x, e.y, pulse, alpha = 0.55f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.glow(0xFFFF2BD6L), e.x, e.y, pulse, alpha = 0.45f, blendMode = BlendMode.Plus)
             sprite(sprites.enemy(e.kind, if (e.kind == EnemyKind.ELITE_BEE) fast else slow))
         }
-        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR -> drawBoss(e as Boss, w, sprites, flash, squash)
+        EnemyKind.THROWN_BONE -> {
+            // 丟出來的硬光骨頭：旋轉＋紅色殘光
+            drawSprite(sprites.glow(0xFFFF3D5AL), e.x, e.y, 2.6f, alpha = 0.5f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.enemy(e.kind, 0), e.x, e.y, 0.9f, (e as ThrownBone).spin)
+        }
+        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY -> drawBoss(e as Boss, w, sprites, flash, squash)
         else -> sprite(sprites.enemy(e.kind, slow))
     }
 }
 
-/** Boss：心情隨血量變化（逞強 → 生氣 → 被打哭），手上的道具沒在攻擊時拿在手上晃。 */
+/**
+ * Boss：本體維持萌感，表情隨血量變化；手上的科技道具沒在攻擊時拿在手上晃。
+ * 裝甲中（拿出新武器的那 1.6 秒）會發出珊瑚色的光。
+ */
 private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash: Boolean, squash: Float) {
     val defeated = w.phase == Phase.BOSS_DEFEATED
-    val mood = if (defeated) 2 else boss.phase
+    val mood = if (defeated) 2 else boss.mood()
     val frame = ((w.time * (if (mood == 2) 6f else 3f)).toInt()) and 1
     val wobble = if (defeated) sin(w.time * 50f) * 6f else 0f
     val x = boss.x + wobble
-    val held = boss.heldProp(boss.phase)
+    if (boss.armorTime > 0f) {
+        val k = 1f - boss.armorTime / Boss.ARMOR_TIME
+        drawSprite(sprites.glow(0xFFFF7A45L), x, boss.y, 5f + k * 3f, alpha = 0.7f * (1f - k * 0.5f), blendMode = BlendMode.Plus)
+    }
+    val held = boss.heldProp()
     val busy = held != null && w.lasers.any { it.owner === boss && it.style == held }
     val sprite = sprites.boss(boss.kind, mood, frame)
     drawSprite(sprite, x, boss.y, rotationDegrees = wobble * 0.5f, stretch = squash)
@@ -171,7 +198,7 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
     }
     if (held != null && !busy && !defeated) {
         val sway = sin(w.time * 2.4f) * 8f
-        drawProp(held, x + boss.handX, boss.y + boss.handY, (-68f + sway) / RAD, idleLength(held), propWidth(held), w.time, sprites)
+        drawProp(held, x + boss.handX, boss.y + boss.handY, (-68f + sway) / RAD, idleLength(held), propWidth(held), w.time, sprites, active = false)
     }
 }
 
@@ -179,6 +206,7 @@ private fun idleLength(style: HazardStyle) = when (style) {
     HazardStyle.FORK -> 230f
     HazardStyle.BONE -> 190f
     HazardStyle.DIPPER -> 210f
+    HazardStyle.WATER -> 135f
     else -> 120f
 }
 
@@ -190,8 +218,8 @@ private fun propWidth(style: HazardStyle) = when (style) {
 }
 
 private fun DrawScope.drawItem(item: Item, sprites: SpriteCache) {
-    if (item.type == ItemType.CANDY) {
-        drawSprite(sprites.candy(item.variant), item.x, item.y, 1f, item.age * 420f)
+    if (item.type == ItemType.DATA) {
+        drawSprite(sprites.item(ItemType.DATA), item.x, item.y, if (item.variant % 3 == 0) 1.3f else 1f, item.age * 300f)
         return
     }
     val bob = sin(item.age * 5f) * 4f
@@ -199,7 +227,7 @@ private fun DrawScope.drawItem(item: Item, sprites: SpriteCache) {
         drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 0.9f + sin(item.age * 6f) * 0.15f, alpha = 0.35f, blendMode = BlendMode.Plus)
     }
     drawSprite(sprites.item(item.type), item.x, item.y + bob, 0.95f)
-    if (item.cycle != null && !com.purpal.catplayground.DebugFlags.noArc) {
+    if (item.cycle != null && !DebugFlags.noArc) {
         // 倒數圈：繞一圈就換成下一種武器。
         val r = 44f
         drawArc(
@@ -209,12 +237,31 @@ private fun DrawScope.drawItem(item: Item, sprites: SpriteCache) {
     }
 }
 
+private val lockedIds = IntArray(32)
+
+/** 追蹤飛彈鎖定的目標畫上洋紅色鎖定框（同一隻只畫一次）。 */
+private fun DrawScope.drawLockOns(w: World, sprites: SpriteCache) {
+    var n = 0
+    for (s in w.playerShots) {
+        if (s.style != ShotStyle.MISSILE) continue
+        val t = s.target ?: continue
+        if (!t.alive) continue
+        var seen = false
+        for (i in 0 until n) if (lockedIds[i] == t.id) seen = true
+        if (seen || n >= lockedIds.size) continue
+        lockedIds[n++] = t.id
+        val pulse = 1f + sin(w.time * 12f) * 0.06f
+        drawSprite(sprites.reticle(), t.x, t.y, (t.radius / 40f).coerceIn(0.8f, 2.2f) * pulse)
+    }
+}
+
 // ───────────── 背景 ─────────────
 
 private fun themeEdge(theme: StageTheme): Color = when (theme) {
     StageTheme.CHEESE_BARN -> Color(0xFF6D4C2F)
     StageTheme.PARK -> Color(0xFF3E7D3A)
     StageTheme.HONEY_FOREST -> Color(0xFF1B3A22)
+    StageTheme.ONSEN -> Color(0xFF3B6E66)
 }
 
 private const val TILE = 300f
@@ -224,6 +271,7 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
         StageTheme.CHEESE_BARN -> drawRect(Color(0xFFE6C08A), size = Size(WORLD_WIDTH, height))
         StageTheme.PARK -> drawRect(Color(0xFF8ED47F), size = Size(WORLD_WIDTH, height))
         StageTheme.HONEY_FOREST -> drawRect(Color(0xFF2E5E3A), size = Size(WORLD_WIDTH, height))
+        StageTheme.ONSEN -> drawRect(Color(0xFF7CCFC4), size = Size(WORLD_WIDTH, height))
     }
     val first = floor(scroll / TILE).toInt() - 1
     val last = floor((scroll + height) / TILE).toInt() + 1
@@ -234,6 +282,7 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.CHEESE_BARN -> barnRow(y, random, row)
             StageTheme.PARK -> parkRow(y, random, row)
             StageTheme.HONEY_FOREST -> forestRow(y, random)
+            StageTheme.ONSEN -> onsenRow(y, random, row, time)
         }
     }
     val drift = Random(theme.ordinal)
@@ -244,6 +293,8 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.CHEESE_BARN -> circle(x, y, 4f, Color.White.copy(alpha = 0.35f))
             StageTheme.PARK -> oval(x, y, 10f, 6f, Color(0xFFFFC1E3).copy(alpha = 0.8f))
             StageTheme.HONEY_FOREST -> oval(x, y, 14f, 8f, Color(0xFF9CCC65).copy(alpha = 0.7f))
+            // 溫泉的熱氣往上飄
+            StageTheme.ONSEN -> oval(x, height - y, 26f, 14f, Color.White.copy(alpha = 0.35f))
         }
     }
 }
@@ -346,12 +397,42 @@ private fun DrawScope.drawHoneycomb(x: Float, y: Float) {
     }
 }
 
+
+/** 溫泉河：兩岸的石頭、水面波紋、漂浮的柚子。 */
+private fun DrawScope.onsenRow(y: Float, random: Random, row: Int, time: Float) {
+    if (row % 2 == 0) drawRect(Color(0xFF86D6CB), Offset(0f, y), Size(WORLD_WIDTH, TILE / 2f))
+    // 兩岸
+    for (side in 0..1) {
+        val bx = if (side == 0) 0f else WORLD_WIDTH - 110f
+        drawRect(Color(0xFF9C8F84), Offset(bx, y), Size(110f, TILE))
+        repeat(3) {
+            val sx = bx + 20f + random.nextFloat() * 70f
+            val sy = y + random.nextFloat() * TILE
+            oval(sx, sy, 60f + random.nextFloat() * 30f, 40f, Color(0xFFB8ADA2))
+            oval(sx - 6f, sy - 6f, 34f, 18f, Color(0xFFD3CABF))
+        }
+    }
+    // 波紋
+    repeat(4) {
+        val wx = 150f + random.nextFloat() * (WORLD_WIDTH - 300f)
+        val wy = y + random.nextFloat() * TILE
+        val r = 30f + (sin(time * 1.5f + it + row) + 1f) * 10f
+        drawOval(Color.White.copy(alpha = 0.35f), Offset(wx - r, wy - r * 0.35f), Size(r * 2f, r * 0.7f), style = Stroke(3f))
+    }
+    // 漂浮的柚子
+    if (random.nextInt(3) == 0) {
+        val fx = 180f + random.nextFloat() * (WORLD_WIDTH - 360f)
+        val fy = y + random.nextFloat() * TILE
+        circle(fx, fy, 16f, Color(0xFFFFC233))
+        circle(fx - 5f, fy - 5f, 5f, Color(0xFFFFE89A))
+        oval(fx + 8f, fy - 16f, 12f, 6f, Color(0xFF7ED957))
+    }
+}
 // ───────────── 子彈、武器與特效 ─────────────
 
 private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     val sprite = sprites.bullet(b.style, b.radius)
-    // 果凍般微微脈動
-    val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.07f)
+    val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.06f)
     val rotation = when {
         b.style == BulletStyle.RICE -> atan2(b.vy, b.vx) * RAD
         b.spin -> b.age * 300f
@@ -360,52 +441,48 @@ private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     drawSprite(sprite, b.x, b.y, scale, rotation)
 }
 
-private val OrangeTrail = Color(0xFFFFB45C)
-private val VioletTrail = Color(0xFFC9A8FF)
-
-/** 玩家子彈：白色貼紙描邊＋光暈＋長拖尾。 */
+/** 玩家子彈：冷色硬光＋深藍描邊（明亮背景上也清楚）＋拖尾。 */
 private fun DrawScope.drawShot(s: PlayerShot, w: World, sprites: SpriteCache) {
     when (s.style) {
         ShotStyle.PELLET -> {
-            val trail = if (w.player.cat == CatType.ORANGE) OrangeTrail else VioletTrail
-            trail(s, trail, 16f, 0.05f)
-            drawSprite(sprites.pawShot(w.player.cat), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD + 90f)
+            trail(s, Cyan, 10f, 0.05f)
+            drawSprite(sprites.plasma(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD + 90f)
         }
         ShotStyle.PAW -> {
-            val scale = s.radius / 30f
-            trail(s, OrangeTrail, s.radius * 1.4f, 0.09f)
-            drawSprite(sprites.bigPaw(), s.x, s.y, scale)
+            // 橘貓專武：重力肉球砲（黑洞＋全息肉球）
+            val scale = s.radius / 26f
+            trail(s, Violet, s.radius * 0.8f, 0.06f)
+            drawSprite(sprites.glow(0xFFB388FFL), s.x, s.y, scale * 1.6f, alpha = 0.5f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.graviton(), s.x, s.y, scale, s.age * 220f)
         }
         ShotStyle.CLAW -> {
-            trail(s, VioletTrail, 10f, 0.03f)
-            drawSprite(sprites.claw(), s.x, s.y, 1f)
+            trail(s, Cyan, 6f, 0.025f)
+            drawSprite(sprites.monoClaw(), s.x, s.y, 1f)
         }
-        ShotStyle.MISSILE -> {
-            drawSprite(sprites.glow(0xFFFFFFFFL), s.x - s.vx * 0.02f, s.y - s.vy * 0.02f, 0.3f, alpha = 0.7f, blendMode = BlendMode.Plus)
-            drawSprite(sprites.fish(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD)
-        }
+        ShotStyle.MISSILE -> drawSprite(sprites.fishMissile(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD)
         ShotStyle.SONIC -> for (k in 0..2) {
-            val r = 14f + k * 10f + (s.age * 70f) % 10f
-            drawArc(Color(0xFFD9CCFF).copy(alpha = 0.95f - k * 0.25f), 200f, 140f, false, Offset(s.x - r, s.y - r), Size(r * 2, r * 2), style = Stroke(6f, cap = StrokeCap.Round))
+            // 力場盾的發射體：往上飛的青色 V 形
+            val y = s.y + k * 14f
+            val r = 22f - k * 4f
+            drawLine(Cyan.copy(alpha = 1f - k * 0.3f), Offset(s.x - r, y + r * 0.5f), Offset(s.x, y - r * 0.2f), 5f, StrokeCap.Square)
+            drawLine(Cyan.copy(alpha = 1f - k * 0.3f), Offset(s.x + r, y + r * 0.5f), Offset(s.x, y - r * 0.2f), 5f, StrokeCap.Square)
         }
     }
 }
 
-/** 子彈後方的拖尾：外層半透明粗線＋內層白線。 */
+/** 子彈後方的拖尾：深藍外框＋色光＋白色核心。 */
 private fun DrawScope.trail(s: PlayerShot, color: Color, width: Float, seconds: Float) {
-    if (com.purpal.catplayground.DebugFlags.noTrail) return
+    if (DebugFlags.noTrail) return
     val start = Offset(s.x, s.y)
     val end = Offset(s.x - s.vx * seconds, s.y - s.vy * seconds)
-    drawLine(color.copy(alpha = 0.45f), start, end, width, StrokeCap.Round)
-    drawLine(Color.White.copy(alpha = 0.7f), start, Offset((s.x + end.x) / 2f, (s.y + end.y) / 2f), width * 0.35f, StrokeCap.Round)
+    drawLine(Navy.copy(alpha = 0.5f), start, end, width + 4f, StrokeCap.Round)
+    drawLine(color.copy(alpha = 0.7f), start, end, width, StrokeCap.Round)
+    drawLine(Color.White.copy(alpha = 0.85f), start, Offset((s.x + end.x) / 2f, (s.y + end.y) / 2f), width * 0.3f, StrokeCap.Round)
 }
 
-private val Rainbow = listOf(
-    Color(0x00B5E3FF), Color(0xFFB5E3FF), Color(0xFFC9B8FF), Color(0xFFFFC2E1), Color.White,
-    Color(0xFFFFE7A8), Color(0xFFC2F5D9), Color(0xFFB5E3FF), Color(0x00B5E3FF),
-)
+private val arcPath = Path()
 
-/** 集中型：彩虹棉花糖光束，白色核心、往上流動的能量環與泡泡，命中處開花。 */
+/** 集中型：磁軌光束。白色細核心＋青色外殼＋往上流動的螺旋線圈＋側邊電弧；命中處有六角衝擊。 */
 private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
     val b = w.beam
     if (!b.active) return
@@ -414,41 +491,75 @@ private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
     if (height <= 0f) return
     val pulse = 1f + sin(w.time * 40f) * 0.08f
     val width = b.width * pulse
+    drawRect(Navy.copy(alpha = 0.45f), Offset(b.x - width * 0.62f, top), Size(width * 1.24f, height))
     drawRect(
-        Brush.horizontalGradient(listOf(Color.Transparent, Color(0x99FFC2E1), Color.Transparent), b.x - width * 1.5f, b.x + width * 1.5f),
-        Offset(b.x - width * 1.5f, top),
-        Size(width * 3f, height),
+        Brush.horizontalGradient(listOf(Color(0x002979FF), Cyan, Color.White, Cyan, Color(0x002979FF)), b.x - width * 0.6f, b.x + width * 0.6f),
+        Offset(b.x - width * 0.6f, top),
+        Size(width * 1.2f, height),
     )
-    drawRect(Brush.horizontalGradient(Rainbow, b.x - width * 0.6f, b.x + width * 0.6f), Offset(b.x - width * 0.6f, top), Size(width * 1.2f, height))
-    drawRect(Color.White, Offset(b.x - width * 0.13f, top), Size(width * 0.26f, height))
+    drawRect(Color.White, Offset(b.x - width * 0.09f, top), Size(width * 0.18f, height))
     var k = 0
     while (k < 30) {
-        val y = b.bottom - ((w.time * 1300f + k * 120f) % height)
+        val y = b.bottom - ((w.time * 1500f + k * 70f) % height)
         if (y < top) break
-        drawOval(Color.White.copy(alpha = 0.75f), Offset(b.x - width * 0.75f, y - width * 0.14f), Size(width * 1.5f, width * 0.28f), style = Stroke(3f))
+        drawOval(Cyan.copy(alpha = 0.8f), Offset(b.x - width * 0.85f, y - width * 0.12f), Size(width * 1.7f, width * 0.24f), style = Stroke(2.5f))
         k++
     }
-    for (i in 0 until 6) {
-        val y = b.bottom - ((w.time * 700f + i * 170f) % height)
-        if (y < top) continue
-        val side = if (i % 2 == 0) -1f else 1f
-        val bx = b.x + side * (width * 0.8f + sin(w.time * 6f + i) * 8f)
-        circle(bx, y, 7f + (i % 3) * 2f, Color.White)
-        drawCircle(Color(0xFFC9B8FF), 7f + (i % 3) * 2f, Offset(bx, y), style = Stroke(2.5f))
+    // 側邊電弧：每 0.06 秒換一個形狀
+    val seed = (w.time / 0.06f).toInt()
+    val rnd = Random(seed)
+    repeat(3) {
+        val y0 = top + rnd.nextFloat() * height
+        val side = if (rnd.nextBoolean()) 1f else -1f
+        arcPath.reset()
+        var ax = b.x + side * width * 0.4f
+        var ay = y0
+        arcPath.moveTo(ax, ay)
+        repeat(5) {
+            ax += side * (10f + rnd.nextFloat() * 14f)
+            ay += (rnd.nextFloat() - 0.3f) * 26f
+            arcPath.lineTo(ax, ay)
+        }
+        drawPath(arcPath, Cyan, style = Stroke(3f, join = StrokeJoin.Bevel))
+        drawPath(arcPath, Color.White, style = Stroke(1.2f))
     }
-    drawSprite(sprites.glow(0xFFC9B8FFL), b.x, b.bottom, width / 50f * 1.2f, alpha = 0.8f, blendMode = BlendMode.Plus)
+    drawSprite(sprites.glow(0xFF00E5FFL), b.x, b.bottom, width / 50f * 1.1f, alpha = 0.7f, blendMode = BlendMode.Plus)
     if (top > 0f) {
         drawSprite(sprites.glow(0xFFFFFFFFL), b.x, top, width / 50f * 2.2f * pulse, alpha = 0.8f, blendMode = BlendMode.Plus)
-        drawSprite(sprites.flower(), b.x, top, width / 60f * pulse, w.time * 240f)
+        val r = width * 1.3f
+        drawPath(hexPath(b.x, top, r, w.time * 2f), Cyan, style = Stroke(4f))
+        drawPath(hexPath(b.x, top, r * 0.6f, -w.time * 3f), Color.White, style = Stroke(2.5f))
     }
 }
 
-/** 雷射與 Boss 的近身攻擊。預告時畫虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
+private val hexScratch = Path()
+
+private fun hexPath(cx: Float, cy: Float, r: Float, rot: Float): Path {
+    hexScratch.reset()
+    for (i in 0 until 6) {
+        val a = rot + i * 1.0471976f
+        val x = cx + cos(a) * r
+        val y = cy + sin(a) * r
+        if (i == 0) hexScratch.moveTo(x, y) else hexScratch.lineTo(x, y)
+    }
+    hexScratch.close()
+    return hexScratch
+}
+
+/** Boss 科技道具的能量色（暖色系）。 */
+private fun energy(style: HazardStyle): Color = when (style) {
+    HazardStyle.FORK, HazardStyle.TAIL -> Color(0xFFFF2BD6)
+    HazardStyle.BONE, HazardStyle.CLAW, HazardStyle.BEAM -> Color(0xFFFF3D5A)
+    HazardStyle.DIPPER -> Amber
+    HazardStyle.WATER -> Color(0xFFFF7A45)
+}
+
+/** 雷射與 Boss 的道具攻擊。預告時畫紅色虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
 private fun DrawScope.drawHazard(l: Laser, w: World, sprites: SpriteCache) {
     if (l.age < l.warnTime) {
         val blink = if ((l.age * 12f).toInt() % 2 == 0) 0.95f else 0.45f
-        val warn = Color(0xFFFF3D8B)
-        val dash = if (plainFx) null else PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -l.age * 200f)
+        val warn = Color(0xFFFF3D5A)
+        val dash = if (DebugFlags.plainFx) null else PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -l.age * 200f)
         drawLine(warn.copy(alpha = blink), Offset(l.x, l.y), Offset(l.endX, l.endY), 7f, StrokeCap.Round, pathEffect = dash)
         if (l.sweep != 0f) {
             val endAngle = l.angle + l.sweep * l.activeTime
@@ -458,30 +569,26 @@ private fun DrawScope.drawHazard(l: Laser, w: World, sprites: SpriteCache) {
             }
         }
         if (l.style == HazardStyle.BEAM) {
-            drawSprite(sprites.glow(0xFFFF8FB1L), l.x, l.y, 0.3f + l.age * 0.8f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.glow(0xFFFF3D5AL), l.x, l.y, 0.3f + l.age * 0.8f, blendMode = BlendMode.Plus)
         } else if (l.style != HazardStyle.CLAW && l.style != HazardStyle.TAIL) {
             // 道具往後拉、蓄力發抖
             val shake = sin(l.age * 60f) * 4f
             val back = 0.75f + 0.25f * (1f - l.age / l.warnTime)
-            drawProp(l.style, l.x + shake, l.y, l.angle, idleLength(l.style) * back, propWidth(l.style), w.time, sprites)
+            drawProp(l.style, l.x + shake, l.y, l.angle, idleLength(l.style) * back, propWidth(l.style), w.time, sprites, active = false)
         }
         return
     }
     if (!l.active) return
     when (l.style) {
         HazardStyle.BEAM -> drawBeamLaser(l, sprites)
-        else -> drawProp(l.style, l.x, l.y, l.angle, maxOf(l.reach, idleLength(l.style) * 0.6f), propWidth(l.style), w.time, sprites, l.width)
+        else -> drawProp(l.style, l.x, l.y, l.angle, maxOf(l.reach, idleLength(l.style) * 0.6f), propWidth(l.style), w.time, sprites, l.width, active = true)
     }
 }
 
-private val ForkSilver = Color(0xFFF2F0F8)
-private val Ink = Color(0xFF6B4C52)
-private val BoneCream = Color(0xFFFFF8EC)
-private val Wood = Color(0xFFC98B55)
 private val TailPink = Color(0xFFFFCADA)
 private val tailPath = Path()
 
-/** 從 (x0,y0) 朝 angle 伸出 length 長的道具。 */
+/** 從 (x0,y0) 朝 angle 伸出 length 長的科技道具；active 時多一層能量光。 */
 private fun DrawScope.drawProp(
     style: HazardStyle,
     x0: Float,
@@ -492,39 +599,65 @@ private fun DrawScope.drawProp(
     time: Float,
     sprites: SpriteCache,
     hitWidth: Float = width,
+    active: Boolean,
 ) {
     val dx = cos(angle)
     val dy = sin(angle)
     val tipX = x0 + dx * length
     val tipY = y0 + dy * length
-    fun shaft(fromBase: Float, fromTip: Float, color: Color) {
+    val glow = energy(style)
+    fun shaft(fromBase: Float, fromTip: Float) {
         val sx = x0 + dx * fromBase
         val sy = y0 + dy * fromBase
         val ex = tipX - dx * fromTip
         val ey = tipY - dy * fromTip
         if ((ex - sx) * dx + (ey - sy) * dy <= 0f) return
-        drawLine(Ink, Offset(sx, sy), Offset(ex, ey), width + 8f, StrokeCap.Round)
-        drawLine(color, Offset(sx, sy), Offset(ex, ey), width, StrokeCap.Round)
-        drawLine(Color.White.copy(alpha = 0.7f), Offset(sx - dy * width * 0.2f, sy + dx * width * 0.2f), Offset(ex - dy * width * 0.2f, ey + dx * width * 0.2f), width * 0.25f, StrokeCap.Round)
+        if (active) drawLine(glow.copy(alpha = 0.35f), Offset(sx, sy), Offset(ex, ey), width * 2.6f, StrokeCap.Round)
+        drawLine(Navy, Offset(sx, sy), Offset(ex, ey), width + 8f, StrokeCap.Round)
+        drawLine(Steel, Offset(sx, sy), Offset(ex, ey), width, StrokeCap.Round)
+        drawLine(glow, Offset(sx, sy), Offset(ex, ey), width * 0.3f, StrokeCap.Round)
     }
     when (style) {
         HazardStyle.FORK -> {
-            shaft(0f, 120f, ForkSilver)
+            shaft(0f, 120f)
             sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 68f, tipY - dy * 68f, 1f, angle * RAD) }
         }
         HazardStyle.BONE -> {
-            shaft(55f, 55f, BoneCream)
+            shaft(58f, 58f)
             sprites.propHead(style)?.let {
-                drawSprite(it, tipX - dx * 30f, tipY - dy * 30f, 1f, angle * RAD)
-                drawSprite(it, x0 + dx * 30f, y0 + dy * 30f, 1f, angle * RAD + 180f)
+                drawSprite(it, tipX - dx * 32f, tipY - dy * 32f, 1f, angle * RAD)
+                drawSprite(it, x0 + dx * 32f, y0 + dy * 32f, 1f, angle * RAD + 180f)
             }
         }
         HazardStyle.DIPPER -> {
-            shaft(0f, 96f, Wood)
-            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 50f, tipY - dy * 50f, 1f, angle * RAD) }
+            shaft(0f, 100f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 57f, tipY - dy * 57f, 1f, angle * RAD) }
+        }
+        HazardStyle.WATER -> {
+            // 柚子砲在手上，伸出去的是高壓溫泉水柱
+            if (active && length > 130f) {
+                val mx = x0 + dx * 126f
+                val my = y0 + dy * 126f
+                val m = Offset(mx, my)
+                val t = Offset(tipX, tipY)
+                drawLine(glow.copy(alpha = 0.35f), m, t, hitWidth * 2.2f, StrokeCap.Round)
+                drawLine(glow, m, t, hitWidth, StrokeCap.Round)
+                drawLine(Color(0xFFFFE0CC), m, t, hitWidth * 0.55f, StrokeCap.Round)
+                drawLine(Color.White, m, t, hitWidth * 0.18f, StrokeCap.Round)
+                val reach = length - 126f
+                var k = 0
+                while (k < 10) {
+                    val f = ((time * 2.5f + k * 0.1f) % 1f)
+                    val px = mx + dx * reach * f - dy * sin(k * 2.3f + time * 9f) * hitWidth * 0.8f
+                    val py = my + dy * reach * f + dx * sin(k * 2.3f + time * 9f) * hitWidth * 0.8f
+                    circle(px, py, 5f, Color.White.copy(alpha = 0.8f))
+                    k++
+                }
+            }
+            sprites.propHead(style)?.let { drawSprite(it, x0 + dx * 62f, y0 + dy * 62f, 1f, angle * RAD) }
         }
         HazardStyle.TAIL -> {
-            // 甩動的粉紅尾巴：沿著線段畫一條波浪
+            // 甩動的電漿尾巴：粉紅尾巴外包洋紅能量
             tailPath.reset()
             val nx = -dy
             val ny = dx
@@ -536,21 +669,22 @@ private fun DrawScope.drawProp(
                 val py = y0 + dy * length * t + ny * wave
                 if (i == 0) tailPath.moveTo(px, py) else tailPath.lineTo(px, py)
             }
-            drawPath(tailPath, Ink, style = Stroke(hitWidth + 8f, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-            drawPath(tailPath, TailPink, style = Stroke(hitWidth, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-            drawPath(tailPath, Color.White.copy(alpha = 0.6f), style = Stroke(hitWidth * 0.25f, cap = StrokeCap.Round))
+            drawPath(tailPath, glow.copy(alpha = 0.35f), style = Stroke(hitWidth * 2.2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(tailPath, Navy, style = Stroke(hitWidth + 8f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(tailPath, TailPink, style = Stroke(hitWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(tailPath, glow, style = Stroke(hitWidth * 0.25f, cap = StrokeCap.Round))
         }
         HazardStyle.CLAW -> {
-            // 三道爪痕
+            // 三道紅色硬光爪痕
             val nx = -dy
             val ny = dx
             for (k in -1..1) {
                 val off = k * hitWidth * 0.42f
                 val s = Offset(x0 + nx * off, y0 + ny * off)
                 val e = Offset(tipX + nx * off, tipY + ny * off)
-                drawLine(Color(0x66FF8FB1), s, e, 30f, StrokeCap.Round)
-                drawLine(Color(0xFFFF4F7B), s, e, 14f, StrokeCap.Round)
-                drawLine(Color.White, s, e, 5f, StrokeCap.Round)
+                drawLine(glow.copy(alpha = 0.35f), s, e, 30f, StrokeCap.Square)
+                drawLine(glow, s, e, 12f, StrokeCap.Square)
+                drawLine(Color.White, s, e, 4f, StrokeCap.Square)
             }
         }
         HazardStyle.BEAM -> Unit
@@ -566,19 +700,27 @@ private fun DrawScope.drawBeamLaser(l: Laser, sprites: SpriteCache) {
     drawLine(color.copy(alpha = 0.35f * fade), start, end, l.width * 2.6f * pulse, StrokeCap.Round, blendMode = BlendMode.Plus)
     drawLine(color.copy(alpha = fade), start, end, l.width * pulse, StrokeCap.Round)
     drawLine(Color.White.copy(alpha = fade), start, end, l.width * 0.4f, StrokeCap.Round)
-    drawSprite(sprites.glow(0xFF80F0FFL), l.x, l.y, l.width / 50f * 2.2f * pulse, alpha = fade, blendMode = BlendMode.Plus)
+    drawSprite(sprites.glow(0xFFFF3D5AL), l.x, l.y, l.width / 50f * 2.2f * pulse, alpha = fade, blendMode = BlendMode.Plus)
 }
 
+/** 力場盾：沿著弧線排列的六角格＋白色邊緣。 */
 private fun DrawScope.drawSonicWall(w: SonicWall) {
     val fade = minOf(1f, (w.life - w.age) * 3f) * minOf(1f, w.age * 8f)
     val degrees = w.halfAngle * RAD
     val topLeft = Offset(w.x - w.radius, w.centerY - w.radius)
     val size = Size(w.radius * 2f, w.radius * 2f)
-    val pulse = 1f + sin(w.age * 20f) * 0.1f
-    drawArc(Color(0xFFB9A7FF).copy(alpha = 0.45f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f * pulse), blendMode = BlendMode.Plus)
-    drawArc(Color(0xFFFFFFFF).copy(alpha = 0.95f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(5f))
-    val inner = w.radius - w.thickness * 0.6f
-    drawArc(Color(0xFFFFC2E1).copy(alpha = 0.7f * fade), -90f - degrees, degrees * 2f, false, Offset(w.x - inner, w.centerY - inner), Size(inner * 2f, inner * 2f), style = Stroke(3f))
+    drawArc(Cyan.copy(alpha = 0.18f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f))
+    val cell = 15f
+    val steps = (w.radius * w.halfAngle * 2f / (cell * 1.7f)).toInt().coerceAtLeast(3)
+    for (row in 0..1) {
+        val r = w.radius + (row - 0.5f) * cell * 1.5f
+        for (i in 0..steps) {
+            val a = -1.5707964f - w.halfAngle + (w.halfAngle * 2f) * (i + row * 0.5f) / steps
+            if (a > -1.5707964f + w.halfAngle) continue
+            drawPath(hexPath(w.x + cos(a) * r, w.centerY + sin(a) * r, cell, 0.5235988f), Cyan.copy(alpha = 0.55f * fade), style = Stroke(2f))
+        }
+    }
+    drawArc(Color.White.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(4f))
 }
 
 private fun DrawScope.drawParticle(p: Particle, sprites: SpriteCache) {
@@ -587,7 +729,7 @@ private fun DrawScope.drawParticle(p: Particle, sprites: SpriteCache) {
         ParticleKind.SPARK -> drawLine(
             p.color.toColor().copy(alpha = 1f - t),
             Offset(p.x, p.y),
-            Offset(p.x - p.vx * 0.035f, p.y - p.vy * 0.035f),
+            Offset(p.x - p.vx * 0.045f, p.y - p.vy * 0.045f),
             p.size * (1f - t * 0.5f),
             StrokeCap.Round,
         )
@@ -595,35 +737,45 @@ private fun DrawScope.drawParticle(p: Particle, sprites: SpriteCache) {
             val s = p.size * (0.6f + t * 0.9f) / 50f
             drawSprite(sprites.puff(), p.x, p.y, s, alpha = (1f - t) * (1f - t * 0.3f))
         }
-        ParticleKind.SMOKE -> drawSprite(sprites.smoke(), p.x, p.y, p.size * (0.6f + t) / 50f, alpha = 0.6f * (1f - t))
+        ParticleKind.SMOKE -> drawSprite(sprites.smoke(), p.x, p.y, p.size * (0.6f + t) / 50f, alpha = 0.5f * (1f - t))
         ParticleKind.FLASH -> drawSprite(sprites.glow(0xFFFFFFFFL), p.x, p.y, p.size / 50f * (0.7f + t * 0.5f), alpha = 1f - t, blendMode = BlendMode.Plus)
         ParticleKind.STAR -> drawSprite(sprites.star(), p.x, p.y, p.size / 22f * (1f - t * 0.4f), t * 360f, alpha = 1f - t * t)
         ParticleKind.HEART -> drawSprite(sprites.heart(), p.x, p.y, p.size / 18f * (1f - t * 0.3f), alpha = 1f - t)
         ParticleKind.RING -> drawCircle(p.color.toColor().copy(alpha = 1f - t), p.size * (0.2f + t), Offset(p.x, p.y), style = Stroke(14f * (1f - t) + 1f))
-        ParticleKind.CONFETTI -> if (!com.purpal.catplayground.DebugFlags.noConfetti) withTransform({
+        ParticleKind.SHOCKWAVE -> {
+            val r = p.size * (0.25f + t * 0.75f)
+            drawCircle(p.color.toColor().copy(alpha = (1f - t) * 0.9f), r, Offset(p.x, p.y), style = Stroke(10f * (1f - t) + 2f))
+            drawCircle(Color.White.copy(alpha = (1f - t) * 0.7f), r * 1.15f, Offset(p.x, p.y), style = Stroke(2f))
+        }
+        ParticleKind.VOXEL -> if (!DebugFlags.noConfetti) withTransform({
             translate(p.x, p.y)
             rotate(p.rotation, Offset.Zero)
-            // 紙片翻面：寬度隨轉動忽寬忽窄
-            scale(0.3f + 0.7f * kotlin.math.abs(cos(p.rotation / 40f)), 1f, Offset.Zero)
         }) {
-            drawRect(p.color.toColor().copy(alpha = (1f - t * t)), Offset(-p.size / 2f, -p.size * 0.3f), Size(p.size, p.size * 0.6f))
+            val s = p.size * (1f - t * 0.4f)
+            drawRect(Navy.copy(alpha = 1f - t * t), Offset(-s / 2f - 1.5f, -s / 2f - 1.5f), Size(s + 3f, s + 3f))
+            drawRect(p.color.toColor().copy(alpha = 1f - t * t), Offset(-s / 2f, -s / 2f), Size(s, s))
         }
+        ParticleKind.HITMARK -> drawSprite(sprites.hitMark(), p.x, p.y, 0.8f + t * 0.5f, 45f * t, alpha = 1f - t)
+        ParticleKind.HEXHIT -> drawSprite(sprites.hexPaw(), p.x, p.y, 0.8f + t * 0.4f, alpha = 1f - t * t)
+        ParticleKind.CASING -> drawSprite(sprites.casing(), p.x, p.y, 1f, p.rotation, alpha = 1f - t * t)
+        ParticleKind.CATHOLO -> drawSprite(sprites.catHolo(), p.x, p.y, 0.7f + t * 0.5f, alpha = 1f - t)
         ParticleKind.PROP -> drawSprite(sprites.lostProp(p.tag), p.x, p.y, 1f, p.rotation, alpha = minOf(1f, (1f - t) * 4f))
         ParticleKind.SFX -> {
             val pop = if (t < 0.15f) 0.5f + t / 0.15f * 0.7f else 1.2f - minOf(0.2f, (t - 0.15f) * 2f)
-            drawSprite(sprites.sfx(p.tag), p.x, p.y, pop, alpha = minOf(1f, (1f - t) * 3.5f))
+            // 色差抖動：前段左右錯位幾下
+            val jx = if (t < 0.3f) sin(t * 120f) * 6f else 0f
+            drawSprite(sprites.sfx(p.tag), p.x + jx, p.y, pop, alpha = minOf(1f, (1f - t) * 3.5f))
         }
         ParticleKind.SCORE -> {
             val pop = if (t < 0.12f) 0.6f + t / 0.12f * 0.6f else 1.2f - minOf(0.2f, (t - 0.12f) * 2f)
             drawNumber(p.tag, p.x, p.y, p.size * pop, sprites, plus = true, alpha = minOf(1f, (1f - t) * 3f))
         }
-        ParticleKind.FLOWER -> drawSprite(sprites.flower(), p.x, p.y, p.size / 60f * (0.6f + t * 0.6f), t * 120f, alpha = 1f - t)
     }
 }
 
 private val digitBuffer = IntArray(10)
 
-/** 用數字圖畫出一個數字（置中）。 */
+/** 用數字圖畫出一個數字（置中或靠右）。 */
 private fun DrawScope.drawNumber(value: Int, cx: Float, cy: Float, scale: Float, sprites: SpriteCache, plus: Boolean = false, alpha: Float = 1f, alignRight: Boolean = false) {
     var n = value.coerceAtLeast(0)
     var count = 0
@@ -631,7 +783,7 @@ private fun DrawScope.drawNumber(value: Int, cx: Float, cy: Float, scale: Float,
         digitBuffer[count++] = n % 10
         n /= 10
     } while (n > 0 && count < digitBuffer.size)
-    val step = SpriteCache.DIGIT_WIDTH * 0.78f * scale
+    val step = SpriteCache.DIGIT_WIDTH * 0.72f * scale
     val total = (count + if (plus) 1 else 0) * step
     var x = (if (alignRight) cx - total else cx - total / 2f) + step / 2f
     if (plus) {
@@ -651,9 +803,9 @@ private fun DrawScope.drawCombo(w: World, sprites: SpriteCache) {
     val alpha = minOf(1f, w.comboTime * 3f)
     val scale = 1.3f + pop * 0.45f
     val right = WORLD_WIDTH - 24f
-    drawSprite(sprites.comboLabel(), right - 75f, 130f, 1f, -4f, alpha = alpha)
+    drawSprite(sprites.comboLabel(), right - 65f, 130f, 1f, alpha = alpha)
     drawNumber(w.combo, right - 20f, 70f, scale, sprites, alpha = alpha, alignRight = true)
-    drawSprite(sprites.times(), right - 30f - (digitCount(w.combo) + 0.6f) * SpriteCache.DIGIT_WIDTH * 0.78f * scale, 74f, scale * 0.7f, alpha = alpha)
+    drawSprite(sprites.times(), right - 30f - (digitCount(w.combo) + 0.6f) * SpriteCache.DIGIT_WIDTH * 0.72f * scale, 74f, scale * 0.7f, alpha = alpha)
 }
 
 private fun digitCount(value: Int): Int {
@@ -666,20 +818,23 @@ private fun digitCount(value: Int): Int {
     return c
 }
 
-private fun DrawScope.drawBlast(w: World) {
+/** 大絕 OVERDRIVE：天降琥珀軌道砲光柱＋六角衝擊波＋巨大肉球印（萌點）。 */
+private fun DrawScope.drawBlast(w: World, sprites: SpriteCache) {
     val r = w.blastRadius
     val p = w.player
-    val color = if (p.cat == CatType.ORANGE) Color(0xFFFFC107) else Color(0xFFB388FF)
-    drawCircle(
-        Brush.radialGradient(
-            0.6f to Color.Transparent,
-            0.9f to color.copy(alpha = 0.6f),
-            1f to Color.White,
-            center = Offset(p.x, p.y),
-            radius = r.coerceAtLeast(1f),
-        ),
-        r,
-        Offset(p.x, p.y),
-        blendMode = BlendMode.Plus,
-    )
+    val k = (r / (w.height * 1.6f)).coerceIn(0f, 1f)
+    val beamW = 120f * (1f - k)
+    if (beamW > 2f) {
+        drawRect(
+            Brush.horizontalGradient(listOf(Color(0x00FFB300), Amber, Color.White, Amber, Color(0x00FFB300)), p.x - beamW, p.x + beamW),
+            Offset(p.x - beamW, 0f),
+            Size(beamW * 2f, p.y),
+            alpha = 0.9f,
+        )
+    }
+    for (ring in 0..2) {
+        val rr = r * (1f - ring * 0.18f)
+        if (rr > 0f) drawPath(hexPath(p.x, p.y, rr, 0.5235988f), Amber.copy(alpha = (1f - k) * (0.9f - ring * 0.25f)), style = Stroke(10f - ring * 3f))
+    }
+    drawSprite(sprites.pawStamp(), p.x, p.y, 0.6f + k * 2.2f, alpha = (1f - k) * 0.9f)
 }

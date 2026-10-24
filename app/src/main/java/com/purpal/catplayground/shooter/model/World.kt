@@ -87,8 +87,10 @@ class World(
         private set
     var comboTime = 0f
         private set
-    private var lastCandyCue = 0f
+    private var lastDataCue = 0f
     private var lastPokoTime = -1f
+    private var lastHitMark = -1f
+    private var lastCasing = 0f
 
     private val script = stage.script.sorted()
     private var scriptIndex = 0
@@ -206,16 +208,41 @@ class World(
         explode(b.x, b.y, big = true)
         hitStop = HIT_STOP * 2f
         if (b.phase == 2) {
-            // 被打哭了：道具被打飛出去。
+            // 被打哭了：頭上的配件被打飛出去。
             for ((i, prop) in b.lostProps.withIndex()) {
                 val side = if (i % 2 == 0) 1f else -1f
-                val px = if (prop == LostProp.FORK) b.x + b.handX else b.x + side * 30f
-                val py = if (prop == LostProp.FORK) b.y + b.handY else b.y - 110f
+                val px = b.x + side * 30f
+                val py = b.y - 110f
                 particles += Particle(px, py, side * (260f + random.nextFloat() * 120f), -620f, 2.2f, 1f, 0, ParticleKind.PROP, prop).also {
                     it.spin = side * 540f
                 }
             }
-            sfx(b.x + 120f, b.y - 120f, SfxText.DOON)
+            sfx(b.x + 120f, b.y - 120f, SfxText.CRITICAL)
+        }
+    }
+
+    /**
+     * Boss 打到一定血量：「卸甲」把攻擊道具打飛（換成徒手的攻擊模式），
+     * 或「裝甲」拿出新武器裝上（更強的攻擊模式）。
+     */
+    fun onBossBreak(b: Boss) {
+        clearBullets(toScore = true)
+        hitStop = HIT_STOP * 3f
+        shake(0.6f)
+        flash(0.7f)
+        particles += Particle(b.x, b.y, 0f, 0f, 0.5f, b.radius * 2.6f, 0xFFFFFFFFL, ParticleKind.SHOCKWAVE)
+        if (b.breakKind == BreakKind.DISARM) {
+            // 丟出去還沒回來的武器也一起消失
+            for (e in enemies) if (e is ThrownBone) e.alive = false
+            if (b is DogBoss) b.boneOut = false
+            explode(b.x + b.handX, b.y + b.handY, big = true)
+            particles += Particle(b.x + b.handX, b.y + b.handY, 380f, -700f, 2.4f, 1f, 0, ParticleKind.PROP, b.lostWeapon).also { it.spin = 620f }
+            sfx(b.x, b.y - 150f, SfxText.BREAK)
+            cue(SoundCue.BREAK)
+        } else {
+            sparks(b.x, b.y, 24, 0xFFFF7A45L, speed = 700f)
+            sfx(b.x, b.y - 150f, SfxText.ARMOR)
+            cue(SoundCue.ARMOR_UP)
         }
     }
 
@@ -272,6 +299,7 @@ class World(
         if (firing && canShoot) {
             if (p.fireTimer <= 0f) {
                 Weapons.fireMain(this, p)
+                if (p.mainWeapon == MainWeapon.SPREAD) ejectCasing(p.x, p.y - 30f)
                 if (time - lastShotCue > 0.09f) {
                     cue(if (p.mainWeapon == MainWeapon.SPECIAL && p.cat == CatType.ORANGE) SoundCue.SHOT_HEAVY else SoundCue.SHOT)
                     lastShotCue = time
@@ -280,7 +308,11 @@ class World(
             if (p.mainWeapon == MainWeapon.FOCUS) {
                 val hit = Weapons.updateBeam(this, p, dt)
                 if (hit != null && every(time, dt, 0.05f)) {
-                    sparks(beam.x + jitter(beam.width * 0.3f), beam.top, 2, 0xFF80F0FFL)
+                    sparks(beam.x + jitter(beam.width * 0.3f), beam.top, 2, 0xFFBFF8FFL)
+                }
+                // 萌點：命中處偶爾浮現貓頭全息標誌
+                if (hit != null && every(time, dt, 0.7f)) {
+                    particles += Particle(beam.x, beam.top, 0f, -40f, 0.5f, 1f, 0, ParticleKind.CATHOLO)
                 }
                 if (every(time, dt, 0.16f)) cue(SoundCue.BEAM)
             }
@@ -352,7 +384,7 @@ class World(
         for (b in bullets) {
             if (b.alive && dist2(b.x, b.y, px, py) < r2) blastCleared += b
         }
-        bulletsToCandy(blastCleared)
+        bulletsToData(blastCleared)
         for (b in blastCleared) b.alive = false
         lasers.forEach { it.alive = false }
         for (e in enemies) {
@@ -412,7 +444,7 @@ class World(
             val e = enemies[i]
             if (e.hitFlash > 0f) e.hitFlash -= dt
             if (e.alive && !(e.isBoss && phase == Phase.BOSS_DEFEATED)) e.update(this, dt)
-            if (e.alive && e.contactDamage > 0f && player.alive && !e.invulnerable &&
+            if (e.alive && e.contactDamage > 0f && player.alive && e.hurtsOnContact &&
                 dist2(e.x, e.y, player.x, player.y) < (e.radius * 0.8f + player.radius).let { it * it }
             ) {
                 damagePlayer(e.contactDamage)
@@ -442,7 +474,8 @@ class World(
             }
             if (b.erasable && walls.any { it.alive && it.blocks(b.x, b.y, b.radius) }) {
                 b.alive = false
-                particles += Particle(b.x, b.y, 0f, 0f, 0.3f, b.radius * 1.6f, 0xFFB388FFL, ParticleKind.RING)
+                particles += Particle(b.x, b.y, 0f, 0f, 0.35f, 1f, 0, ParticleKind.HEXHIT)
+                sparks(b.x, b.y, 3, 0xFFFF3D5AL, speed = 260f)
                 continue
             }
             if (p.alive && dist2(b.x, b.y, p.x, p.y) < (b.radius * 0.75f + p.radius).let { it * it }) {
@@ -492,9 +525,9 @@ class World(
             item.age += dt
             item.updateCycle(dt)
             val d2 = dist2(item.x, item.y, p.x, p.y)
-            if (item.type == ItemType.CANDY) {
-                // 糖果先彈開，接著一路飛向貓咪。
-                if (item.age < CANDY_POP || !p.alive) {
+            if (item.type == ItemType.DATA) {
+                // 資料方塊先彈開，接著一路飛向貓咪。
+                if (item.age < DATA_POP || !p.alive) {
                     item.x += item.vx * dt
                     item.y += item.vy * dt
                     item.vx *= 0.9f
@@ -560,11 +593,11 @@ class World(
                 score += 100
                 cue(SoundCue.ITEM)
             }
-            ItemType.CANDY -> {
-                score += CANDY_SCORE
-                if (time - lastCandyCue > 0.06f) {
-                    cue(SoundCue.CANDY)
-                    lastCandyCue = time
+            ItemType.DATA -> {
+                score += DATA_SCORE
+                if (time - lastDataCue > 0.06f) {
+                    cue(SoundCue.DATA)
+                    lastDataCue = time
                 }
             }
         }
@@ -582,9 +615,13 @@ class World(
                 if (random.nextFloat() < 0.35f && particles.size < MAX_PARTICLES) {
                     particles += Particle(s.x, s.y, jitter(160f), -120f - random.nextFloat() * 120f, 0.45f, 13f, 0xFFFFE07AL, ParticleKind.STAR)
                 }
-                if (e.isBoss && time - lastPokoTime > 0.9f && e.alive) {
+                if (time - lastHitMark > 0.12f) {
+                    lastHitMark = time
+                    particles += Particle(s.x, s.y, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
+                }
+                if (e.isBoss && time - lastPokoTime > 1.2f && e.alive) {
                     lastPokoTime = time
-                    sfx(s.x + jitter(60f), s.y - 40f, SfxText.POKO)
+                    sfx(s.x + jitter(60f), s.y - 40f, SfxText.HIT)
                 }
                 if (s.style == ShotStyle.MISSILE) explode(s.x, s.y, big = false, quiet = true)
                 if (s.pierce > 0 && !e.isBoss) {
@@ -618,15 +655,15 @@ class World(
         val gained = (e.score * (1f + minOf(combo, 50) * 0.02f)).toInt()
         score += gained
         explode(e.x, e.y, big = e.radius > 40f)
-        confetti(e.x, e.y, if (e.isElite) 26 else if (e.radius > 40f) 12 else 6)
+        voxels(e.x, e.y, e.radius, if (e.isElite) 28 else if (e.radius > 40f) 14 else 8)
         particles += Particle(e.x, e.y - 20f, 0f, -90f, 0.9f, if (e.isElite || e.radius > 45f) 1.2f else 0.8f, 0, ParticleKind.SCORE, gained)
         if (e.isElite) {
             hitStop = HIT_STOP
             shake(0.4f)
             flash(0.4f)
-            sfx(e.x, e.y - 60f, SfxText.DOON)
+            sfx(e.x, e.y - 60f, SfxText.CRITICAL)
         } else if (e.radius > 45f) {
-            sfx(e.x + 30f, e.y - 40f, SfxText.PAAN)
+            sfx(e.x + 30f, e.y - 40f, SfxText.TERMINATED)
         }
         if (e is HoneyPot) e.burst(this)
         val drop = e.drop ?: if (random.nextFloat() < 0.3f) ItemType.COIN else null
@@ -647,7 +684,7 @@ class World(
     }
 
     private fun clearBullets(toScore: Boolean) {
-        if (toScore) bulletsToCandy(bullets)
+        if (toScore) bulletsToData(bullets)
         for (b in bullets) {
             if (particles.size < MAX_PARTICLES) particles += Particle(b.x, b.y, 0f, -60f, 0.5f, 9f, 0xFFFFF59DL, ParticleKind.STAR)
         }
@@ -655,13 +692,13 @@ class World(
         lasers.clear()
     }
 
-    /** 消彈：子彈變成糖果飛向貓咪（數量有上限，其餘直接加分）。 */
-    private fun bulletsToCandy(list: List<EnemyBullet>) {
+    /** 消彈：子彈分解成資料方塊飛向貓咪（數量有上限，其餘直接加分）。 */
+    private fun bulletsToData(list: List<EnemyBullet>) {
         var made = 0
         for (b in list) {
             if (!b.alive) continue
-            if (made < MAX_CANDIES && items.size < 120) {
-                items += Item(b.x, b.y, ItemType.CANDY).also {
+            if (made < MAX_DATA_BITS && items.size < 120) {
+                items += Item(b.x, b.y, ItemType.DATA).also {
                     it.variant = random.nextInt(5)
                     val a = random.nextFloat() * TWO_PI
                     it.vx = cos(a) * 220f
@@ -669,10 +706,10 @@ class World(
                 }
                 made++
             } else {
-                score += CANDY_SCORE
+                score += DATA_SCORE
             }
         }
-        if (made >= 8) sfx(player.x, player.y - 140f, SfxText.SWEET)
+        if (made >= 8) sfx(player.x, player.y - 140f, SfxText.DATA)
     }
 
     private fun updateParticles(dt: Float) {
@@ -682,9 +719,9 @@ class World(
             p.y += p.vy * dt
             p.rotation += p.spin * dt
             when (p.kind) {
-                ParticleKind.CONFETTI -> {
-                    p.vx *= 0.94f
-                    p.vy = p.vy * 0.94f + 900f * dt
+                ParticleKind.VOXEL, ParticleKind.CASING -> {
+                    p.vx *= 0.95f
+                    p.vy = p.vy * 0.95f + 900f * dt
                 }
                 ParticleKind.PROP -> p.vy += 1100f * dt
                 ParticleKind.SCORE, ParticleKind.SFX -> p.vy *= 0.9f
@@ -719,19 +756,32 @@ class World(
         particles += Particle(x, y, 0f, -50f, 0.8f, 1f, 0, ParticleKind.SFX, which)
     }
 
-    /** 彩色紙片。 */
-    fun confetti(x: Float, y: Float, count: Int) {
+    /** 擊破時「數位分解」：衝擊環＋往外飛散的體素方塊（敵人的粉彩色混著青色資料色）。 */
+    fun voxels(x: Float, y: Float, radius: Float, count: Int) {
+        particles += Particle(x, y, 0f, 0f, 0.35f, radius * 2.2f, 0xFF00E5FFL, ParticleKind.SHOCKWAVE)
         repeat(count) {
             if (particles.size >= MAX_PARTICLES) return
             val a = random.nextFloat() * TWO_PI
-            val v = 200f + random.nextFloat() * 420f
+            val v = 160f + random.nextFloat() * 460f
+            val d = random.nextFloat() * radius * 0.6f
             particles += Particle(
-                x, y, cos(a) * v, sin(a) * v - 260f, 0.9f + random.nextFloat() * 0.6f, 9f + random.nextFloat() * 5f,
-                CONFETTI_COLORS[random.nextInt(CONFETTI_COLORS.size)], ParticleKind.CONFETTI,
+                x + cos(a) * d, y + sin(a) * d, cos(a) * v, sin(a) * v - 220f, 0.6f + random.nextFloat() * 0.5f, 6f + random.nextFloat() * 9f,
+                VOXEL_COLORS[random.nextInt(VOXEL_COLORS.size)], ParticleKind.VOXEL,
             ).also {
-                it.rotation = random.nextFloat() * 360f
-                it.spin = (random.nextFloat() - 0.5f) * 900f
+                it.rotation = random.nextFloat() * 90f
+                it.spin = (random.nextFloat() - 0.5f) * 600f
             }
+        }
+    }
+
+    /** 散彈射擊時退出的彈殼（萌點：印著肉球）。 */
+    fun ejectCasing(x: Float, y: Float) {
+        if (time - lastCasing < 0.18f || particles.size >= MAX_PARTICLES) return
+        lastCasing = time
+        val side = if (random.nextBoolean()) 1f else -1f
+        particles += Particle(x + side * 18f, y, side * (140f + random.nextFloat() * 80f), -260f - random.nextFloat() * 80f, 0.7f, 1f, 0, ParticleKind.CASING).also {
+            it.rotation = random.nextFloat() * 360f
+            it.spin = side * 720f
         }
     }
 
@@ -835,10 +885,10 @@ class World(
         const val HIT_STOP = 0.06f
         const val COMBO_TIME = 1.6f
         const val MAGNET_RADIUS = 200f
-        const val CANDY_SCORE = 10
-        const val CANDY_POP = 0.3f
-        private const val MAX_CANDIES = 60
-        val CONFETTI_COLORS = longArrayOf(0xFFFF8FB1L, 0xFF8FD3FFL, 0xFFFFE07AL, 0xFFB9A7FFL, 0xFF9BE8C4L)
+        const val DATA_SCORE = 10
+        const val DATA_POP = 0.3f
+        private const val MAX_DATA_BITS = 60
+        val VOXEL_COLORS = longArrayOf(0xFF00E5FFL, 0xFFFFFFFFL, 0xFF2979FFL, 0xFFFFCADAL, 0xFFEDE6F5L, 0xFFFFE07AL)
         const val INTRO_TIME = 2.8f
         const val WARNING_TIME = 2.2f
         const val ULTIMATE_CINEMATIC = 1.6f
@@ -861,6 +911,7 @@ class World(
             BulletStyle.HONEY -> 12f
             BulletStyle.STAR -> 12f
             BulletStyle.SEED -> 10f
+            BulletStyle.BUBBLE -> 15f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

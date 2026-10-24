@@ -326,6 +326,6 @@ def all_sprites():
         for m in range(3):
             for f in range(2):
                 out.append(fn(m, f))
-    out += [fork_head(), bone_end(), dipper_head()]
+    # 叉子、骨頭、蜂蜜棒的頭改由 scifi.py 輸出（科技版）
     out += lost_items()
     return out

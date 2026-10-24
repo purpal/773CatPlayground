@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import com.purpal.catplayground.Screen
 import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Sfx
+import com.purpal.catplayground.ui.ArtImage
+import com.purpal.catplayground.ui.FitText
 import com.purpal.catplayground.ui.PillButton
 import com.purpal.catplayground.ui.PlayBackground
 import com.purpal.catplayground.ui.PlayColors
@@ -131,10 +133,10 @@ private fun BouncingCat() {
         label = "bounce",
     )
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Text(
-            "😸",
-            fontSize = 72.sp,
-            modifier = Modifier.graphicsLayer {
+        ArtImage(
+            "cat_orange_front",
+            contentDescription = "773喵",
+            modifier = Modifier.size(110.dp).graphicsLayer {
                 translationY = -bounce * 16.dp.toPx()
                 rotationZ = (bounce - 0.5f) * 10f
             },
@@ -164,15 +166,15 @@ private fun GameCard(game: GameEntry, status: String?, onClick: () -> Unit) {
                 .background(PlayColors.CardStrong),
             contentAlignment = Alignment.Center,
         ) {
-            Text(game.emoji, fontSize = 36.sp)
+            ArtImage(game.icon, Modifier.size(60.dp), contentDescription = game.title)
         }
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(game.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            FitText(game.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(game.description, color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp)
             if (status != null) {
                 Spacer(Modifier.height(6.dp))
-                Text(status, color = PlayColors.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                FitText(status, color = PlayColors.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
         Text("▶", color = Color.White, fontSize = 24.sp)

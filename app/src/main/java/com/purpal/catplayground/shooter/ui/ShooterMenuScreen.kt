@@ -211,7 +211,13 @@ private fun StageRow(entry: StageEntry, cleared: Int, best: Int, carried: Boolea
             }
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
-        Text(entry.emoji, fontSize = 30.sp)
+        val stage = entry.stage
+        if (stage != null) {
+            // 已完成的關卡用 Boss 頭像（v2 麻糬萌風）
+            ArtImage("${stage.bossArt}_m0_0", Modifier.size(44.dp), contentDescription = stage.bossName, alpha = if (unlocked) 1f else 0.5f)
+        } else {
+            Text(entry.emoji, fontSize = 30.sp)
+        }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             FitText(

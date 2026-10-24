@@ -26,8 +26,11 @@ enum class EnemyKind {
     PUPPY, FRISBEE, BALL_TURRET,
     BEE, HONEY_POT, BEAR_CUB, BEEHIVE,
     BALLOON,
-    ELITE_MOUSE, ELITE_DOG, ELITE_BEE,
-    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR,
+    DUCKLING, YUZU, BUCKET, BABY_CAPY,
+    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY,
+    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY,
+    /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
+    THROWN_BONE,
 }
 
 abstract class Enemy(
@@ -48,6 +51,8 @@ abstract class Enemy(
     open val isElite: Boolean get() = false
     /** Boss 進場中等情況不能被打。 */
     open val invulnerable: Boolean get() = false
+    /** 碰到玩家會不會受傷（一般是可以被打的時候；被丟出來的道具雖然打不壞，碰到一樣會痛）。 */
+    open val hurtsOnContact: Boolean get() = !invulnerable
     /** 撞到玩家造成的傷害。 */
     open val contactDamage: Float get() = 20f
 
@@ -282,6 +287,68 @@ class Beehive(x: Float, y: Float, private val vx: Float) : Enemy(x, y, 30f, 40f,
     }
 }
 
+// ───────────── 第 4 關：卡皮巴拉的溫泉 ─────────────
+
+/** 頭上頂著小毛巾的小鴨子，排成一排游下來，偶爾吐一顆泡泡。 */
+class Duckling(x: Float, private val delay: Float) : Enemy(x, -50f - delay * 200f, 16f, 30f, 90) {
+    override val kind = EnemyKind.DUCKLING
+    private val baseX = x
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        y += 190f * dt
+        x = baseX + sin(age * 3f + delay * 6f) * 36f
+        if (crossed(age, dt, 1.2f + delay)) w.aimed(x, y + 20f, 240f, BulletStyle.BUBBLE, Tint.CYAN, radius = 11f)
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 一邊轉一邊飄下來的柚子，停下來後爆出一圈柚子籽。 */
+class YuzuDrone(x: Float, private val stopY: Float) : Enemy(x, -60f, 40f, 40f, 160) {
+    override val kind = EnemyKind.YUZU
+    val spin: Float get() = age * 3f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.3f -> y = approach(y, stopY, 3f, dt)
+            age < 4.5f -> if (every(age, dt, 1.4f, offset = 1.6f)) w.ring(x, y, 10, 200f, age, BulletStyle.SEED, Tint.ORANGE)
+            else -> y += 220f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 跟著地面捲動的檜木水桶（裡面躲著小青蛙），往玩家潑三坨熱水。 */
+class BucketTurret(x: Float) : Enemy(x, -60f, 70f, 42f, 220) {
+    override val kind = EnemyKind.BUCKET
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        y += World.SCROLL_SPEED * dt
+        if (age > 0.8f && every(age, dt, 2f, offset = 1f)) {
+            for (k in -1..1) {
+                val dx = (w.player.x - x) / 1.5f + k * 70f
+                w.bullet(x, y - 10f, dx, -230f, BulletStyle.HONEY, Tint.ORANGE).ay = 360f
+            }
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 套著游泳圈漂下來的小卡皮巴拉，慢慢吐出扇形泡泡。 */
+class BabyCapy(x: Float) : Enemy(x, -70f, 90f, 50f, 260) {
+    override val kind = EnemyKind.BABY_CAPY
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        y += 80f * dt
+        x += sin(age * 1.2f) * 30f * dt
+        if (every(age, dt, 1.9f, offset = 1f)) w.fan(x, y + 20f, w.aimAt(x, y), 5, 70f * DEG, 150f, BulletStyle.BUBBLE, Tint.CYAN)
+        leaveIfOffscreen(w)
+    }
+}
+
 // ───────────── 菁英怪 ─────────────
 
 abstract class Elite(x: Float, hp: Float, radius: Float, score: Int, item: ItemType) : Enemy(x, -90f, hp, radius, score) {
@@ -360,6 +427,38 @@ class EliteBee(x: Float) : Elite(x, 380f, 60f, 2200, ItemType.FOCUS) {
                 }
             }
             else -> y += 260f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 溫泉猴老大（雪猴）：在幾個點之間跳來跳去，丟雪球、叫小鴨子來幫忙。 */
+class EliteMonkey(x: Float) : Elite(x, 450f, 64f, 2400, ItemType.SONIC) {
+    override val kind = EnemyKind.ELITE_MONKEY
+    private var hopFromX = x
+    private var hopToX = x
+    private var hopT = 1f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 320f, 2.5f, dt)
+            age < 12f -> {
+                if (every(age, dt, 1.8f, offset = 1.5f)) {
+                    hopFromX = x
+                    hopToX = 150f + w.random.nextFloat() * (WORLD_WIDTH - 300f)
+                    hopT = 0f
+                }
+                if (hopT < 1f) {
+                    hopT = (hopT + dt / 0.5f).coerceAtMost(1f)
+                    x = hopFromX + (hopToX - hopFromX) * hopT
+                    y = 320f - sin(hopT * HALF_PI * 2f) * 90f
+                    if (hopT >= 1f) w.ring(x, y, 14, 190f, age, BulletStyle.BIG_ORB, Tint.CYAN)
+                }
+                if (every(age, dt, 0.9f, offset = 2f)) w.fan(x, y + 30f, w.aimAt(x, y), 3, 26f * DEG, 300f, BulletStyle.ORB, Tint.CYAN)
+                if (crossed(age, dt, 5f)) for (i in 0 until 4) w.spawn(Duckling(200f + i * 200f, i * 0.12f))
+            }
+            else -> y += 240f * dt
         }
         leaveIfOffscreen(w)
     }

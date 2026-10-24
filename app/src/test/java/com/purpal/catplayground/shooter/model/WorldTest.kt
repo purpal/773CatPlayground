@@ -253,31 +253,90 @@ class WorldTest {
         assertTrue(w.player.armor < armor)
     }
 
-    @Test
-    fun bossLosesItsPropsWhenItStartsCrying() {
-        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+    private fun bossFight(stage: StageDef): World {
+        val w = World(stage, CatType.ORANGE, 2000f)
         w.godMode = true
         autoplayUntil(w) { it.phase == Phase.BOSS }
-        val boss = w.boss!!
-        assertEquals(HazardStyle.FORK, boss.heldProp(boss.phase))
-        boss.hp = boss.maxHp * 0.2f
-        w.update(STEP)
-        assertEquals(2, boss.phase)
-        assertEquals(null, boss.heldProp(boss.phase))
-        val props = w.particles.filter { it.kind == ParticleKind.PROP }.map { it.tag }.toSet()
-        assertEquals(setOf(LostProp.CROWN, LostProp.FORK), props)
+        return w
     }
 
     @Test
-    fun cancelledBulletsTurnIntoCandyThatFliesToThePlayer() {
+    fun timidMouseDisarmsEarlyAndLosesItsFork() {
+        val w = bossFight(Stages.mouse)
+        val boss = w.boss!!
+        assertEquals(HazardStyle.FORK, boss.heldProp())
+        boss.hp = boss.maxHp * 0.7f
+        w.update(STEP)
+        assertFalse("70% is above the mouse's break point", boss.broken)
+        boss.hp = boss.maxHp * 0.62f
+        w.update(STEP)
+        assertTrue(boss.broken)
+        assertEquals(null, boss.heldProp())
+        assertTrue(w.particles.any { it.kind == ParticleKind.PROP && it.tag == LostProp.FORK })
+        assertTrue(w.particles.any { it.kind == ParticleKind.SFX && it.tag == SfxText.BREAK })
+    }
+
+    @Test
+    fun eachBossBreaksAtItsOwnThreshold() {
+        assertEquals(0.65f, MouseBoss().breakAt, 0f)
+        assertEquals(0.35f, DogBoss().breakAt, 0f)
+        assertEquals(0.25f, BearBoss().breakAt, 0f)
+        assertEquals(BreakKind.ARMOR, CapyBoss().breakKind)
+        val bear = bossFight(Stages.bear).boss!!
+        bear.hp = bear.maxHp * 0.3f
+        repeat(3) { bear.update(World(Stages.bear, CatType.ORANGE, 2000f), STEP) }
+        assertFalse("the tough bear keeps its dipper at 30%", bear.broken)
+    }
+
+    @Test
+    fun capybaraArmorsUpWithANewWeapon() {
+        val w = bossFight(Stages.capybara)
+        val boss = w.boss!!
+        assertEquals("no weapon before armoring", null, boss.heldProp())
+        boss.hp = boss.maxHp * 0.48f
+        w.update(STEP)
+        assertTrue(boss.broken)
+        assertTrue("invulnerable while armoring", boss.invulnerable)
+        assertEquals(HazardStyle.WATER, boss.heldProp())
+        assertEquals(1, boss.mood())
+        // 卸甲／裝甲時有短暫停格，所以多等一點
+        repeat(((Boss.ARMOR_TIME + 0.4f) / STEP).toInt()) { w.update(STEP) }
+        assertFalse(boss.invulnerable)
+        repeat(60 * 6) { w.update(STEP) }
+        assertTrue("armored capybara uses its yuzu cannon", w.lasers.any { it.style == HazardStyle.WATER } || w.bullets.isNotEmpty())
+    }
+
+    @Test
+    fun thrownBoneFliesOutAndComesBack() {
+        val w = bossFight(Stages.dog)
+        val dog = w.boss as DogBoss
+        w.player.x = 300f
+        w.player.y = 1500f
+        val bone = ThrownBone(dog, w.player.x, w.player.y)
+        w.spawn(bone)
+        assertTrue(dog.boneOut)
+        assertEquals(null, dog.heldProp())
+        assertTrue(bone.invulnerable && bone.hurtsOnContact)
+        var maxY = 0f
+        repeat(((ThrownBone.FLIGHT + 0.2f) / STEP).toInt()) {
+            w.update(STEP)
+            maxY = maxOf(maxY, bone.y)
+        }
+        assertTrue("bone should fly toward the player (maxY=$maxY)", maxY > 1000f)
+        assertFalse(bone.alive)
+        assertFalse(dog.boneOut)
+    }
+
+    @Test
+    fun cancelledBulletsTurnIntoDataThatFliesToThePlayer() {
         val w = worldInStage()
         repeat(20) { w.shoot(100f + it * 40f, 300f, HALF_PI, 10f, BulletStyle.ORB, Tint.RED) }
         val score = w.score
         assertTrue(w.requestUltimate())
         repeat(60 * 4) { w.update(STEP) }
         assertTrue(w.bullets.isEmpty())
-        assertTrue(w.items.none { it.type == ItemType.CANDY })
-        assertTrue("candies add score", w.score >= score + 20 * World.CANDY_SCORE)
+        assertTrue(w.items.none { it.type == ItemType.DATA })
+        assertTrue("data bits add score", w.score >= score + 20 * World.DATA_SCORE)
     }
 
     @Test

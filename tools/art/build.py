@@ -7,6 +7,7 @@
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -17,7 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 import cats  # noqa: E402
 
 MODULES = [cats]
-for name in ("bosses", "minions", "items", "effects", "ultimate"):
+for name in ("bosses", "minions", "items", "effects", "ultimate", "scifi", "capybara", "icons"):
     try:
         MODULES.append(__import__(name))
     except ModuleNotFoundError:
@@ -43,6 +44,28 @@ def main():
     env = dict(os.environ, NODE_PATH=node_modules)
     subprocess.run(["node", os.path.join(HERE, "render.mjs"), svg_dir, out_dir], check=True, env=env)
     preview(out_dir, [s.name for s in sprites])
+    install_app_icon(out_dir)
+
+
+# 自適應圖示前景（108dp）在各密度的像素大小
+ICON_SIZES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
+
+
+def install_app_icon(out_dir):
+    """app_icon_fg 放到 res/mipmap-*，預覽圖不打包進 assets。"""
+    from PIL import Image
+    src = os.path.join(out_dir, "app_icon_fg.png")
+    if os.path.exists(src):
+        im = Image.open(src).convert("RGBA")
+        for density, px in ICON_SIZES.items():
+            d = os.path.join(ROOT, "app", "src", "main", "res", f"mipmap-{density}")
+            os.makedirs(d, exist_ok=True)
+            im.resize((px, px), Image.LANCZOS).save(os.path.join(d, "ic_launcher_foreground.png"))
+        shutil.copy(src, os.path.join(ROOT, "build", "art", "app_icon_fg.png"))
+        os.remove(src)
+    for f in os.listdir(out_dir):
+        if f.startswith("preview_"):
+            shutil.move(os.path.join(out_dir, f), os.path.join(ROOT, "build", "art", f))
 
 
 def preview(out_dir, names):

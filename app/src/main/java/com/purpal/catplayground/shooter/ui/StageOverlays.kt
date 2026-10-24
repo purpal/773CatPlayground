@@ -55,7 +55,7 @@ import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.Speaker
-import com.purpal.catplayground.shooter.model.StageTheme
+import com.purpal.catplayground.shooter.model.StageDef
 import com.purpal.catplayground.shooter.model.World
 import com.purpal.catplayground.shooter.model.CatType
 import com.purpal.catplayground.ui.ArtImage
@@ -90,11 +90,7 @@ fun StageOverlays(
 }
 
 /** Boss 頭像：警告時是逞強的樣子（m0），被打倒後的對話是哭哭的樣子（m2）。 */
-private fun bossArt(theme: StageTheme, mood: Int) = when (theme) {
-    StageTheme.CHEESE_BARN -> "boss_mouse_m${mood}_0"
-    StageTheme.PARK -> "boss_dog_m${mood}_0"
-    StageTheme.HONEY_FOREST -> "boss_bear_m${mood}_0"
-}
+private fun bossArt(stage: StageDef, mood: Int) = "${stage.bossArt}_m${mood}_0"
 
 private fun catArt(cat: CatType) = if (cat == CatType.ORANGE) "cat_orange_front" else "cat_black_front"
 
@@ -183,7 +179,7 @@ private fun Warning(world: World) {
                             .background(Color(0xFFFDEFF5), CircleShape)
                             .border(3.dp, Gold, CircleShape),
                         contentAlignment = Alignment.Center,
-                    ) { ArtImage(bossArt(world.stage.theme, 0), Modifier.size(84.dp)) }
+                    ) { ArtImage(bossArt(world.stage, 0), Modifier.size(84.dp)) }
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f, fill = false)) {
                         FitText("STAGE ${world.stage.number}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
@@ -269,7 +265,7 @@ private fun Dialogue(world: World) {
                     .background(if (isCat) Color(0xFFFFE0B2) else Color(0xFFE1BEE7), RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                ArtImage(if (isCat) catArt(world.player.cat) else bossArt(world.stage.theme, 2), Modifier.size(70.dp))
+                ArtImage(if (isCat) catArt(world.player.cat) else bossArt(world.stage, 2), Modifier.size(70.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

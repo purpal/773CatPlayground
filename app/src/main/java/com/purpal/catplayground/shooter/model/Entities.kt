@@ -65,7 +65,7 @@ class PlayerShot(
     var wallLevel = 0
 }
 
-enum class BulletStyle { ORB, BIG_ORB, RICE, CHEESE, BONE, NOTE, HONEY, STAR, SEED }
+enum class BulletStyle { ORB, BIG_ORB, RICE, CHEESE, BONE, NOTE, HONEY, STAR, SEED, BUBBLE }
 
 class EnemyBullet(
     var x: Float,
@@ -89,10 +89,10 @@ class EnemyBullet(
 }
 
 /**
- * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或道具的近身攻擊
- * （叉子突刺、骨頭橫掃、蜂蜜棒重擊、尾巴鞭打、爪擊）。
+ * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或科技道具的攻擊
+ * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、柚子砲的高壓溫泉水柱）。
  */
-enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW }
+enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER }
 
 /**
  * 雷射／近身攻擊：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。
@@ -174,14 +174,14 @@ class Item(var x: Float, var y: Float, type: ItemType) {
     var age = 0f
     var alive = true
     var cycleTime = 0f
-    /** 糖果的顏色。 */
+    /** 資料方塊的樣式（大小變化）。 */
     var variant = 0
-    /** 消彈變成的糖果：先往外彈開，再飛向貓咪。 */
+    /** 消彈變成的資料方塊：先往外彈開，再飛向貓咪。 */
     var vx = 0f
     var vy = 0f
     val radius = when (type) {
         ItemType.COIN -> 20f
-        ItemType.CANDY -> 16f
+        ItemType.DATA -> 16f
         else -> 30f
     }
     val cycle: List<ItemType>? = when (type) {
@@ -217,35 +217,48 @@ class Item(var x: Float, var y: Float, type: ItemType) {
     }
 }
 
-/** Boss 被打掉的道具（畫面用來畫飛出去的樣子）。 */
+/** Boss 被打掉的東西（畫面用來畫飛出去的樣子）：配件與卸甲時被打飛的武器。 */
 object LostProp {
     const val CROWN = 1
     const val HAT = 2
     const val POT = 3
     const val FORK = 4
+    const val BONE = 5
+    const val DIPPER = 6
+    const val YUZU = 7
 }
 
-/** 畫面上的音效字。 */
+/** 畫面上的 HUD 字樣（科技風）。 */
 object SfxText {
-    const val POKO = 0
-    const val PAAN = 1
-    const val DOON = 2
-    const val SWEET = 3
+    const val HIT = 0
+    const val TERMINATED = 1
+    const val CRITICAL = 2
+    const val DATA = 3
     const val ELITE = 4
+    const val BREAK = 5
+    const val ARMOR = 6
 }
 
 enum class ParticleKind {
     SPARK, STAR, RING, HEART, SMOKE, FLASH, FIRE,
-    /** 彩色紙片，會受重力往下飄。 */
-    CONFETTI,
+    /** 擊破時數位分解出的體素方塊，會受重力往下掉。 */
+    VOXEL,
+    /** 命中標記（白色 X）。 */
+    HITMARK,
+    /** 力場盾擋下子彈時亮起的六角格（裡面有肉球）。 */
+    HEXHIT,
+    /** 散彈退出的彈殼（印著肉球）。 */
+    CASING,
+    /** 衝擊環（青色，或大絕的琥珀色）。 */
+    SHOCKWAVE,
     /** 被打飛的 Boss 道具，tag 為 [LostProp]。 */
     PROP,
     /** 漫畫音效字，tag 為 [SfxText]。 */
     SFX,
     /** 彈跳的分數，tag 為分數。 */
     SCORE,
-    /** 命中處開出的小花。 */
-    FLOWER,
+    /** 磁軌光束命中處的貓頭全息標誌。 */
+    CATHOLO,
 }
 
 class Particle(

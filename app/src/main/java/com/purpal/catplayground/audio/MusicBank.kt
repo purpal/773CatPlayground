@@ -5,7 +5,7 @@ import com.purpal.catplayground.audio.Synth.addNoise
 import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
-enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, BOSS }
+enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, BOSS }
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
 internal object MusicBank {
@@ -15,6 +15,7 @@ internal object MusicBank {
         Music.STAGE_MOUSE -> mouseStage()
         Music.STAGE_DOG -> dogStage()
         Music.STAGE_BEAR -> bearStage()
+        Music.STAGE_CAPY -> capyStage()
         Music.BOSS -> boss()
     }
 
@@ -143,6 +144,33 @@ internal object MusicBank {
             volume = 0.03,
         )
         bass(intArrayOf(38, 36, 34, 36, 38, 41, 43, 45), 0.3)
+        drums(8, kickEveryBeat = false, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 4 關：溫泉河畔。日本「陽音階」的悠哉旋律，節奏保持輕快。 */
+    private fun capyStage(): ShortArray = Song(bpm = 124.0, bars = 8).run {
+        melody(
+            "74:2 76:2 79:2 81:2 " +
+                "83:3 81:1 79:4 " +
+                "76:2 79:2 81:1 79:1 76:2 " +
+                "74:6 r:2 " +
+                "79:2 81:2 83:2 86:2 " +
+                "88:3 86:1 83:4 " +
+                "81:2 79:2 76:2 79:2 " +
+                "74:6 r:2",
+            volume = 0.2,
+            wave = Wave.TRIANGLE,
+            octaveUp = 0.07,
+        )
+        chords(
+            listOf(
+                intArrayOf(62, 67, 69), intArrayOf(67, 71, 74), intArrayOf(64, 67, 71), intArrayOf(62, 67, 69),
+                intArrayOf(67, 71, 74), intArrayOf(71, 74, 79), intArrayOf(69, 74, 76), intArrayOf(62, 67, 69),
+            ),
+            volume = 0.03,
+        )
+        bass(intArrayOf(38, 43, 40, 38, 43, 47, 45, 38), 0.28)
         drums(8, kickEveryBeat = false, hatSixteenths = false)
         pcm()
     }

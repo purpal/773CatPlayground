@@ -135,6 +135,37 @@ fun DrawScope.drawUltimateCinematic(w: World, sprites: SpriteCache, text: TextMe
         )
     }
 
+    // OVERDRIVE：HUD 解鎖軌道砲（琥珀色框＋色差字），接著天降光柱
+    val hud = span(t, 0.55f, 0.66f)
+    if (hud > 0f) {
+        val ov = sprites.overdrive()
+        val ovW = size.width * 0.8f
+        val ovH = ovW * ov.image.height / ov.image.width
+        val oy = size.height * 0.12f
+        val a = hud * (1f - span(t, 0.86f, 0.94f))
+        val amber = Color(0xFFFFB300)
+        val bx = size.width * 0.06f
+        val bw = size.width * 0.88f
+        val bh = ovH * 1.5f
+        val c = 26f
+        // 四個角的 L 形框
+        for (corner in 0 until 4) {
+            val sx = if (corner % 2 == 0) 1f else -1f
+            val sy = if (corner < 2) 1f else -1f
+            val x0 = if (sx > 0f) bx else bx + bw
+            val y0 = if (sy > 0f) oy else oy + bh
+            drawLine(amber.copy(alpha = a), Offset(x0, y0), Offset(x0 + sx * c, y0), 5f)
+            drawLine(amber.copy(alpha = a), Offset(x0, y0), Offset(x0, y0 + sy * c), 5f)
+        }
+        val jitter = if (hud < 1f) sin(t * 300f) * 8f else 0f
+        withTransform({
+            translate(size.width / 2f + jitter, oy + bh / 2f)
+            scale(ovW / ov.image.width, ovW / ov.image.width, Offset.Zero)
+        }) {
+            drawImage(ov.image, Offset(-ov.image.width / 2f, -ov.image.height / 2f), alpha = a)
+        }
+    }
+
     // 收尾白光
     val flash = span(t, 0.88f, 1f)
     if (flash > 0f) drawRect(Color.White.copy(alpha = flash))

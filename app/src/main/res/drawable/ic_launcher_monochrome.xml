@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主題圖示用的單色版：貓頭剪影＋吊牌。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M36,30 L41,44 Q54,38 67,44 L72,30 L74,50 Q82,58 80,66 Q78,80 54,82 Q30,80 28,66 Q26,58 34,50 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M46,84 L62,84 L63,94 Q54,98 45,94 Z" />
+</vector>

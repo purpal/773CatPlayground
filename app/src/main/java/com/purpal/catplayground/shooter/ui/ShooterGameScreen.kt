@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -158,11 +159,17 @@ fun ShooterGameScreen(
         onDispose { lifecycle.removeObserver(observer) }
     }
 
+    // HUD 的高度依實際字體量一次（之後內容結構固定、高度不變），量好之前先不開始遊戲。
+    var hudPx by remember { mutableIntStateOf(0) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val density = LocalDensity.current
-        // 上方是固定高度的 HUD，下方才是遊戲畫面，避免 HUD 擋住 Boss。
-        val hudHeight = with(density) { WindowInsets.statusBars.getTop(this).toDp() } + HUD_HEIGHT
-        val gameHeightPx = constraints.maxHeight - with(density) { hudHeight.toPx() }
+        if (hudPx == 0) {
+            ShooterHud(hud, stage.number, stage.title, Modifier.onSizeChanged { if (it.height > 0) hudPx = it.height }, onPause = {})
+            return@BoxWithConstraints
+        }
+        // 上方是 HUD，下方才是遊戲畫面，避免 HUD 擋住 Boss。
+        val hudHeight = with(density) { hudPx.toDp() }
+        val gameHeightPx = (constraints.maxHeight - hudPx).toFloat()
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
         val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
         val context = LocalContext.current
@@ -267,7 +274,7 @@ fun ShooterGameScreen(
                 },
         )
 
-        ShooterHud(hud, stage.number, stage.title, Modifier.height(hudHeight), onPause = { paused = true })
+        ShooterHud(hud, stage.number, stage.title, onPause = { paused = true })
         BossBar(hud, Modifier.padding(top = hudHeight))
         UltimateButton(
             cat = cat,
@@ -305,17 +312,19 @@ fun ShooterGameScreen(
     }
 }
 
-private val HUD_HEIGHT = 96.dp
-
 private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
     1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_MOUSE)
     2 -> listOf(
         EnemyKind.PUPPY, EnemyKind.FRISBEE, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_RUNNER, EnemyKind.BALLOON,
-        EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_DOG,
+        EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.THROWN_BONE,
     )
-    else -> listOf(
+    3 -> listOf(
         EnemyKind.BEE, EnemyKind.HONEY_POT, EnemyKind.BEAR_CUB, EnemyKind.BEEHIVE, EnemyKind.CHEESE_DRONE, EnemyKind.PUPPY,
         EnemyKind.BALLOON, EnemyKind.ELITE_BEE, EnemyKind.ELITE_DOG, EnemyKind.BOSS_BEAR,
+    )
+    else -> listOf(
+        EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
+        EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_BEE, EnemyKind.BOSS_CAPY,
     )
 }
 
@@ -340,8 +349,10 @@ private fun playCues(world: World, sound: SoundManager) {
             SoundCue.MISSILE -> sound.play(Sfx.MISSILE, 0.4f)
             SoundCue.LASER -> sound.play(Sfx.LASER, 0.7f)
             SoundCue.BEAM -> sound.play(Sfx.BEAM, 0.35f)
-            SoundCue.CANDY -> sound.play(Sfx.ITEM, 0.35f, 1.3f + random.nextFloat() * 0.3f)
+            SoundCue.DATA -> sound.play(Sfx.ITEM, 0.35f, 1.3f + random.nextFloat() * 0.3f)
             SoundCue.SWING -> sound.play(Sfx.SONIC, 0.7f, 0.6f)
+            SoundCue.BREAK -> sound.play(Sfx.EXPLODE_BIG, 1f, 0.8f)
+            SoundCue.ARMOR_UP -> sound.play(Sfx.POWER_UP, 1f, 0.7f)
         }
     }
     world.cues.clear()
@@ -357,6 +368,7 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.CHEESE_BARN -> Music.STAGE_MOUSE
     StageTheme.PARK -> Music.STAGE_DOG
     StageTheme.HONEY_FOREST -> Music.STAGE_BEAR
+    StageTheme.ONSEN -> Music.STAGE_CAPY
 }
 
 // ───────────── HUD ─────────────
@@ -375,10 +387,11 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
                 FitText("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 FitText("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             }
-            // 武器資訊放在分數右邊，HUD 只有兩列，任何字體大小都放得下。
+            // 武器資訊放在分數右邊。副武器那一格永遠佔位（沒有副武器時透明），HUD 高度才不會變。
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Chip("${hud.mainWeapon.label} Lv${hud.mainLevel}", Color(0xFFFF9100))
-                if (hud.subWeapon != SubWeapon.NONE) Chip("${hud.subWeapon.label} Lv${hud.subLevel}", Color(0xFF7C4DFF))
+                val hasSub = hud.subWeapon != SubWeapon.NONE
+                Chip(if (hasSub) "${hud.subWeapon.label} Lv${hud.subLevel}" else "追蹤彈 Lv3", Color(0xFF7C4DFF), visible = hasSub)
             }
             Spacer(Modifier.width(8.dp))
             Box(
@@ -451,14 +464,14 @@ private fun Gauge(label: String, value: Float, color: Color, modifier: Modifier)
 }
 
 @Composable
-private fun Chip(text: String, color: Color) {
+private fun Chip(text: String, color: Color, visible: Boolean = true) {
     FitText(
         text,
-        color = Color.White,
+        color = if (visible) Color.White else Color.Transparent,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .background(color.copy(alpha = 0.85f), RoundedCornerShape(50))
+            .background(if (visible) color.copy(alpha = 0.85f) else Color.Transparent, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 2.dp),
     )
 }

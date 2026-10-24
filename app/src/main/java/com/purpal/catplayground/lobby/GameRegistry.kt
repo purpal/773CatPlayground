@@ -13,7 +13,8 @@ data class GameEntry(
     val id: String,
     val title: String,
     val description: String,
-    val emoji: String,
+    /** assets/art 裡的圖示名稱（v2 麻糬萌風，tools/art/icons.py）。 */
+    val icon: String,
     val colors: List<Color>,
     val start: Screen,
 )
@@ -27,7 +28,7 @@ object GameRegistry {
             id = WATER_SORT,
             title = "彩虹倒水",
             description = "把同顏色的水倒在一起",
-            emoji = "🧪",
+            icon = "lobby_watersort",
             colors = listOf(Color(0xFF4FC3F7), Color(0xFF7B1FA2)),
             start = Screen.WaterSortLevels,
         ),
@@ -35,7 +36,7 @@ object GameRegistry {
             id = SHOOTER,
             title = "喵星萌王爭霸戰",
             description = "貓咪射擊！打倒可愛動物成為萌王",
-            emoji = "🐯",
+            icon = "lobby_shooter",
             colors = listOf(Color(0xFFFF9100), Color(0xFFD81B60)),
             start = Screen.ShooterMenu,
         ),

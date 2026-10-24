@@ -95,12 +95,5 @@ def digit(ch, name):
 
 
 def all_sprites():
-    out = [
-        paw_shot("shot_paw_orange", "#FF9A3C", "glowO"),
-        paw_shot("shot_paw_violet", "#A07CFF", "glowV"),
-        big_paw(), claw(), fish(), flower(), fx_star(), fx_heart(),
-    ]
-    out += [sfx(k, *v) for k, v in SFX.items()]
-    out += [digit(str(d), f"fx_d{d}") for d in range(10)]
-    out += [digit("+", "fx_plus"), digit("×", "fx_x")]
-    return out
+    # v3 起武器與音效字改用 scifi.py 的科技風；這裡只留下補血等道具會用到的萌系小圖。
+    return [fx_star(), fx_heart()]

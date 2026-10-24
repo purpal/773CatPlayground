@@ -22,20 +22,21 @@ enum class CatType(
     val specialName: String,
     val ultimateName: String,
 ) {
-    ORANGE("橘斑貓 小橘", "小橘", 160f, 560f, "巨肉球砲", "猛虎咆哮"),
-    BLACK("黑貓 小黑", "小黑", 100f, 780f, "連射爪擊", "黑豹咆哮"),
+    ORANGE("橘斑貓 小橘", "小橘", 160f, 560f, "重力肉球砲", "猛虎咆哮"),
+    BLACK("黑貓 小黑", "小黑", 100f, 780f, "單分子爪刃", "黑豹咆哮"),
 }
 
 enum class MainWeapon(val label: String) { SPREAD("散射"), FOCUS("集中"), SPECIAL("專武") }
 
-enum class SubWeapon(val label: String) { NONE("無"), HOMING("追蹤彈"), SONIC("聲波彈") }
+enum class SubWeapon(val label: String) { NONE("無"), HOMING("追蹤飛彈"), SONIC("力場盾") }
 
-enum class ItemType { SPREAD, FOCUS, SPECIAL, HOMING, SONIC, REPAIR, BOMB, COIN, CANDY }
+/** DATA：消彈時子彈分解成的資料方塊，飛向貓咪加分。 */
+enum class ItemType { SPREAD, FOCUS, SPECIAL, HOMING, SONIC, REPAIR, BOMB, COIN, DATA }
 
 /** 給畫面播放音效用的事件。 */
 enum class SoundCue {
     SHOT, SHOT_HEAVY, ENEMY_HIT, EXPLODE_SMALL, EXPLODE_BIG, ITEM, POWER_UP, PLAYER_HIT,
-    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM, CANDY, SWING,
+    ROAR, BOMB_BLAST, WARNING, BOSS_DOWN, SONIC, MISSILE, LASER, BEAM, DATA, SWING, BREAK, ARMOR_UP,
 }
 
 enum class Phase {
