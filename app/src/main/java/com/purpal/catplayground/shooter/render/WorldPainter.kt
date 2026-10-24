@@ -806,9 +806,6 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
     val degrees = w.halfAngle * RAD
     val topLeft = Offset(w.x - w.radius, w.centerY - w.radius)
     val size = Size(w.radius * 2f, w.radius * 2f)
-    // 光暈：一寬一窄兩層相加混色的青光
-    drawArc(Cyan.copy(alpha = 0.22f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 4.5f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
-    drawArc(Cyan.copy(alpha = 0.35f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2.2f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
     drawArc(Cyan.copy(alpha = 0.18f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f))
     val cell = 15f
     val steps = (w.radius * w.halfAngle * 2f / (cell * 1.7f)).toInt().coerceAtLeast(3)
@@ -820,8 +817,7 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
             drawPath(hexPath(w.x + cos(a) * r, w.centerY + sin(a) * r, cell, 0.5235988f), Cyan.copy(alpha = 0.55f * fade), style = Stroke(2f))
         }
     }
-    drawArc(Cyan.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(10f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
-    drawArc(Color.White.copy(alpha = 0.95f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(5f, cap = StrokeCap.Round))
+    drawArc(Color.White.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(4f))
 }
 
 private val CritRed = ColorFilter.lighting(Color(0xFFFF3D5A), Color(0xFF3A0010))
