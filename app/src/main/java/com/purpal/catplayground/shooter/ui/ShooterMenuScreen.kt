@@ -61,6 +61,8 @@ fun ShooterMenuScreen(
     val sound = LocalSound.current
     var cat by remember { mutableStateOf(runCatching { CatType.valueOf(prefs.shooterCat) }.getOrDefault(CatType.ORANGE)) }
     var ultimateLeft by remember { mutableStateOf(prefs.shooterUltimateOnLeft) }
+    var damageNumbers by remember { mutableStateOf(prefs.shooterDamageNumbers) }
+    var fxHigh by remember { mutableStateOf(prefs.shooterFxHigh) }
 
     Box(
         Modifier
@@ -115,6 +117,16 @@ fun ShooterMenuScreen(
                     Spacer(Modifier.width(8.dp))
                 }
             }
+            Spacer(Modifier.height(8.dp))
+            OptionRow("傷害數字", listOf("顯示" to true, "隱藏" to false), damageNumbers) {
+                damageNumbers = it
+                prefs.shooterDamageNumbers = it
+            }
+            Spacer(Modifier.height(8.dp))
+            OptionRow("特效品質", listOf("高" to true, "低" to false), fxHigh) {
+                fxHigh = it
+                prefs.shooterFxHigh = it
+            }
 
             Spacer(Modifier.height(16.dp))
             SectionTitle("關卡")
@@ -125,6 +137,21 @@ fun ShooterMenuScreen(
                 Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun OptionRow(title: String, options: List<Pair<String, Boolean>>, current: Boolean, onSelect: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FitText(title, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        for ((label, value) in options) {
+            PillButton(
+                label,
+                background = if (current == value) PlayColors.Sun else PlayColors.Card,
+                contentColor = if (current == value) PlayColors.Night else Color.White,
+            ) { onSelect(value) }
+            Spacer(Modifier.width(8.dp))
         }
     }
 }

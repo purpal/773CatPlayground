@@ -19,7 +19,11 @@ class Player(val cat: CatType) {
     var fireTimer = 0f
     var subTimer = 0f
     var alive = true
-    val radius = 12f
+    /** 判定點：黑貓比較小。 */
+    val radius = if (cat == CatType.BLACK) 9f else 12f
+    /** 黑貓的影閃：剩餘秒數與冷卻。 */
+    var dashTime = 0f
+    var dashCooldown = 0f
 
     val armorRatio: Float get() = (armor / cat.maxArmor).coerceIn(0f, 1f)
 
@@ -237,6 +241,7 @@ object SfxText {
     const val ELITE = 4
     const val BREAK = 5
     const val ARMOR = 6
+    const val CHAIN = 7
 }
 
 enum class ParticleKind {
@@ -259,6 +264,17 @@ enum class ParticleKind {
     SCORE,
     /** 磁軌光束命中處的貓頭全息標誌。 */
     CATHOLO,
+    /** 傷害數字，tag 為顯示的數值；color 不為 0 表示爆擊。 */
+    DAMAGE,
+    /** 黑貓影閃的殘影，tag 為跑步姿勢（0 直、1 左、2 右）。 */
+    GHOST,
+}
+
+/** 連鎖閃電：依序跳過的點（第一個是起點）。 */
+class Bolt(val xs: FloatArray, val ys: FloatArray, val count: Int, val seed: Int) {
+    var age = 0f
+    val life = 0.28f
+    val alive: Boolean get() = age < life
 }
 
 class Particle(

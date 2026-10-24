@@ -285,8 +285,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val DUCK = frames("min_duck")
         private val BABY_CAPY = frames("min_babycapy")
         private val ITEMS = ItemType.entries.map { "item_${it.name.lowercase()}" }.toTypedArray()
-        private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor")
-        private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f)
+        private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor", "sfx_chain")
+        private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f, 220f)
         private val DIGITS = Array(10) { "fx_d$it" }
     }
 }

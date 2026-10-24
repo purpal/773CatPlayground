@@ -64,29 +64,29 @@ object Stages {
             cat("謝謝招待喵！下一站，出發！"),
         ),
         script = script {
-            line(1.5f, 5, 0.5f) { w, i -> w.spawn(MouseRunner(200f + i * 150f)) }
+            line(1.5f, 10, 0.12f) { w, i -> w.spawn(MouseRunner(140f + (i % 5) * 180f + (i / 5) * 90f)) }
             at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
-            line(7f, 4, 0.7f) { w, i -> w.spawn(MousePlane(fromLeft = true, startY = 260f + i * 30f)) }
-            line(10f, 6, 0.4f) { w, i -> w.spawn(MouseRunner(820f - i * 120f, wiggle = 1.5f)) }
+            line(7f, 6, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = true, startY = 240f + i * 30f)) }
+            line(10f, 10, 0.15f) { w, i -> w.spawn(MouseRunner(860f - (i % 5) * 170f, wiggle = 1.5f)) }
             at(13f) { it.spawn(CheeseDrone(300f, 360f)); it.spawn(CheeseDrone(700f, 300f)) }
             at(16f) { it.spawn(Balloon(260f, ItemType.HOMING)) }
-            line(19f, 4, 0.7f) { w, i -> w.spawn(MousePlane(fromLeft = false, startY = 220f + i * 30f)) }
-            line(22f, 8, 0.3f) { w, i -> w.spawn(MouseRunner(100f + (i % 4) * 260f)) }
+            line(19f, 6, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = false, startY = 220f + i * 30f)) }
+            line(22f, 12, 0.12f) { w, i -> w.spawn(MouseRunner(100f + (i % 4) * 260f + (i / 4) * 40f)) }
             at(25f) { it.spawn(Balloon(720f, ItemType.FOCUS)) }
             at(27f) { it.spawn(CheeseDrone(500f, 320f)) }
-            line(28f, 3, 1f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 0, startY = 300f)) }
+            line(28f, 6, 0.4f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 0, startY = 280f + (i / 2) * 30f)) }
             at(30f) { it.spawn(EliteMouse(500f)) }
             at(33f) { it.spawn(Balloon(500f, ItemType.SPECIAL)) }
-            line(35f, 10, 0.25f) { w, i -> w.spawn(MouseRunner(80f + i * 90f, wiggle = 0.5f)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(MouseRunner(80f + (i % 10) * 90f, wiggle = 0.5f)) }
             at(39f) { it.spawn(CheeseDrone(250f, 280f)); it.spawn(CheeseDrone(750f, 280f)) }
             at(43f) { it.spawn(Balloon(300f, ItemType.REPAIR)) }
-            line(45f, 6, 0.6f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 0, startY = 200f + i * 40f)) }
+            line(45f, 8, 0.3f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 0, startY = 200f + (i / 2) * 40f)) }
             at(50f) { it.spawn(Balloon(700f, ItemType.SONIC)) }
             line(52f, 3, 1.2f) { w, i -> w.spawn(CheeseDrone(250f + i * 250f, 260f + i * 40f)) }
-            line(57f, 12, 0.22f) { w, i -> w.spawn(MouseRunner(if (i % 2 == 0) 150f + i * 30f else 850f - i * 30f)) }
+            line(57f, 16, 0.12f) { w, i -> w.spawn(MouseRunner(if (i % 2 == 0) 150f + i * 25f else 850f - i * 25f)) }
             at(55f) { it.spawn(EliteMouse(300f, 300f)) }
             at(61f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
-            line(63f, 4, 0.8f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 1, startY = 260f)) }
+            line(63f, 8, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 1, startY = 240f + (i / 2) * 25f)) }
             at(68f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
             at(72f) { }
         },
@@ -107,25 +107,25 @@ object Stages {
         script = script {
             line(1.5f, 3, 0.8f) { w, i -> w.spawn(Puppy(250f + i * 250f, 300f + (i % 2) * 80f)) }
             at(5f) { it.spawn(Balloon(500f, ItemType.FOCUS)) }
-            line(6f, 3, 1f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 0, startY = 250f + i * 60f)) }
+            line(6f, 6, 0.3f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 0, startY = 230f + (i / 2) * 60f)) }
             line(10f, 3, 1.2f) { w, i -> w.spawn(BallTurret(200f + i * 300f)) }
             at(14f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
             line(15f, 4, 0.6f) { w, i -> w.spawn(Puppy(150f + i * 230f, 260f)) }
-            line(20f, 4, 0.8f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + i * 40f)) }
+            line(20f, 8, 0.25f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i / 2) * 40f)) }
             at(24f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
             line(25f, 4, 0.9f) { w, i -> w.spawn(BallTurret(150f + i * 230f)) }
-            line(30f, 6, 0.5f) { w, i -> w.spawn(MouseRunner(120f + i * 150f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(MouseRunner(120f + (i % 5) * 190f)) }
             at(31f) { it.spawn(EliteDog(500f)) }
             at(34f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
             line(36f, 5, 0.7f) { w, i -> w.spawn(Puppy(100f + i * 200f, 240f + (i % 2) * 120f)) }
             at(41f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
-            line(43f, 6, 0.5f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 0, startY = 220f + (i % 3) * 70f)) }
+            line(43f, 10, 0.2f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 0, startY = 220f + (i % 3) * 70f)) }
             line(48f, 4, 0.6f) { w, i -> w.spawn(BallTurret(120f + i * 250f)) }
             at(52f) { it.spawn(Balloon(600f, ItemType.SPREAD)) }
             line(54f, 6, 0.6f) { w, i -> w.spawn(Puppy(100f + i * 160f, 280f)) }
             at(57f) { it.spawn(EliteMouse(700f)) }
             at(60f) { it.spawn(Balloon(500f, ItemType.FOCUS)) }
-            line(61f, 8, 0.4f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i % 4) * 50f)) }
+            line(61f, 12, 0.18f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i % 4) * 50f)) }
             at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
             at(72f) { }
         },
@@ -185,13 +185,13 @@ object Stages {
             cat("呼～好舒服…等等，我是來比萌的喵！"),
         ),
         script = script {
-            line(1.5f, 6, 0.3f) { w, i -> w.spawn(Duckling(150f + i * 140f, i * 0.1f)) }
+            line(1.5f, 10, 0.15f) { w, i -> w.spawn(Duckling(150f + (i % 5) * 175f, (i / 5) * 0.3f + (i % 5) * 0.05f)) }
             at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
             line(6f, 3, 1f) { w, i -> w.spawn(YuzuDrone(250f + i * 250f, 300f + (i % 2) * 80f)) }
             line(10f, 3, 1.2f) { w, i -> w.spawn(BucketTurret(200f + i * 300f)) }
             at(13f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
             line(14f, 2, 1.5f) { w, i -> w.spawn(BabyCapy(300f + i * 400f)) }
-            line(18f, 8, 0.25f) { w, i -> w.spawn(Duckling(850f - i * 95f, 0f)) }
+            line(18f, 12, 0.15f) { w, i -> w.spawn(Duckling(850f - (i % 6) * 140f, (i / 6) * 0.3f)) }
             at(22f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
             line(23f, 4, 0.8f) { w, i -> w.spawn(YuzuDrone(150f + i * 230f, 280f)) }
             at(27f) { it.spawn(EliteMonkey(500f)) }

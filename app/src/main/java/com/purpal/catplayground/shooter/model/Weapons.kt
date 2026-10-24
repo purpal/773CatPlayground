@@ -9,7 +9,7 @@ object Weapons {
 
     private val spreadCount = intArrayOf(3, 5, 7, 7, 9)
     private val spreadAngle = floatArrayOf(18f, 28f, 38f, 46f, 56f)
-    private val beamWidth = floatArrayOf(26f, 34f, 44f, 54f, 66f)
+    private val beamWidth = floatArrayOf(32f, 44f, 58f, 74f, 94f)
     private val beamDps = floatArrayOf(150f, 210f, 280f, 350f, 430f)
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)

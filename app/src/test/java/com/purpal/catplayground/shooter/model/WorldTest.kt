@@ -375,4 +375,71 @@ class WorldTest {
         assertFalse(elite.alive)
         assertTrue(w.items.any { it.cycle == Item.MAIN_CYCLE })
     }
+
+    @Test
+    fun diversRamThePlayerAndSelfDestruct() {
+        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+        repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+        w.enemies.clear()
+        val diver = MouseRunner(w.player.x)
+        diver.y = w.player.y - 400f
+        w.spawn(diver)
+        val armor = w.player.armor
+        var guard = 0
+        while (diver.alive && guard++ < 600) {
+            w.update(STEP)
+            w.bullets.clear()
+        }
+        assertFalse("diver blew up", diver.alive)
+        assertTrue("diver never shoots and hurts on contact", w.player.armor < armor)
+    }
+
+    @Test
+    fun onlyGroundShootersFire() {
+        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+        repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+        w.enemies.clear()
+        w.godMode = true
+        w.spawn(MousePlane(fromLeft = true, startY = 300f))
+        w.spawn(Bee(500f, 0f))
+        repeat(60 * 3) { w.update(STEP) }
+        assertTrue("divers fire nothing", w.bullets.isEmpty())
+        w.spawn(BallTurret(500f).also { it.y = 300f })
+        repeat(60 * 3) { w.update(STEP) }
+        assertTrue("ground turret fires", w.bullets.isNotEmpty())
+        assertEquals(World.defaultRadius(BulletStyle.ORB) * World.BULLET_SCALE, w.bullets.first().radius, 0.01f)
+    }
+
+    @Test
+    fun bossBodyIsSolidAndHurts() {
+        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+        val boss = MouseBoss()
+        boss.y = 600f
+        w.enemies += boss
+        repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+        w.player.x = boss.x
+        w.player.y = boss.y + 20f
+        w.player.invulnerable = 0f
+        val armor = w.player.armor
+        w.update(STEP)
+        assertTrue("touching the boss hurts", w.player.armor < armor)
+        val d = kotlin.math.sqrt(dist2(boss.x, boss.y, w.player.x, w.player.y))
+        assertTrue("player is pushed out of the boss body ($d)", d >= boss.radius * World.BOSS_BODY)
+    }
+
+    @Test
+    fun blackCatDashesOnAFastFlickAndOrangeDoesNot() {
+        for (cat in CatType.entries) {
+            val w = World(Stages.mouse, cat, 2000f)
+            repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+            w.player.invulnerable = 0f
+            w.drag(300f, 0f)
+            w.update(STEP)
+            if (cat == CatType.BLACK) {
+                assertTrue("black cat dashes", w.player.dashTime > 0f && w.player.invulnerable > 0f)
+            } else {
+                assertEquals(0f, w.player.dashTime, 0f)
+            }
+        }
+    }
 }

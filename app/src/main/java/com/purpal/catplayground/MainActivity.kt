@@ -32,6 +32,7 @@ import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.lobby.LobbyScreen
 import com.purpal.catplayground.shooter.model.Loadout
 import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.render.FxSettings
 import com.purpal.catplayground.shooter.ui.ShooterGameScreen
 import com.purpal.catplayground.shooter.ui.ShooterMenuScreen
 import com.purpal.catplayground.ui.BrandSplash
@@ -184,29 +185,33 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                 onPlay = { stage, cat -> push(Screen.ShooterPlay(stage, cat, takeCarry(stage))) },
             )
 
-            is Screen.ShooterPlay -> ShooterGameScreen(
-                stageNumber = screen.stage,
-                cat = screen.cat,
-                autotest = debug?.autotest == true,
-                ultimateOnLeft = prefs.shooterUltimateOnLeft,
-                bestScore = prefs.shooterBest(screen.stage),
-                loadout = screen.loadout,
-                onCleared = { stage, score, loadout ->
-                    prefs.setShooterBest(stage, score)
-                    if (stage > shooterCleared) {
-                        shooterCleared = stage
-                        prefs.shooterCleared = stage
-                    }
-                    // 破關時的機體狀態先存起來：直接進下一關會用掉，回列表的話下次挑戰下一關時用。
-                    if (Stages.get(stage + 1) != null) {
-                        prefs.shooterCarry = loadout.encode()
-                        prefs.shooterCarryStage = stage + 1
-                        carryStage = stage + 1
-                    }
-                },
-                onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat, takeCarry(screen.stage + 1))) },
-                onExit = { pop() },
-            )
+            is Screen.ShooterPlay -> {
+                FxSettings.damageNumbers = prefs.shooterDamageNumbers
+                FxSettings.high = prefs.shooterFxHigh
+                ShooterGameScreen(
+                    stageNumber = screen.stage,
+                    cat = screen.cat,
+                    autotest = debug?.autotest == true,
+                    ultimateOnLeft = prefs.shooterUltimateOnLeft,
+                    bestScore = prefs.shooterBest(screen.stage),
+                    loadout = screen.loadout,
+                    onCleared = { stage, score, loadout ->
+                        prefs.setShooterBest(stage, score)
+                        if (stage > shooterCleared) {
+                            shooterCleared = stage
+                            prefs.shooterCleared = stage
+                        }
+                        // 破關時的機體狀態先存起來：直接進下一關會用掉，回列表的話下次挑戰下一關時用。
+                        if (Stages.get(stage + 1) != null) {
+                            prefs.shooterCarry = loadout.encode()
+                            prefs.shooterCarryStage = stage + 1
+                            carryStage = stage + 1
+                        }
+                    },
+                    onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat, takeCarry(screen.stage + 1))) },
+                    onExit = { pop() },
+                )
+            }
         }
     }
 

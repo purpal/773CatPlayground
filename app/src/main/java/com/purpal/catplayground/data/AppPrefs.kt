@@ -32,6 +32,16 @@ class AppPrefs(context: Context) {
         get() = prefs.getBoolean("shooter_ultimate_left", false)
         set(value) = prefs.edit().putBoolean("shooter_ultimate_left", value).apply()
 
+    /** 射擊遊戲顯示傷害數字。 */
+    var shooterDamageNumbers: Boolean
+        get() = prefs.getBoolean("shooter_damage_numbers", true)
+        set(value) = prefs.edit().putBoolean("shooter_damage_numbers", value).apply()
+
+    /** 射擊遊戲特效品質高（多一層柔光）；低階手機可以關掉。 */
+    var shooterFxHigh: Boolean
+        get() = prefs.getBoolean("shooter_fx_high", true)
+        set(value) = prefs.edit().putBoolean("shooter_fx_high", value).apply()
+
     /** 破關時保留下來、下一關可以用一次的機體狀態（[com.purpal.catplayground.shooter.model.Loadout] 的編碼）。 */
     var shooterCarry: String?
         get() = prefs.getString("shooter_carry", null)

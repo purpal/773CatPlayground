@@ -29,6 +29,8 @@ class World(
     val walls = ArrayList<SonicWall>()
     val items = ArrayList<Item>()
     val particles = ArrayList<Particle>()
+    /** 連鎖閃電（畫面用）。 */
+    val bolts = ArrayList<Bolt>()
 
     /** 這一幀產生的音效，畫面播放後清空。 */
     val cues = ArrayList<SoundCue>()
@@ -91,6 +93,10 @@ class World(
     private var lastPokoTime = -1f
     private var lastHitMark = -1f
     private var lastCasing = 0f
+    private var lastDamageNumber = -1f
+    private var lastGhost = 0f
+    /** 爪刃命中次數；每隔幾下觸發一次連鎖閃電。 */
+    private var clawHits = 0
 
     private val script = stage.script.sorted()
     private var scriptIndex = 0
@@ -115,6 +121,8 @@ class World(
     fun update(dt: Float) {
         if (!running) return
         updateParticles(dt)
+        for (b in bolts) b.age += dt
+        bolts.removeAll { !it.alive }
         if (screenFlash > 0f) screenFlash = (screenFlash - dt * 3f).coerceAtLeast(0f)
         if (hitStop > 0f) {
             hitStop -= dt
@@ -265,6 +273,8 @@ class World(
         val p = player
         if (p.invulnerable > 0f) p.invulnerable -= dt
         if (p.transformed > 0f) p.transformed -= dt
+        if (p.dashTime > 0f) p.dashTime -= dt
+        if (p.dashCooldown > 0f) p.dashCooldown -= dt
         beam.active = false
         val dragDx = dragX
         val dragDy = dragY
@@ -280,7 +290,15 @@ class World(
         var dx = mx * p.speed * dt + dragDx * gain
         var dy = my * p.speed * dt + dragDy * gain
         val step = hypot(dx, dy)
-        val maxStep = p.speed * MAX_DRAG_SPEED_FACTOR * dt
+        // 黑貓的影閃：手指快速一甩就瞬間閃過去，短暫無敵並留下殘影。
+        if (p.cat == CatType.BLACK && p.dashCooldown <= 0f && step / dt > p.cat.baseSpeed * DASH_TRIGGER) {
+            p.dashTime = DASH_TIME
+            p.dashCooldown = DASH_COOLDOWN
+            p.invulnerable = maxOf(p.invulnerable, DASH_TIME)
+            cue(SoundCue.SWING)
+        }
+        val dashBoost = if (p.dashTime > 0f) DASH_SPEED_BOOST else 1f
+        val maxStep = p.speed * MAX_DRAG_SPEED_FACTOR * dashBoost * dt
         if (step > maxStep) {
             // 太快的甩動：這一步只走最大距離，剩下的留到後面幾步補上，最後仍會停在手指指到的位置。
             val keep = 1f - maxStep / step
@@ -290,6 +308,12 @@ class World(
             dy = dy / step * maxStep
         }
         p.vx = p.vx * 0.6f + dx / dt * 0.4f
+        if (p.dashTime > 0f && time - lastGhost > 0.03f && particles.size < MAX_PARTICLES) {
+            lastGhost = time
+            val bank = p.vx / p.cat.baseSpeed
+            val pose = if (bank < -0.2f) 1 else if (bank > 0.2f) 2 else 0
+            particles += Particle(p.x, p.y, 0f, 0f, 0.3f, 1f, 0, ParticleKind.GHOST, pose)
+        }
         p.x = (p.x + dx).coerceIn(40f, WORLD_WIDTH - 40f)
         p.y = (p.y + dy).coerceIn(playerMinY, playerMaxY)
 
@@ -369,6 +393,12 @@ class World(
     private fun startBlast() {
         blastRadius = 0f
         blastHit.clear()
+        // 魚形飛彈齊射：12 顆往上扇形散開，再各自追向敵人。
+        for (i in 0 until ULT_MISSILES) {
+            val a = -HALF_PI + (i - (ULT_MISSILES - 1) / 2f) * 9f * DEG
+            playerShots += PlayerShot(player.x + (i - (ULT_MISSILES - 1) / 2f) * 14f, player.y - 30f, cos(a) * 520f, sin(a) * 520f, 30f, 14f, ShotStyle.MISSILE)
+        }
+        cue(SoundCue.MISSILE)
         shake(0.8f)
         flash(1f)
         cue(SoundCue.BOMB_BLAST)
@@ -390,7 +420,7 @@ class World(
         for (e in enemies) {
             if (e.alive && !e.invulnerable && e.id !in blastHit && dist2(e.x, e.y, px, py) < (blastRadius + e.radius).let { it * it }) {
                 blastHit += e.id
-                damageEnemy(e, if (e.isBoss) 700f else 400f)
+                damageEnemy(e, if (e.isBoss) 700f else 400f, crit = true)
             }
         }
         if (blastRadius > height * 1.6f) blastRadius = -1f
@@ -444,13 +474,54 @@ class World(
             val e = enemies[i]
             if (e.hitFlash > 0f) e.hitFlash -= dt
             if (e.alive && !(e.isBoss && phase == Phase.BOSS_DEFEATED)) e.update(this, dt)
-            if (e.alive && e.contactDamage > 0f && player.alive && e.hurtsOnContact &&
+            if (e.isBoss) {
+                if (phase != Phase.BOSS_DEFEATED) bossBody(e)
+            } else if (e.alive && e.contactDamage > 0f && player.alive && e.hurtsOnContact &&
                 dist2(e.x, e.y, player.x, player.y) < (e.radius * 0.8f + player.radius).let { it * it }
             ) {
                 damagePlayer(e.contactDamage)
+                if (e.kamikaze) {
+                    // 自毀俯衝型撞到就自爆（不給分）
+                    e.alive = false
+                    explode(e.x, e.y, big = false)
+                    voxels(e.x, e.y, e.radius, 8)
+                }
+            }
+            if (e.pendingDamage > 0f) {
+                e.pendingTime += dt
+                if (e.pendingTime >= DAMAGE_NUMBER_INTERVAL) flushDamage(e)
             }
             i++
         }
+    }
+
+    /** Boss 的身體是實心的：機體撞上去會受損，並被推回身體外面（進場與裝甲中也一樣）。 */
+    private fun bossBody(b: Enemy) {
+        val p = player
+        if (!p.alive || !b.alive) return
+        val reach = b.radius * BOSS_BODY + p.radius
+        val d2 = dist2(b.x, b.y, p.x, p.y)
+        if (d2 >= reach * reach) return
+        damagePlayer(b.contactDamage)
+        val d = sqrt(d2)
+        val nx = if (d > 1f) (p.x - b.x) / d else 0f
+        val ny = if (d > 1f) (p.y - b.y) / d else 1f
+        p.x = (b.x + nx * reach).coerceIn(40f, WORLD_WIDTH - 40f)
+        p.y = (b.y + ny * reach).coerceIn(playerMinY, playerMaxY)
+    }
+
+    /** 把累積的傷害變成一個飄起來的數字（顯示值放大 10 倍，看起來比較爽快）。 */
+    private fun flushDamage(e: Enemy, crit: Boolean = false) {
+        if (!crit && time - lastDamageNumber < 0.025f && e.alive) return
+        val value = (e.pendingDamage * DAMAGE_DISPLAY).toInt()
+        e.pendingDamage = 0f
+        e.pendingTime = 0f
+        if (value <= 0 || particles.size >= MAX_PARTICLES) return
+        lastDamageNumber = time
+        particles += Particle(
+            e.x + jitter(e.radius * 0.5f), e.y - e.radius * 0.4f + jitter(12f), jitter(40f), -260f,
+            if (crit) 0.9f else 0.6f, if (crit) 1.5f else 0.85f, if (crit) 0xFFFF3D5AL else 0L, ParticleKind.DAMAGE, value,
+        )
     }
 
     private fun updateBullets(dt: Float) {
@@ -610,7 +681,9 @@ class World(
                 if (!e.alive || e.invulnerable || e.id in s.hits) continue
                 val r = e.radius + s.radius
                 if (dist2(s.x, s.y, e.x, e.y) > r * r) continue
-                damageEnemy(e, s.damage)
+                val crit = random.nextFloat() < CRIT_CHANCE
+                damageEnemy(e, if (crit) s.damage * 2f else s.damage, crit)
+                if (s.style == ShotStyle.CLAW && ++clawHits % CHAIN_EVERY == 0) chainLightning(e)
                 particles += Particle(s.x, s.y, 0f, -40f, 0.15f, s.radius * 2.2f, 0xFFFFF3C4L, ParticleKind.FLASH)
                 if (random.nextFloat() < 0.35f && particles.size < MAX_PARTICLES) {
                     particles += Particle(s.x, s.y, jitter(160f), -120f - random.nextFloat() * 120f, 0.45f, 13f, 0xFFFFE07AL, ParticleKind.STAR)
@@ -635,9 +708,42 @@ class World(
         }
     }
 
-    fun damageEnemy(e: Enemy, damage: Float) {
+    /**
+     * 黑貓爪刃的連鎖閃電：從被打中的敵人跳到附近還沒被電到的敵人，等級越高跳越多下。
+     */
+    private fun chainLightning(from: Enemy) {
+        val hops = 2 + player.mainLevel
+        val xs = FloatArray(hops + 1)
+        val ys = FloatArray(hops + 1)
+        xs[0] = from.x
+        ys[0] = from.y
+        val hit = HashSet<Int>()
+        hit += from.id
+        var current = from
+        var n = 1
+        while (n <= hops) {
+            val next = enemies.filter { it.alive && !it.invulnerable && it.id !in hit && it !is Balloon && it.y > -20f }
+                .minByOrNull { dist2(current.x, current.y, it.x, it.y) } ?: break
+            if (dist2(current.x, current.y, next.x, next.y) > CHAIN_RANGE * CHAIN_RANGE) break
+            hit += next.id
+            xs[n] = next.x
+            ys[n] = next.y
+            n++
+            particles += Particle(next.x, next.y, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
+            damageEnemy(next, CHAIN_DAMAGE)
+            current = next
+        }
+        if (n < 2) return
+        bolts += Bolt(xs, ys, n, random.nextInt())
+        cue(SoundCue.LASER)
+        if (n >= 4) sfx(xs[n - 1], ys[n - 1] - 60f, SfxText.CHAIN)
+    }
+
+    fun damageEnemy(e: Enemy, damage: Float, crit: Boolean = false) {
         if (phase == Phase.BOSS_DEFEATED && e.isBoss) return
         e.hp -= damage
+        e.pendingDamage += damage
+        if (crit) flushDamage(e, crit = true)
         e.hitFlash = 0.08f
         if (time - lastHitCue > 0.07f) {
             cue(SoundCue.ENEMY_HIT)
@@ -650,6 +756,7 @@ class World(
             return
         }
         e.alive = false
+        if (e.pendingDamage > 0f) flushDamage(e)
         combo++
         comboTime = COMBO_TIME
         val gained = (e.score * (1f + minOf(combo, 50) * 0.02f)).toInt()
@@ -724,7 +831,10 @@ class World(
                     p.vy = p.vy * 0.95f + 900f * dt
                 }
                 ParticleKind.PROP -> p.vy += 1100f * dt
-                ParticleKind.SCORE, ParticleKind.SFX -> p.vy *= 0.9f
+                ParticleKind.SCORE, ParticleKind.SFX, ParticleKind.DAMAGE -> {
+                    p.vx *= 0.9f
+                    p.vy *= 0.88f
+                }
                 else -> {
                     p.vx *= 0.96f
                     p.vy *= 0.96f
@@ -798,8 +908,9 @@ class World(
 
     fun jitter(amount: Float): Float = (random.nextFloat() * 2f - 1f) * amount
 
+    /** 敵彈一律放大 [BULLET_SCALE] 倍（判定與外觀一起），比較好看清楚、也比較好閃。 */
     fun bullet(x: Float, y: Float, vx: Float, vy: Float, style: BulletStyle, color: Long, radius: Float = defaultRadius(style)): EnemyBullet {
-        val b = EnemyBullet(x, y, vx, vy, style, color, radius, defaultDamage(style))
+        val b = EnemyBullet(x, y, vx, vy, style, color, radius * BULLET_SCALE, defaultDamage(style))
         bullets += b
         return b
     }
@@ -810,15 +921,21 @@ class World(
     fun aimed(x: Float, y: Float, speed: Float, style: BulletStyle, color: Long, radius: Float = defaultRadius(style)) =
         shoot(x, y, aimAt(x, y), speed, style, color, radius)
 
+    /**
+     * 扇形彈：間隔放大 [BULLET_SPACING] 倍；奇數顆慢一點，形成快慢兩層。
+     */
     fun fan(x: Float, y: Float, center: Float, count: Int, spread: Float, speed: Float, style: BulletStyle, color: Long) {
+        val wide = spread * BULLET_SPACING
         for (i in 0 until count) {
-            val a = if (count == 1) center else center - spread / 2f + spread * i / (count - 1)
-            shoot(x, y, a, speed, style, color)
+            val a = if (count == 1) center else center - wide / 2f + wide * i / (count - 1)
+            shoot(x, y, a, if (i % 2 == 1) speed * SLOW_LAYER else speed, style, color)
         }
     }
 
+    /** 環形彈：顆數減少讓間隔放大 [BULLET_SPACING] 倍；奇數顆慢一點，形成快慢兩層。 */
     fun ring(x: Float, y: Float, count: Int, speed: Float, offset: Float, style: BulletStyle, color: Long) {
-        for (i in 0 until count) shoot(x, y, offset + i * TWO_PI / count, speed, style, color)
+        val n = (count / BULLET_SPACING).toInt().coerceAtLeast(3)
+        for (i in 0 until n) shoot(x, y, offset + i * TWO_PI / n, if (i % 2 == 1) speed * SLOW_LAYER else speed, style, color)
     }
 
     /**
@@ -900,6 +1017,30 @@ class World(
         /** 每秒最多移動 speed × 這個倍數。 */
         const val MAX_DRAG_SPEED_FACTOR = 5f
         const val MAX_CONTINUES = 3
+
+        /** 敵彈大小與間隔的倍率。 */
+        const val BULLET_SCALE = 1.4f
+        const val BULLET_SPACING = 1.2f
+        /** 扇形／環形彈裡慢的那一層的速度倍率。 */
+        const val SLOW_LAYER = 0.72f
+        /** Boss 身體判定（相對於半徑）。 */
+        const val BOSS_BODY = 0.9f
+
+        const val CRIT_CHANCE = 0.12f
+        const val DAMAGE_DISPLAY = 10f
+        const val DAMAGE_NUMBER_INTERVAL = 0.12f
+
+        const val CHAIN_EVERY = 10
+        const val CHAIN_RANGE = 300f
+        const val CHAIN_DAMAGE = 9f
+
+        /** 黑貓影閃：手指移動速度超過基本速度的這個倍數就觸發。 */
+        const val DASH_TRIGGER = 2.6f
+        const val DASH_TIME = 0.3f
+        const val DASH_COOLDOWN = 0.9f
+        const val DASH_SPEED_BOOST = 1.8f
+
+        const val ULT_MISSILES = 12
         private const val MAX_PARTICLES = 700
 
         fun defaultRadius(style: BulletStyle): Float = when (style) {
