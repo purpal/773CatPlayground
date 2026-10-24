@@ -490,7 +490,7 @@ internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modif
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
             Modifier
-                .size(84.dp)
+                .size(59.dp)
                 .pointerInput(onPress) { detectTapGestures(onPress = { onPress() }) },
             contentAlignment = Alignment.Center,
         ) {
@@ -498,13 +498,13 @@ internal fun UltimateButton(cat: CatType, bombs: Int, onPress: () -> Unit, modif
             if (com.purpal.catplayground.DebugFlags.plainHud) {
                 Box(
                     Modifier
-                        .size(78.dp)
+                        .size(55.dp)
                         .background(if (ready) Color(0xFFFF6D00).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { Text(if (cat == CatType.ORANGE) "🐯" else "🐈‍⬛", fontSize = 38.sp) }
+                ) { Text(if (cat == CatType.ORANGE) "🐯" else "🐈‍⬛", fontSize = 27.sp) }
             } else ArtImage(
                 if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black",
-                Modifier.size(84.dp),
+                Modifier.size(59.dp),
                 contentDescription = cat.ultimateName,
                 alpha = if (ready) 1f else 0.4f,
             )

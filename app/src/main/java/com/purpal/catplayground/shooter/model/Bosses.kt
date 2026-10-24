@@ -59,8 +59,8 @@ abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Flo
     open fun mood(): Int = phase
 
     /** 手的位置（相對於 Boss 中心），道具從這裡伸出去。 */
-    open val handX: Float get() = 100f
-    open val handY: Float get() = 70f
+    open val handX: Float get() = 150f
+    open val handY: Float get() = 105f
 
     /**
      * 用道具或肢體攻擊：預告後從手（或身體）伸出去，貫穿、無法被力場盾擋下。
@@ -151,7 +151,7 @@ const val BEAM_DAMAGE = 26f
  * 第 1 關：起司鼠王（小起司）。拿著電漿叉。
  * 老鼠膽小，65% 血就被打到「卸甲」：叉子飛走，嚇得滿場亂跑、叫小老鼠來幫忙、甩電漿尾巴。
  */
-class MouseBoss : Boss(hp = 15000f, radius = 120f, score = 20000, homeY = 330f) {
+class MouseBoss : Boss(hp = 15000f, radius = 180f, score = 20000, homeY = 410f) {
     override val kind = EnemyKind.BOSS_MOUSE
     override val name = "起司鼠王"
     override val breakAt = 0.65f
@@ -159,12 +159,12 @@ class MouseBoss : Boss(hp = 15000f, radius = 120f, score = 20000, homeY = 330f) 
     override val weapon = HazardStyle.FORK
     override val lostWeapon = LostProp.FORK
     override val lostProps = intArrayOf(LostProp.CROWN)
-    override val handX = 104f
-    override val handY = 92f
+    override val handX = 156f
+    override val handY = 138f
 
     override fun move(w: World, dt: Float) {
         // 卸甲後慌張地快速左右跑
-        x = if (broken) WORLD_WIDTH / 2f + sin(age * 1.5f) * 290f else WORLD_WIDTH / 2f + sin(age * 0.6f) * 200f
+        x = if (broken) WORLD_WIDTH / 2f + sin(age * 1.5f) * 240f else WORLD_WIDTH / 2f + sin(age * 0.6f) * 180f
     }
 
     private val cheeseRings = Attack(4f) { w, t, dt ->
@@ -238,7 +238,7 @@ class MouseBoss : Boss(hp = 15000f, radius = 120f, score = 20000, homeY = 330f) 
  * 第 2 關：柴犬隊長。拿著硬光骨頭：橫掃、突刺，還會把骨頭當迴力鏢丟出去。
  * 柴犬固執，35% 才鬆口「卸甲」：之後改用吠叫的音波、眼睛光束與衝撞。
  */
-class DogBoss : Boss(hp = 21000f, radius = 120f, score = 30000, homeY = 340f) {
+class DogBoss : Boss(hp = 21000f, radius = 180f, score = 30000, homeY = 420f) {
     override val kind = EnemyKind.BOSS_DOG
     override val name = "柴犬隊長"
     override val breakAt = 0.35f
@@ -246,8 +246,8 @@ class DogBoss : Boss(hp = 21000f, radius = 120f, score = 30000, homeY = 340f) {
     override val weapon = HazardStyle.BONE
     override val lostWeapon = LostProp.BONE
     override val lostProps = intArrayOf(LostProp.HAT)
-    override val handX = 112f
-    override val handY = 86f
+    override val handX = 168f
+    override val handY = 129f
     private var targetX = WORLD_WIDTH / 2f
     private var dashing = false
     /** 骨頭丟出去還沒回來。 */
@@ -273,7 +273,7 @@ class DogBoss : Boss(hp = 21000f, radius = 120f, score = 30000, homeY = 340f) {
     }
     private val dash = Attack(3.2f) { w, t, dt ->
         dashing = t < 3f
-        if (every(t, dt, 1f)) targetX = 120f + w.random.nextFloat() * (WORLD_WIDTH - 240f)
+        if (every(t, dt, 1f)) targetX = 200f + w.random.nextFloat() * (WORLD_WIDTH - 400f)
         if (every(t, dt, 0.15f)) w.shoot(x, y + 60f, HALF_PI, 210f, BulletStyle.BONE, Tint.BONE)
     }
     private val frisbeeStorm = Attack(4f) { w, t, dt ->
@@ -373,7 +373,7 @@ class ThrownBone(private val boss: DogBoss, targetX: Float, targetY: Float) :
  * 第 3 關：熊熊大王。拿著熱熔蜂蜜鑽：重擊地面、360 度旋轉橫掃。
  * 熊又壯又耐打，撐到 25% 才「卸甲」：之後改用熊掌爪擊、捶地與丟蜂巢。
  */
-class BearBoss : Boss(hp = 28000f, radius = 140f, score = 40000, homeY = 360f) {
+class BearBoss : Boss(hp = 28000f, radius = 210f, score = 40000, homeY = 440f) {
     override val kind = EnemyKind.BOSS_BEAR
     override val name = "熊熊大王"
     override val breakAt = 0.25f
@@ -381,8 +381,8 @@ class BearBoss : Boss(hp = 28000f, radius = 140f, score = 40000, homeY = 360f) {
     override val weapon = HazardStyle.DIPPER
     override val lostWeapon = LostProp.DIPPER
     override val lostProps = intArrayOf(LostProp.POT)
-    override val handX = 124f
-    override val handY = 92f
+    override val handX = 186f
+    override val handY = 138f
 
     override fun move(w: World, dt: Float) {
         x = WORLD_WIDTH / 2f + sin(age * 0.45f) * 150f
@@ -460,15 +460,15 @@ class BearBoss : Boss(hp = 28000f, radius = 140f, score = 40000, homeY = 360f) {
  * 卡皮巴拉淡定、什麼都無所謂，打到一半（50%）才慢慢「裝甲」：戴上護目鏡、裝上肩甲，
  * 拿出橘子砲——高壓溫泉水柱掃射、橘子飛彈連發。
  */
-class CapyBoss : Boss(hp = 32000f, radius = 140f, score = 50000, homeY = 360f) {
+class CapyBoss : Boss(hp = 32000f, radius = 210f, score = 50000, homeY = 440f) {
     override val kind = EnemyKind.BOSS_CAPY
     override val name = "溫泉大王 卡皮"
     override val breakAt = 0.5f
     override val breakKind = BreakKind.ARMOR
     override val weapon = HazardStyle.WATER
     override val lostProps = intArrayOf(LostProp.YUZU)
-    override val handX = 130f
-    override val handY = 70f
+    override val handX = 195f
+    override val handY = 105f
 
     /** 放空（裝甲前）→ 裝甲（護目鏡）→ 裝甲被打哭。 */
     override fun mood(): Int = when {

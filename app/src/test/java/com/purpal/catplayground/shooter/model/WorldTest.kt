@@ -456,15 +456,15 @@ class WorldTest {
         w.player.mainWeapon = MainWeapon.SPECIAL
         w.player.mainLevel = 3
         w.firing = true
-        // 放在趾頭附近（機體正上方約一個輪廓大小）
-        val target = BallTurret(w.player.x).also { it.y = w.player.y - 95f; it.hp = 10000f }
+        // 放在貓掌輪廓的正下方（掌心底部）
+        val target = BallTurret(w.player.x).also { it.y = w.player.y + 230f; it.hp = 10000f }
         w.enemies += target
         var minX = Float.MAX_VALUE
         var maxX = -Float.MAX_VALUE
         var minY = Float.MAX_VALUE
         repeat(60 * 2) {
             w.update(STEP)
-            target.y = w.player.y - 95f
+            target.y = w.player.y + w.pawBolt.size
             target.x = w.player.x
             assertTrue(w.pawBolt.active)
             minX = minOf(minX, w.pawBolt.headX - w.player.x)

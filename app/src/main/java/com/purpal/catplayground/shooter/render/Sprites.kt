@@ -87,6 +87,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         art(RUN[(if (beast) 2 else 0) + cat.ordinal][pose][frame and 3], CAT_WIDTH)
 
     /** 大絕特寫（寫實漫畫風）。 */
+    /** 大絕道具：和大絕按鈕同一個圖示。 */
+    fun ultButton(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ITEM_WIDTH)
+
     fun ultimate(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_tiger" else "ult_panther", ULT_WIDTH)
 
     // ── 敵人 ──
@@ -153,8 +156,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     // ── 道具 ──
 
     fun item(type: ItemType): Sprite = when (type) {
-        ItemType.COIN -> art("item_coin", 46f)
-        ItemType.DATA -> art("item_data", 26f)
+        ItemType.COIN -> art("item_coin", 83f)
+        ItemType.DATA -> art("item_data", 34f)
         else -> art(ITEMS[type.ordinal], ITEM_WIDTH)
     }
 
@@ -239,6 +242,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         for (d in 0..9) digit(d)
         plus(); times()
         ultimate(cat)
+        ultButton(cat)
         puff(); smoke(); muzzle()
         GLOWS.forEach { glow(it) }
         for (style in BulletStyle.entries) {
@@ -252,9 +256,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         fun bulletReference(radius: Float) = if (radius > 16f) 22f else 11f
 
         const val CAT_WIDTH = 130f
-        const val BOSS_WIDTH = 360f
+        const val BOSS_WIDTH = 540f
         const val ELITE_WIDTH = 175f
-        const val ITEM_WIDTH = 76f
+        const val ITEM_WIDTH = 137f
         const val ULT_WIDTH = 760f
         const val DIGIT_WIDTH = 30f
 

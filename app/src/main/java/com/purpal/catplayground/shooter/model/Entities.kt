@@ -184,9 +184,9 @@ class Item(var x: Float, var y: Float, type: ItemType) {
     var vx = 0f
     var vy = 0f
     val radius = when (type) {
-        ItemType.COIN -> 20f
+        ItemType.COIN -> 36f
         ItemType.DATA -> 16f
-        else -> 30f
+        else -> 54f
     }
     val cycle: List<ItemType>? = when (type) {
         in MAIN_CYCLE -> MAIN_CYCLE

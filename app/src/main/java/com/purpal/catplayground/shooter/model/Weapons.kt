@@ -14,9 +14,9 @@ object Weapons {
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
     /** 肉球閃電：輪廓大小、每秒繞幾圈、每次命中的傷害、閃電頭的判定半徑。 */
-    private val pawBoltSize = floatArrayOf(125f, 140f, 155f, 170f, 185f)
-    private val pawBoltLaps = floatArrayOf(0.9f, 1.15f, 1.4f, 1.7f, 2f)
-    private val pawBoltDamage = floatArrayOf(24f, 30f, 36f, 44f, 52f)
+    private val pawBoltSize = floatArrayOf(188f, 210f, 232f, 255f, 278f)
+    private val pawBoltLaps = floatArrayOf(1.8f, 2.3f, 2.8f, 3.4f, 4f)
+    private val pawBoltDamage = floatArrayOf(48f, 60f, 72f, 88f, 104f)
     private val pawBoltReach = floatArrayOf(30f, 34f, 38f, 42f, 46f)
     private val point = FloatArray(2)
 
@@ -92,6 +92,10 @@ object Weapons {
         b.x = p.x
         b.y = p.y
         b.size = pawBoltSize[level]
+        // 上一步的閃電頭位置：繞得很快時一步會走很遠，判定用「這一步走過的線段」才不會漏打
+        PawPath.point(b.progress, point)
+        val fromX = p.x + point[0] * b.size
+        val fromY = p.y + point[1] * b.size
         b.progress = (b.progress + pawBoltLaps[level] * dt) % 1000f
         PawPath.point(b.progress, point)
         b.headX = p.x + point[0] * b.size
@@ -99,10 +103,11 @@ object Weapons {
         val reach = pawBoltReach[level]
         var hit: Enemy? = null
         for (e in w.enemies) {
-            if (!e.alive || e.invulnerable || e is Balloon) continue
+            // 氣球也打得破
+            if (!e.alive || e.invulnerable) continue
             if (w.time - e.pawHitTime < PAW_HIT_COOLDOWN) continue
             val r = e.radius + reach
-            if (dist2(b.headX, b.headY, e.x, e.y) > r * r) continue
+            if (segmentDist2(e.x, e.y, fromX, fromY, b.headX, b.headY) > r * r) continue
             e.pawHitTime = w.time
             val crit = w.random.nextFloat() < World.CRIT_CHANCE
             val damage = pawBoltDamage[level] * power(p)
@@ -113,6 +118,16 @@ object Weapons {
     }
 
     const val PAW_HIT_COOLDOWN = 0.08f
+
+    /** 點 (px, py) 到線段 (ax, ay)-(bx, by) 的距離平方。 */
+    private fun segmentDist2(px: Float, py: Float, ax: Float, ay: Float, bx: Float, by: Float): Float {
+        val dx = bx - ax
+        val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        if (len2 < 1f) return dist2(px, py, ax, ay)
+        val t = (((px - ax) * dx + (py - ay) * dy) / len2).coerceIn(0f, 1f)
+        return dist2(px, py, ax + dx * t, ay + dy * t)
+    }
 
     fun fireSub(w: World, p: Player) {
         val level = p.subLevel.coerceIn(1, Player.MAX_SUB_LEVEL)

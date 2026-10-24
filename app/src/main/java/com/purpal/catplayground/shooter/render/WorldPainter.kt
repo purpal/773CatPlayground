@@ -85,7 +85,7 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
             // 背景壓暗一些，讓霓虹般的火力更突出。
             drawRect(Color(0xFF0A0E24).copy(alpha = 0.3f), size = Size(WORLD_WIDTH, w.height))
             for (wall in w.walls) drawSonicWall(wall)
-            for (item in w.items) drawItem(item, sprites)
+            for (item in w.items) drawItem(item, w, sprites)
             for (e in w.enemies) drawEnemy(e, w, sprites)
             drawLockOns(w, sprites)
             for (s in w.playerShots) drawShot(s, w, sprites)
@@ -164,7 +164,10 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
             // 氣球本體在判定圓上，道具掛在線的下端。
             sprite(sprites.enemy(e.kind, 0), dy = 30f)
             val drop = (e as Balloon).drop
-            if (drop != null) drawSprite(sprites.item(drop), e.x, e.y + 104f, 0.85f)
+            if (drop != null) {
+                val art = if (drop == ItemType.BOMB) sprites.ultButton(w.player.cat) else sprites.item(drop)
+                drawSprite(art, e.x, e.y + 140f, 0.85f)
+            }
         }
         EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> {
             val pulse = 3.4f + sin(w.time * 6f + e.id) * 0.3f
@@ -237,19 +240,20 @@ private fun propWidth(style: HazardStyle) = when (style) {
     else -> 24f
 }
 
-private fun DrawScope.drawItem(item: Item, sprites: SpriteCache) {
+private fun DrawScope.drawItem(item: Item, w: World, sprites: SpriteCache) {
     if (item.type == ItemType.DATA) {
         drawSprite(sprites.item(ItemType.DATA), item.x, item.y, if (item.variant % 3 == 0) 1.3f else 1f, item.age * 300f)
         return
     }
     val bob = sin(item.age * 5f) * 4f
     if (item.type != ItemType.COIN) {
-        drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 0.9f + sin(item.age * 6f) * 0.15f, alpha = 0.35f, blendMode = BlendMode.Plus)
+        drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 1.6f + sin(item.age * 6f) * 0.25f, alpha = 0.35f, blendMode = BlendMode.Plus)
     }
-    drawSprite(sprites.item(item.type), item.x, item.y + bob, 0.95f)
+    val art = if (item.type == ItemType.BOMB) sprites.ultButton(w.player.cat) else sprites.item(item.type)
+    drawSprite(art, item.x, item.y + bob, 0.95f)
     if (item.cycle != null && !DebugFlags.noArc) {
         // 倒數圈：繞一圈就換成下一種武器。
-        val r = 44f
+        val r = 78f
         drawArc(
             Color.White.copy(alpha = 0.9f), -90f, 360f * item.cycleProgress, false,
             Offset(item.x - r, item.y + bob - r), Size(r * 2f, r * 2f), style = Stroke(5f, cap = StrokeCap.Round),
