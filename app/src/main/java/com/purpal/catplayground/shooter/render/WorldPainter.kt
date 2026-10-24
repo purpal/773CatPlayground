@@ -35,6 +35,7 @@ import com.purpal.catplayground.shooter.model.Laser
 import com.purpal.catplayground.shooter.model.MainWeapon
 import com.purpal.catplayground.shooter.model.MousePlane
 import com.purpal.catplayground.shooter.model.Particle
+import com.purpal.catplayground.shooter.model.PawPath
 import com.purpal.catplayground.shooter.model.ParticleKind
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.PlayerShot
@@ -89,6 +90,7 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
             drawLockOns(w, sprites)
             for (s in w.playerShots) drawShot(s, w, sprites)
             drawBeam(w, sprites)
+            drawPawBolt(w, sprites)
             drawPlayer(w, sprites)
             for (l in w.lasers) drawHazard(l, w, sprites)
             for (b in w.bullets) drawBullet(b, sprites)
@@ -473,10 +475,8 @@ private fun DrawScope.drawShot(s: PlayerShot, w: World, sprites: SpriteCache) {
             trail(s, Violet, s.radius * 0.8f, 0.06f)
             drawSprite(sprites.glow(0xFFB388FFL), s.x, s.y, scale * 1.6f, alpha = 0.5f, blendMode = BlendMode.Plus)
             drawSprite(sprites.graviton(), s.x, s.y, scale, s.age * 220f)
-        }
-        ShotStyle.CLAW -> {
-            trail(s, Cyan, 6f, 0.025f)
-            drawSprite(sprites.monoClaw(), s.x, s.y, 1f)
+            // 黑洞中央的橘色肉球（不跟著轉，永遠朝上）
+            drawSprite(sprites.gravitonPaw(), s.x, s.y, scale * (1f + sin(s.age * 14f) * 0.05f))
         }
         ShotStyle.MISSILE -> drawSprite(sprites.fishMissile(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD)
         ShotStyle.SONIC -> for (k in 0..2) {
@@ -558,6 +558,57 @@ private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
         drawPath(hexPath(b.x, top, r, w.time * 2f), Cyan, style = Stroke(4f))
         drawPath(hexPath(b.x, top, r * 0.6f, -w.time * 3f), Color.White, style = Stroke(2.5f))
     }
+}
+
+private val pawPoint = FloatArray(2)
+private val pawZig = Path()
+
+/**
+ * 黑貓專武「肉球閃電」：淡淡的貓掌全輪廓＋閃電殘影（從淡到亮，沒有判定）＋閃電本體（鋸齒狀、有判定）。
+ * 跳躍段（掌心到趾頭之間）畫成更淡的細線。
+ */
+private fun DrawScope.drawPawBolt(w: World, sprites: SpriteCache) {
+    val b = w.pawBolt
+    if (!b.active) return
+    val n = PawPath.count
+    val xs = PawPath.xs
+    val ys = PawPath.ys
+    fun px(i: Int) = b.x + xs[i] * b.size
+    fun py(i: Int) = b.y + ys[i] * b.size
+    // 1) 全輪廓：讓貓掌形狀一直看得出來
+    for (i in 0 until n) {
+        if (PawPath.jump[i]) continue
+        val j = (i + 1) % n
+        drawLine(Cyan.copy(alpha = 0.22f), Offset(px(i), py(i)), Offset(px(j), py(j)), 3f, StrokeCap.Round)
+    }
+    // 2) 殘影：閃電頭後面 75% 的路徑，越接近頭越亮越粗
+    val head = ((b.progress % 1f) + 1f) % 1f
+    val headSeg = PawPath.segmentAt(head)
+    val trailSegs = (n * 0.75f).toInt()
+    for (k in trailSegs downTo 1) {
+        val i = (headSeg - k + n) % n
+        if (PawPath.jump[i]) continue
+        val j = (i + 1) % n
+        val f = 1f - k / trailSegs.toFloat()
+        if (FxSettings.high && f > 0.5f) {
+            drawLine(Cyan.copy(alpha = 0.25f * f), Offset(px(i), py(i)), Offset(px(j), py(j)), 14f * f, StrokeCap.Round, blendMode = BlendMode.Plus)
+        }
+        drawLine(Cyan.copy(alpha = 0.25f + 0.6f * f), Offset(px(i), py(i)), Offset(px(j), py(j)), 2.5f + 4f * f, StrokeCap.Round)
+        if (f > 0.6f) drawLine(Color.White.copy(alpha = f), Offset(px(i), py(i)), Offset(px(j), py(j)), 1.5f + 1.5f * f, StrokeCap.Round)
+    }
+    // 3) 閃電本體：頭前後一小段畫成跳動的鋸齒
+    val rnd = Random((w.time / 0.035f).toInt())
+    pawZig.reset()
+    for (k in 0..8) {
+        PawPath.point(head - 0.04f + k * 0.005f, pawPoint)
+        val x = b.x + pawPoint[0] * b.size + (if (k in 1..7) (rnd.nextFloat() - 0.5f) * 22f else 0f)
+        val y = b.y + pawPoint[1] * b.size + (if (k in 1..7) (rnd.nextFloat() - 0.5f) * 22f else 0f)
+        if (k == 0) pawZig.moveTo(x, y) else pawZig.lineTo(x, y)
+    }
+    if (FxSettings.high) drawPath(pawZig, Cyan.copy(alpha = 0.45f), style = Stroke(22f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+    drawPath(pawZig, Cyan, style = Stroke(8f, join = StrokeJoin.Round))
+    drawPath(pawZig, Color.White, style = Stroke(3f, join = StrokeJoin.Round))
+    drawSprite(sprites.glow(0xFF00E5FFL), b.headX, b.headY, 1.2f + b.level * 0.1f, alpha = 0.9f, blendMode = BlendMode.Plus)
 }
 
 private val hexScratch = Path()

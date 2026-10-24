@@ -17,6 +17,10 @@ class WorldTest {
             if (w.phase == Phase.OUTRO_DIALOG) w.dialogFinished()
             val target = w.boss?.takeIf { !it.entering } ?: w.nearestEnemy(w.player.x, w.player.y)
             w.moveX = if (target != null && abs(target.x - w.player.x) > 20f) sign(target.x - w.player.x) else 0f
+            // 肉球閃電是近身武器：要靠近目標下方才打得到
+            val melee = w.player.cat == CatType.BLACK && w.player.mainWeapon == MainWeapon.SPECIAL
+            val wantY = if (melee && target != null) target.y + target.radius + 70f else w.height * 0.72f
+            w.moveY = if (abs(wantY - w.player.y) > 20f) sign(wantY - w.player.y) else 0f
             w.update(STEP)
             w.cues.clear()
             t += STEP
@@ -47,15 +51,15 @@ class WorldTest {
             var t = 0f
             autoplayUntil(w) { it.phase == Phase.BOSS }
             w.firing = true
-            while (w.phase == Phase.BOSS && t < 300f) {
+            while (w.phase == Phase.BOSS && t < 400f) {
                 val b = w.boss!!
                 w.moveX = if (abs(b.x - w.player.x) > 20f) sign(b.x - w.player.x) else 0f
                 w.update(STEP)
                 w.cues.clear()
                 t += STEP
             }
-            // 滿火力時 boss 戰大約 20～60 秒。
-            assertTrue("stage ${entry.number} boss took $t s", t in 15f..70f)
+            // Boss 血量加倍後，滿火力時 boss 戰大約 40～120 秒。
+            assertTrue("stage ${entry.number} boss took $t s", t in 30f..140f)
         }
     }
 
@@ -441,5 +445,35 @@ class WorldTest {
                 assertEquals(0f, w.player.dashTime, 0f)
             }
         }
+    }
+
+    @Test
+    fun blackCatPawBoltTracesAPawAndHitsWhatItTouches() {
+        val w = World(Stages.mouse, CatType.BLACK, 2000f)
+        repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+        w.enemies.clear()
+        w.godMode = true
+        w.player.mainWeapon = MainWeapon.SPECIAL
+        w.player.mainLevel = 3
+        w.firing = true
+        // 放在趾頭附近（機體正上方約一個輪廓大小）
+        val target = BallTurret(w.player.x).also { it.y = w.player.y - 95f; it.hp = 10000f }
+        w.enemies += target
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
+        var minY = Float.MAX_VALUE
+        repeat(60 * 2) {
+            w.update(STEP)
+            target.y = w.player.y - 95f
+            target.x = w.player.x
+            assertTrue(w.pawBolt.active)
+            minX = minOf(minX, w.pawBolt.headX - w.player.x)
+            maxX = maxOf(maxX, w.pawBolt.headX - w.player.x)
+            minY = minOf(minY, w.pawBolt.headY - w.player.y)
+        }
+        assertTrue("paw bolt damaged the enemy", target.hp < 10000f)
+        assertTrue("outline is wider than tall-ish paw", maxX - minX > w.pawBolt.size * 2f)
+        assertTrue("toes are above the cat", minY < -w.pawBolt.size)
+        assertTrue("no claw shots any more", w.playerShots.isEmpty())
     }
 }

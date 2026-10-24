@@ -72,10 +72,19 @@ def graviton():
     ring = (f'<ellipse rx="46" ry="11" fill="none" stroke="{VIOLET}" stroke-width="4" transform="rotate(-18)"/>'
             f'<ellipse rx="38" ry="7" fill="none" stroke="{WHITE}" stroke-width="1.6" transform="rotate(-18)"/>')
     b += lit(ring, 3)
-    holo = "".join(f'<circle cx="{dx}" cy="{dy}" r="{r}" fill="none" stroke="{VIOLET}" stroke-width="1.8"/>'
-                   for dx, dy, r in ((0, 5, 8), (-9, -6, 3.6), (-3, -11, 3.6), (3, -11, 3.6), (9, -6, 3.6)))
-    b += lit(holo, 3)
     return Sprite("shot_graviton", 220, 220, "-55 -55 110 110", b, GLOW)
+
+
+def graviton_paw():
+    """重力球中央的橘色肉球（另外疊上去、不跟著黑洞旋轉，永遠正向朝上）。"""
+    pad = "M0,-2 C9,-2 15,5 14,11 C13,16 7,16 0,15 C-7,16 -13,16 -14,11 C-15,5 -9,-2 0,-2 Z"
+    beans = ((-13, -9, 4.6, 5.6), (-5, -15, 4.6, 5.8), (5, -15, 4.6, 5.8), (13, -9, 4.6, 5.6))
+    glow = f'<circle r="22" fill="#FF9A2E" opacity="0.35" filter="url(#g3)"/>'
+    b = glow + path(pad, "#FF9A2E", NAVY, 2.2)
+    b += "".join(ellipse(x, y, rx, ry, "#FF9A2E", NAVY, 2.2) for x, y, rx, ry in beans)
+    b += path("M-6,3 Q0,0 6,3", "none", "#FFD3A0", 2.4)
+    b += "".join(ellipse(x - 1, y - 2, 1.4, 1.8, "#FFD3A0", "none") for x, y, _, _ in beans)
+    return Sprite("shot_graviton_paw", 120, 120, "-27 -27 54 54", b, GLOW)
 
 
 def mono_claw():
@@ -233,7 +242,7 @@ def lost_props():
 
 
 def all_sprites():
-    out = [plasma_bolt(), casing(), cat_holo(), graviton(), mono_claw(), fish_missile(), reticle(), hex_paw(),
+    out = [plasma_bolt(), casing(), cat_holo(), graviton(), graviton_paw(), fish_missile(), reticle(), hex_paw(),
            hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon()]
     out += lost_props()
     out += [

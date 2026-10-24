@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -177,7 +178,14 @@ fun ShooterGameScreen(
         val world = remember(attempt, stageNumber, worldHeight) {
             // 上一關帶過來的狀態只用一次：重新開始本關時回到初始裝備。
             World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt, loadout = if (attempt == 0) loadout else null)
-                .also { it.godMode = autotest }
+                .also {
+                    it.godMode = autotest
+                    // 自動測試直接拿專武，好在截圖裡看到專武特效
+                    if (autotest) {
+                        it.player.mainWeapon = com.purpal.catplayground.shooter.model.MainWeapon.SPECIAL
+                        it.player.mainLevel = 3
+                    }
+                }
         }
 
         LaunchedEffect(sprites, cat, stageNumber) {
@@ -383,15 +391,19 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // 左邊：關卡、分數、護甲；速度不再顯示（兩隻貓的差別在判定點與影閃，不在數值）。
             Column(Modifier.weight(1f)) {
                 FitText("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 FitText("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                Spacer(Modifier.height(4.dp))
+                Gauge("護甲", hud.armor / 100f, Color(0xFFFF5252), Modifier.fillMaxWidth())
             }
-            // 武器資訊放在分數右邊。副武器那一格永遠佔位（沒有副武器時透明），HUD 高度才不會變。
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Spacer(Modifier.width(10.dp))
+            // 主武器、副武器一樣大；副武器那一格永遠佔位（沒有副武器時透明），HUD 高度才不會變。
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Chip("${hud.mainWeapon.label} Lv${hud.mainLevel}", Color(0xFFFF9100))
                 val hasSub = hud.subWeapon != SubWeapon.NONE
-                Chip(if (hasSub) "${hud.subWeapon.label} Lv${hud.subLevel}" else "追蹤彈 Lv3", Color(0xFF7C4DFF), visible = hasSub)
+                Chip(if (hasSub) "${hud.subWeapon.label} Lv${hud.subLevel}" else "", Color(0xFF7C4DFF), visible = hasSub)
             }
             Spacer(Modifier.width(8.dp))
             Box(
@@ -401,11 +413,6 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
                     .pointerInput(Unit) { detectTapGestures { onPause() } },
                 contentAlignment = Alignment.Center,
             ) { Text("⏸", fontSize = 20.sp, color = Color.White) }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Gauge("護甲", hud.armor / 100f, Color(0xFFFF5252), Modifier.weight(1f))
-            Gauge("速度", hud.speed / 100f, Color(0xFF40C4FF), Modifier.weight(1f))
         }
     }
 }
@@ -463,17 +470,18 @@ private fun Gauge(label: String, value: Float, color: Color, modifier: Modifier)
     }
 }
 
+/** 武器等級標籤：固定大小，主副武器一樣大。 */
 @Composable
 private fun Chip(text: String, color: Color, visible: Boolean = true) {
-    FitText(
-        text,
-        color = if (visible) Color.White else Color.Transparent,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
+    Box(
+        Modifier
+            .size(width = 112.dp, height = 24.dp)
             .background(if (visible) color.copy(alpha = 0.85f) else Color.Transparent, RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 2.dp),
-    )
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (visible) FitText(text, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    }
 }
 
 @Composable

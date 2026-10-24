@@ -47,6 +47,9 @@ class World(
     /** 集中型光束。 */
     val beam = BeamState()
 
+    /** 黑貓專武：肉球閃電。 */
+    val pawBolt = PawBoltState()
+
     /** 大爆炸時整個畫面閃白的強度（0～1）。 */
     var screenFlash = 0f
         private set
@@ -95,7 +98,7 @@ class World(
     private var lastCasing = 0f
     private var lastDamageNumber = -1f
     private var lastGhost = 0f
-    /** 爪刃命中次數；每隔幾下觸發一次連鎖閃電。 */
+    /** 肉球閃電命中次數；每隔幾下觸發一次連鎖閃電。 */
     private var clawHits = 0
 
     private val script = stage.script.sorted()
@@ -276,6 +279,7 @@ class World(
         if (p.dashTime > 0f) p.dashTime -= dt
         if (p.dashCooldown > 0f) p.dashCooldown -= dt
         beam.active = false
+        pawBolt.active = false
         val dragDx = dragX
         val dragDy = dragY
         dragX = 0f
@@ -339,6 +343,18 @@ class World(
                     particles += Particle(beam.x, beam.top, 0f, -40f, 0.5f, 1f, 0, ParticleKind.CATHOLO)
                 }
                 if (every(time, dt, 0.16f)) cue(SoundCue.BEAM)
+            }
+            if (p.mainWeapon == MainWeapon.SPECIAL && p.cat == CatType.BLACK) {
+                val hit = Weapons.updatePawBolt(this, p, dt)
+                if (hit != null) {
+                    sparks(pawBolt.headX, pawBolt.headY, 3, 0xFFBFF8FFL, speed = 420f)
+                    if (time - lastHitMark > 0.12f) {
+                        lastHitMark = time
+                        particles += Particle(pawBolt.headX, pawBolt.headY, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
+                    }
+                    if (++clawHits % CHAIN_EVERY == 0) chainLightning(hit)
+                }
+                if (every(time, dt, 0.25f)) cue(SoundCue.BEAM)
             }
             if (p.subWeapon != SubWeapon.NONE && p.subTimer <= 0f) Weapons.fireSub(this, p)
         }
@@ -683,7 +699,6 @@ class World(
                 if (dist2(s.x, s.y, e.x, e.y) > r * r) continue
                 val crit = random.nextFloat() < CRIT_CHANCE
                 damageEnemy(e, if (crit) s.damage * 2f else s.damage, crit)
-                if (s.style == ShotStyle.CLAW && ++clawHits % CHAIN_EVERY == 0) chainLightning(e)
                 particles += Particle(s.x, s.y, 0f, -40f, 0.15f, s.radius * 2.2f, 0xFFFFF3C4L, ParticleKind.FLASH)
                 if (random.nextFloat() < 0.35f && particles.size < MAX_PARTICLES) {
                     particles += Particle(s.x, s.y, jitter(160f), -120f - random.nextFloat() * 120f, 0.45f, 13f, 0xFFFFE07AL, ParticleKind.STAR)
@@ -709,7 +724,7 @@ class World(
     }
 
     /**
-     * 黑貓爪刃的連鎖閃電：從被打中的敵人跳到附近還沒被電到的敵人，等級越高跳越多下。
+     * 黑貓肉球閃電的連鎖閃電：從被打中的敵人跳到附近還沒被電到的敵人，等級越高跳越多下。
      */
     private fun chainLightning(from: Enemy) {
         val hops = 2 + player.mainLevel
@@ -1030,7 +1045,7 @@ class World(
         const val DAMAGE_DISPLAY = 10f
         const val DAMAGE_NUMBER_INTERVAL = 0.12f
 
-        const val CHAIN_EVERY = 10
+        const val CHAIN_EVERY = 12
         const val CHAIN_RANGE = 300f
         const val CHAIN_DAMAGE = 9f
 

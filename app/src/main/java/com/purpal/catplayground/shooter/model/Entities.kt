@@ -47,7 +47,7 @@ class Player(val cat: CatType) {
     }
 }
 
-enum class ShotStyle { PELLET, PAW, CLAW, MISSILE, SONIC }
+enum class ShotStyle { PELLET, PAW, MISSILE, SONIC }
 
 class PlayerShot(
     var x: Float,

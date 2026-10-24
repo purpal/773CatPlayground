@@ -151,7 +151,7 @@ const val BEAM_DAMAGE = 26f
  * 第 1 關：起司鼠王（小起司）。拿著電漿叉。
  * 老鼠膽小，65% 血就被打到「卸甲」：叉子飛走，嚇得滿場亂跑、叫小老鼠來幫忙、甩電漿尾巴。
  */
-class MouseBoss : Boss(hp = 7500f, radius = 120f, score = 20000, homeY = 330f) {
+class MouseBoss : Boss(hp = 15000f, radius = 120f, score = 20000, homeY = 330f) {
     override val kind = EnemyKind.BOSS_MOUSE
     override val name = "起司鼠王"
     override val breakAt = 0.65f
@@ -238,7 +238,7 @@ class MouseBoss : Boss(hp = 7500f, radius = 120f, score = 20000, homeY = 330f) {
  * 第 2 關：柴犬隊長。拿著硬光骨頭：橫掃、突刺，還會把骨頭當迴力鏢丟出去。
  * 柴犬固執，35% 才鬆口「卸甲」：之後改用吠叫的音波、眼睛光束與衝撞。
  */
-class DogBoss : Boss(hp = 10500f, radius = 120f, score = 30000, homeY = 340f) {
+class DogBoss : Boss(hp = 21000f, radius = 120f, score = 30000, homeY = 340f) {
     override val kind = EnemyKind.BOSS_DOG
     override val name = "柴犬隊長"
     override val breakAt = 0.35f
@@ -373,7 +373,7 @@ class ThrownBone(private val boss: DogBoss, targetX: Float, targetY: Float) :
  * 第 3 關：熊熊大王。拿著熱熔蜂蜜鑽：重擊地面、360 度旋轉橫掃。
  * 熊又壯又耐打，撐到 25% 才「卸甲」：之後改用熊掌爪擊、捶地與丟蜂巢。
  */
-class BearBoss : Boss(hp = 14000f, radius = 140f, score = 40000, homeY = 360f) {
+class BearBoss : Boss(hp = 28000f, radius = 140f, score = 40000, homeY = 360f) {
     override val kind = EnemyKind.BOSS_BEAR
     override val name = "熊熊大王"
     override val breakAt = 0.25f
@@ -460,7 +460,7 @@ class BearBoss : Boss(hp = 14000f, radius = 140f, score = 40000, homeY = 360f) {
  * 卡皮巴拉淡定、什麼都無所謂，打到一半（50%）才慢慢「裝甲」：戴上護目鏡、裝上肩甲，
  * 拿出橘子砲——高壓溫泉水柱掃射、橘子飛彈連發。
  */
-class CapyBoss : Boss(hp = 16000f, radius = 140f, score = 50000, homeY = 360f) {
+class CapyBoss : Boss(hp = 32000f, radius = 140f, score = 50000, homeY = 360f) {
     override val kind = EnemyKind.BOSS_CAPY
     override val name = "溫泉大王 卡皮"
     override val breakAt = 0.5f

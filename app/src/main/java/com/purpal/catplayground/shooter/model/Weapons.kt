@@ -13,8 +13,12 @@ object Weapons {
     private val beamDps = floatArrayOf(150f, 210f, 280f, 350f, 430f)
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
-    private val clawStreams = intArrayOf(1, 1, 2, 2, 3)
-    private val clawDamage = floatArrayOf(5f, 6f, 6f, 7f, 7f)
+    /** 肉球閃電：輪廓大小、每秒繞幾圈、每次命中的傷害、閃電頭的判定半徑。 */
+    private val pawBoltSize = floatArrayOf(90f, 104f, 118f, 132f, 148f)
+    private val pawBoltLaps = floatArrayOf(0.9f, 1.15f, 1.4f, 1.7f, 2f)
+    private val pawBoltDamage = floatArrayOf(24f, 30f, 36f, 44f, 52f)
+    private val pawBoltReach = floatArrayOf(30f, 34f, 38f, 42f, 46f)
+    private val point = FloatArray(2)
 
     private fun level(p: Player) = p.mainLevel.coerceIn(1, Player.MAX_MAIN_LEVEL) - 1
 
@@ -47,13 +51,8 @@ object Weapons {
                 }
                 p.fireTimer = 0.17f
             } else {
-                // 黑貓專武：高射速爪擊。
-                val streams = clawStreams[level]
-                for (i in 0 until streams) {
-                    val offset = (i - (streams - 1) / 2f) * 18f + w.jitter(4f)
-                    w.playerShots += PlayerShot(x + offset, y, 0f, -1800f, clawDamage[level] * power, 9f, ShotStyle.CLAW)
-                }
-                p.fireTimer = 0.05f
+                // 黑貓專武：肉球閃電，在 updatePawBolt 處理
+                p.fireTimer = 0.2f
             }
         }
     }
@@ -80,6 +79,40 @@ object Weapons {
         if (target != null) w.damageEnemy(target, beamDps[level] * power(p) * dt)
         return target
     }
+
+    /**
+     * 黑貓專武：沿著貓掌輪廓繞著機體跑的閃電。等級越高繞得越快、範圍越大、傷害越高。
+     * 只有閃電頭有判定；同一隻敵人每 [PAW_HIT_COOLDOWN] 秒最多被打一次。回傳這一步打中的敵人。
+     */
+    fun updatePawBolt(w: World, p: Player, dt: Float): Enemy? {
+        val level = level(p)
+        val b = w.pawBolt
+        b.active = true
+        b.level = level
+        b.x = p.x
+        b.y = p.y
+        b.size = pawBoltSize[level]
+        b.progress = (b.progress + pawBoltLaps[level] * dt) % 1000f
+        PawPath.point(b.progress, point)
+        b.headX = p.x + point[0] * b.size
+        b.headY = p.y + point[1] * b.size
+        val reach = pawBoltReach[level]
+        var hit: Enemy? = null
+        for (e in w.enemies) {
+            if (!e.alive || e.invulnerable || e is Balloon) continue
+            if (w.time - e.pawHitTime < PAW_HIT_COOLDOWN) continue
+            val r = e.radius + reach
+            if (dist2(b.headX, b.headY, e.x, e.y) > r * r) continue
+            e.pawHitTime = w.time
+            val crit = w.random.nextFloat() < World.CRIT_CHANCE
+            val damage = pawBoltDamage[level] * power(p)
+            w.damageEnemy(e, if (crit) damage * 2f else damage, crit)
+            hit = e
+        }
+        return hit
+    }
+
+    const val PAW_HIT_COOLDOWN = 0.08f
 
     fun fireSub(w: World, p: Player) {
         val level = p.subLevel.coerceIn(1, Player.MAX_SUB_LEVEL)

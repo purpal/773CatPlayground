@@ -103,19 +103,9 @@ fun ShooterMenuScreen(
 
             Spacer(Modifier.height(16.dp))
             SectionTitle("設定")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FitText("大絕按鈕位置", color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                for ((label, left) in listOf("左下" to true, "右下" to false)) {
-                    PillButton(
-                        label,
-                        background = if (ultimateLeft == left) PlayColors.Sun else PlayColors.Card,
-                        contentColor = if (ultimateLeft == left) PlayColors.Night else Color.White,
-                    ) {
-                        ultimateLeft = left
-                        prefs.shooterUltimateOnLeft = left
-                    }
-                    Spacer(Modifier.width(8.dp))
-                }
+            OptionRow("大絕按鈕位置", listOf("左下" to true, "右下" to false), ultimateLeft) {
+                ultimateLeft = it
+                prefs.shooterUltimateOnLeft = it
             }
             Spacer(Modifier.height(8.dp))
             OptionRow("傷害數字", listOf("顯示" to true, "隱藏" to false), damageNumbers) {
@@ -148,6 +138,7 @@ private fun OptionRow(title: String, options: List<Pair<String, Boolean>>, curre
         for ((label, value) in options) {
             PillButton(
                 label,
+                modifier = Modifier.width(76.dp),
                 background = if (current == value) PlayColors.Sun else PlayColors.Card,
                 contentColor = if (current == value) PlayColors.Night else Color.White,
             ) { onSelect(value) }
@@ -185,7 +176,7 @@ private fun CatCard(cat: CatType, selected: Boolean, modifier: Modifier, onClick
         )
         FitText(cat.displayName, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
-        StatBar("護甲", cat.maxArmor / 160f, Color(0xFFFF8A80))
+        StatBar("護甲", cat.maxArmor / 100f, Color(0xFFFF8A80))
         StatBar("速度", cat.baseSpeed / 780f, Color(0xFF80D8FF))
         Spacer(Modifier.height(6.dp))
         FitText("專武：${cat.specialName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)

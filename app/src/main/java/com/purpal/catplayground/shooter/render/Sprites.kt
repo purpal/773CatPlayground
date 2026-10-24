@@ -164,7 +164,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     fun casing() = art("fx_casing", 24f)
     fun catHolo() = art("fx_catholo", 110f)
     fun graviton() = art("shot_graviton", 120f)
-    fun monoClaw() = art("shot_monoclaw", 60f)
+    fun gravitonPaw() = art("shot_graviton_paw", 50f)
     fun fishMissile() = art("shot_fish2", 64f)
     fun reticle() = art("fx_reticle", 110f)
     fun hexPaw() = art("fx_hexpaw", 52f)
@@ -233,7 +233,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         HazardStyle.entries.forEach { propHead(it) }
         listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT, LostProp.FORK, LostProp.BONE, LostProp.DIPPER, LostProp.YUZU).forEach { lostProp(it) }
         ItemType.entries.forEach { item(it) }
-        plasma(); casing(); catHolo(); graviton(); monoClaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
+        plasma(); casing(); catHolo(); graviton(); gravitonPaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
         star(); heart(); comboLabel(); roar(); overdrive()
         SFX.indices.forEach { sfx(it) }
         for (d in 0..9) digit(d)
