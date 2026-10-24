@@ -1,0 +1,2 @@
+-rw-rw---- 1 u0_a179 media_rw 3455532 2026-10-24 02:19 /sdcard/run.mp4
+/sdcard/run.mp4: 1 file pulled, 0 skipped. 36.6 MB/s (3455532 bytes in 0.090s)

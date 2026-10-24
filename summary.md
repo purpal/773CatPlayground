@@ -1,0 +1,48 @@
+# Emulator smoke test
+- stage 1, cat ORANGE, played 110s, screen 720x1600, probe 'nostretch'
+- crashes: none
+- memory kills: 2
+
+## gfxinfo
+Total frames rendered: 1303
+Janky frames: 1293 (99.23%)
+Janky frames (legacy): 1303 (100.00%)
+50th percentile: 150ms
+90th percentile: 200ms
+95th percentile: 250ms
+99th percentile: 400ms
+Number Slow UI thread: 1241
+Number Slow bitmap uploads: 578
+Number Slow issue draw commands: 1293
+50th gpu percentile: 4950ms
+90th gpu percentile: 4950ms
+95th gpu percentile: 4950ms
+99th gpu percentile: 4950ms
+
+## ShooterPerf
+--------- beginning of main
+10-24 02:18:03.083  4244  4244 I ShooterPerf: frames=55 avg=91.8ms p95=233.3ms max=533.3ms slow(>20ms)=54 phase=STAGE bullets=0 particles=0 enemies=0
+10-24 02:18:08.121  4244  4244 I ShooterPerf: frames=50 avg=102.7ms p95=216.7ms max=366.7ms slow(>20ms)=47 phase=STAGE bullets=2 particles=1 enemies=4
+10-24 02:18:13.185  4244  4244 I ShooterPerf: frames=53 avg=95.6ms p95=200.0ms max=266.7ms slow(>20ms)=52 phase=STAGE bullets=7 particles=1 enemies=4
+10-24 02:18:18.197  4244  4244 I ShooterPerf: frames=59 avg=82.2ms p95=166.7ms max=283.3ms slow(>20ms)=58 phase=STAGE bullets=16 particles=51 enemies=7
+10-24 02:18:23.248  4244  4244 I ShooterPerf: frames=51 avg=101.0ms p95=216.7ms max=400.0ms slow(>20ms)=48 phase=STAGE bullets=32 particles=8 enemies=9
+10-24 02:18:28.244  4244  4244 I ShooterPerf: frames=53 avg=95.0ms p95=166.7ms max=500.0ms slow(>20ms)=52 phase=STAGE bullets=49 particles=52 enemies=2
+10-24 02:18:33.258  4244  4244 I ShooterPerf: frames=62 avg=80.6ms p95=150.0ms max=150.0ms slow(>20ms)=60 phase=STAGE bullets=42 particles=0 enemies=3
+10-24 02:18:34.484  4244  4244 I ShooterPerf: ULTIMATE uptimeMs=126278
+10-24 02:18:38.445  4244  4244 I ShooterPerf: frames=46 avg=113.4ms p95=200.0ms max=483.3ms slow(>20ms)=45 phase=STAGE bullets=13 particles=123 enemies=1
+10-24 02:18:43.485  4244  4244 I ShooterPerf: frames=49 avg=101.7ms p95=316.7ms max=400.0ms slow(>20ms)=46 phase=STAGE bullets=6 particles=25 enemies=2
+10-24 02:18:48.576  4244  4244 I ShooterPerf: frames=62 avg=81.2ms p95=133.3ms max=300.0ms slow(>20ms)=60 phase=STAGE bullets=13 particles=26 enemies=5
+10-24 02:18:53.638  4244  4244 I ShooterPerf: frames=63 avg=82.3ms p95=183.3ms max=216.7ms slow(>20ms)=56 phase=STAGE bullets=22 particles=1 enemies=5
+10-24 02:18:58.651  4244  4244 I ShooterPerf: frames=65 avg=77.2ms p95=150.0ms max=150.0ms slow(>20ms)=62 phase=STAGE bullets=26 particles=11 enemies=4
+10-24 02:19:03.663  4244  4244 I ShooterPerf: frames=66 avg=75.5ms p95=150.0ms max=216.7ms slow(>20ms)=61 phase=STAGE bullets=37 particles=0 enemies=5
+10-24 02:19:06.197  4244  4244 I ShooterPerf: ULTIMATE uptimeMs=157991
+10-24 02:19:08.727  4244  4244 I ShooterPerf: frames=56 avg=89.6ms p95=150.0ms max=150.0ms slow(>20ms)=55 phase=STAGE bullets=41 particles=0 enemies=10
+10-24 02:19:13.864  4244  4244 I ShooterPerf: frames=37 avg=135.1ms p95=366.7ms max=633.3ms slow(>20ms)=37 phase=STAGE bullets=21 particles=115 enemies=1
+10-24 02:19:18.892  4244  4244 I ShooterPerf: frames=77 avg=67.7ms p95=100.0ms max=233.3ms slow(>20ms)=74 phase=STAGE bullets=34 particles=0 enemies=2
+10-24 02:19:23.914  4244  4244 I ShooterPerf: frames=73 avg=68.7ms p95=116.7ms max=233.3ms slow(>20ms)=69 phase=STAGE bullets=27 particles=25 enemies=5
+10-24 02:19:28.976  4244  4244 I ShooterPerf: frames=68 avg=74.5ms p95=133.3ms max=183.3ms slow(>20ms)=64 phase=STAGE bullets=27 particles=29 enemies=4
+10-24 02:19:34.008  4244  4244 I ShooterPerf: frames=70 avg=71.7ms p95=133.3ms max=266.7ms slow(>20ms)=64 phase=STAGE bullets=22 particles=27 enemies=2
+10-24 02:19:39.031  4244  4244 I ShooterPerf: frames=56 avg=88.7ms p95=166.7ms max=233.3ms slow(>20ms)=55 phase=STAGE bullets=47 particles=65 enemies=5
+10-24 02:19:44.052  4244  4244 I ShooterPerf: frames=53 avg=96.2ms p95=183.3ms max=233.3ms slow(>20ms)=52 phase=STAGE bullets=46 particles=22 enemies=7
+10-24 02:19:49.128  4244  4244 I ShooterPerf: frames=71 avg=70.7ms p95=116.7ms max=183.3ms slow(>20ms)=65 phase=STAGE bullets=59 particles=52 enemies=8
+10-24 02:19:54.173  4244  4244 I ShooterPerf: frames=72 avg=70.6ms p95=116.7ms max=166.7ms slow(>20ms)=69 phase=STAGE bullets=30 particles=7 enemies=8
