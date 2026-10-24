@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/purpal/773CatPlayground/compare/v0.9.1...v0.10.0) (2026-10-24)
+
+
+### Features
+
+* exaggerated skill effects, diving swarms, solid bosses, bigger enemy bullets, black cat dash ([cf8c3b6](https://github.com/purpal/773CatPlayground/commit/cf8c3b66c656c96dfb6e3814847cfa1f805e95ad))
+
+
+### Bug Fixes
+
+* make floating damage numbers larger ([0b463a9](https://github.com/purpal/773CatPlayground/commit/0b463a9a493c78678bf2fe95ecc77022b069b439))
+
 ## [0.9.1](https://github.com/purpal/773CatPlayground/compare/v0.9.0...v0.9.1) (2026-10-24)
 
 
