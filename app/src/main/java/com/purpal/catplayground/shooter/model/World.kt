@@ -520,7 +520,7 @@ class World(
         lastDamageNumber = time
         particles += Particle(
             e.x + jitter(e.radius * 0.5f), e.y - e.radius * 0.4f + jitter(12f), jitter(40f), -260f,
-            if (crit) 0.9f else 0.6f, if (crit) 1.5f else 0.85f, if (crit) 0xFFFF3D5AL else 0L, ParticleKind.DAMAGE, value,
+            if (crit) 0.9f else 0.6f, if (crit) 2.4f else 1.4f, if (crit) 0xFFFF3D5AL else 0L, ParticleKind.DAMAGE, value,
         )
     }
 
