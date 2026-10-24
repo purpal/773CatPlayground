@@ -6,8 +6,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * 黑貓專武「肉球閃電」的路徑：以機體為中心的貓掌外輪廓（像貓掌造型的票卡，四顆趾頭在上方鼓起），
- * 閃電只繞外圍一圈；掌心與趾頭的肉球只畫成淡淡的光暈。
+ * 黑貓專武「高周波震動掌」的輪廓：以機體為中心的貓掌外輪廓（像貓掌造型的票卡，四顆趾頭在上方鼓起）。
+ * 只有輪廓有傷害；掌心與趾頭的肉球只畫成淡淡的光暈。
  * 座標以 1 為單位（實際大小乘上 [PawBoltState.size]），y 往下為正。
  */
 object PawPath {
@@ -37,6 +37,11 @@ object PawPath {
 
     val xs: FloatArray
     val ys: FloatArray
+    /** 每一點的外法線（輪廓是從中心往外取樣，所以就是方向向量）。 */
+    val nx: FloatArray
+    val ny: FloatArray
+    /** 每一點到中心的距離。 */
+    val radius: FloatArray
     /** 保留給畫面使用：外輪廓沒有跳躍段。 */
     val jump: BooleanArray
     /** 走到第 i 點時累積的路徑比例（0～1）。 */
@@ -61,6 +66,9 @@ object PawPath {
     init {
         xs = FloatArray(POINTS)
         ys = FloatArray(POINTS)
+        nx = FloatArray(POINTS)
+        ny = FloatArray(POINTS)
+        radius = FloatArray(POINTS)
         jump = BooleanArray(POINTS)
         // 從正上方開始順時針繞一圈，每個方向取所有形狀裡最遠的邊界（聯集的外輪廓）
         for (i in 0 until POINTS) {
@@ -71,6 +79,9 @@ object PawPath {
             for (t in TOES) r = maxOf(r, exitCircle(dx, dy, t[0], t[1], t[2], t[2]))
             xs[i] = dx * r
             ys[i] = dy * r
+            nx[i] = dx
+            ny[i] = dy
+            radius[i] = r
         }
         val seg = FloatArray(POINTS)
         var total = 0f
@@ -81,6 +92,16 @@ object PawPath {
         }
         at = FloatArray(POINTS + 1)
         for (i in 0 until POINTS) at[i + 1] = at[i] + seg[i] / total
+    }
+
+    /** 從中心往 (dx, dy) 方向，輪廓離中心的距離（單位座標，兩個取樣點之間線性內插）。 */
+    fun radiusToward(dx: Float, dy: Float): Float {
+        val a = kotlin.math.atan2(dy, dx) + HALF_PI
+        val f = ((a / TWO_PI) % 1f + 1f) % 1f * POINTS
+        val i = f.toInt() % POINTS
+        val j = (i + 1) % POINTS
+        val t = f - f.toInt()
+        return radius[i] + (radius[j] - radius[i]) * t
     }
 
     /** 路徑比例 t 所在的線段索引。 */
@@ -106,15 +127,17 @@ object PawPath {
     }
 }
 
-/** 肉球閃電目前的狀態（畫面用）。 */
+/** 高周波震動掌目前的狀態（畫面用）。 */
 class PawBoltState {
     var active = false
     var x = 0f
     var y = 0f
     var size = 0f
-    /** 閃電頭在路徑上的位置（0～1，一直往上加，取小數部分）。 */
-    var progress = 0f
-    var headX = 0f
-    var headY = 0f
     var level = 0
+    /** 距離上一次大震波的秒數（畫面用來畫往外擴散的震波）。 */
+    var pulseAge = 9f
+    /** 大震波的計時。 */
+    var pulseTimer = 0f
+    /** 震動的相位，用來決定每格殘影往哪邊偏。 */
+    var phase = 0f
 }

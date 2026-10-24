@@ -13,12 +13,10 @@ object Weapons {
     private val beamDps = floatArrayOf(150f, 210f, 280f, 350f, 430f)
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
-    /** 肉球閃電：輪廓大小、每秒繞幾圈、每次命中的傷害、閃電頭的判定半徑。 */
-    private val pawBoltSize = floatArrayOf(188f, 210f, 232f, 255f, 278f)
-    private val pawBoltLaps = floatArrayOf(1.8f, 2.3f, 2.8f, 3.4f, 4f)
-    private val pawBoltDamage = floatArrayOf(48f, 60f, 72f, 88f, 104f)
-    private val pawBoltReach = floatArrayOf(30f, 34f, 38f, 42f, 46f)
-    private val point = FloatArray(2)
+    /** 高周波震動掌：輪廓大小、持續震動每次的傷害、震動帶的半寬。 */
+    private val vibroSize = floatArrayOf(226f, 252f, 278f, 306f, 334f)
+    private val vibroDamage = floatArrayOf(43f, 54f, 65f, 79f, 94f)
+    private val vibroBand = floatArrayOf(26f, 29f, 32f, 35f, 38f)
 
     private fun level(p: Player) = p.mainLevel.coerceIn(1, Player.MAX_MAIN_LEVEL) - 1
 
@@ -51,7 +49,7 @@ object Weapons {
                 }
                 p.fireTimer = 0.17f
             } else {
-                // 黑貓專武：肉球閃電，在 updatePawBolt 處理
+                // 黑貓專武：高周波震動掌，在 updateVibroPaw 處理
                 p.fireTimer = 0.2f
             }
         }
@@ -81,43 +79,55 @@ object Weapons {
     }
 
     /**
-     * 黑貓專武：沿著貓掌輪廓繞著機體跑的閃電。等級越高繞得越快、範圍越大、傷害越高。
-     * 只有閃電頭有判定；同一隻敵人每 [PAW_HIT_COOLDOWN] 秒最多被打一次。回傳這一步打中的敵人。
+     * 黑貓專武「高周波震動掌」：貓掌輪廓圍在機體周圍高速震動，只有輪廓那一圈有傷害。
+     * 持續震動：碰到輪廓的敵人每 [VIBRO_TICK] 秒受一次傷害；每 [VIBRO_PULSE] 秒再放一次大震波（較寬、傷害 1.5 倍）。
+     * 回傳這一步被打中的敵人（給特效用）。
      */
-    fun updatePawBolt(w: World, p: Player, dt: Float): Enemy? {
+    fun updateVibroPaw(w: World, p: Player, dt: Float): Enemy? {
         val level = level(p)
         val b = w.pawBolt
         b.active = true
         b.level = level
         b.x = p.x
         b.y = p.y
-        b.size = pawBoltSize[level]
-        // 上一步的閃電頭位置：繞得很快時一步會走很遠，判定用「這一步走過的線段」才不會漏打
-        PawPath.point(b.progress, point)
-        val fromX = p.x + point[0] * b.size
-        val fromY = p.y + point[1] * b.size
-        b.progress = (b.progress + pawBoltLaps[level] * dt) % 1000f
-        PawPath.point(b.progress, point)
-        b.headX = p.x + point[0] * b.size
-        b.headY = p.y + point[1] * b.size
-        val reach = pawBoltReach[level]
+        b.size = vibroSize[level]
+        b.phase += dt
+        b.pulseAge += dt
+        b.pulseTimer += dt
+        val pulse = b.pulseTimer >= VIBRO_PULSE
+        if (pulse) {
+            b.pulseTimer -= VIBRO_PULSE
+            b.pulseAge = 0f
+            w.cue(SoundCue.SONIC)
+        }
+        val damage = vibroDamage[level] * power(p)
         var hit: Enemy? = null
         for (e in w.enemies) {
-            // 氣球也打得破
             if (!e.alive || e.invulnerable) continue
-            if (w.time - e.pawHitTime < PAW_HIT_COOLDOWN) continue
-            val r = e.radius + reach
-            if (segmentDist2(e.x, e.y, fromX, fromY, b.headX, b.headY) > r * r) continue
-            e.pawHitTime = w.time
-            val crit = w.random.nextFloat() < World.CRIT_CHANCE
-            val damage = pawBoltDamage[level] * power(p)
-            w.damageEnemy(e, if (crit) damage * 2f else damage, crit)
-            hit = e
+            val dx = e.x - p.x
+            val dy = e.y - p.y
+            val d = kotlin.math.sqrt(dx * dx + dy * dy)
+            val edge = PawPath.radiusToward(dx, dy) * b.size
+            val gap = kotlin.math.abs(d - edge) - e.radius
+            val band = vibroBand[level]
+            if (pulse && gap < band * 2.5f) {
+                val crit = w.random.nextFloat() < World.CRIT_CHANCE
+                w.damageEnemy(e, if (crit) damage * 3f else damage * 1.5f, crit)
+                e.vibrate = 0.25f
+                hit = e
+            } else if (gap < band && w.time - e.pawHitTime >= VIBRO_TICK) {
+                e.pawHitTime = w.time
+                val crit = w.random.nextFloat() < World.CRIT_CHANCE
+                w.damageEnemy(e, if (crit) damage * 2f else damage, crit)
+                e.vibrate = 0.15f
+                hit = e
+            }
         }
         return hit
     }
 
-    const val PAW_HIT_COOLDOWN = 0.08f
+    const val VIBRO_TICK = 0.2f
+    const val VIBRO_PULSE = 0.5f
 
     /** 點 (px, py) 到線段 (ax, ay)-(bx, by) 的距離平方。 */
     private fun segmentDist2(px: Float, py: Float, ax: Float, ay: Float, bx: Float, by: Float): Float {

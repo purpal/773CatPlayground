@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import com.purpal.catplayground.DebugFlags
 import com.purpal.catplayground.shooter.model.BallTurret
 import com.purpal.catplayground.shooter.model.Balloon
-import com.purpal.catplayground.shooter.model.Bolt
 import com.purpal.catplayground.shooter.model.Boss
 import com.purpal.catplayground.shooter.model.BulletStyle
 import com.purpal.catplayground.shooter.model.CatType
@@ -90,11 +89,10 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
             drawLockOns(w, sprites)
             for (s in w.playerShots) drawShot(s, w, sprites)
             drawBeam(w, sprites)
-            drawPawBolt(w, sprites)
+            drawVibroPaw(w, sprites)
             drawPlayer(w, sprites)
             for (l in w.lasers) drawHazard(l, w, sprites)
             for (b in w.bullets) drawBullet(b, sprites)
-            for (bolt in w.bolts) drawBolt(bolt)
             for (p in w.particles) drawParticle(p, w, sprites)
             if (w.blastRadius >= 0f) drawBlast(w, sprites)
             drawCombo(w, sprites)
@@ -140,9 +138,11 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
     val hit = e.hitFlash > 0f
     val flash = hit && ((w.time * 20f).toInt() % 2 == 0)
     val squash = if (hit && !DebugFlags.noStretch) 1.07f else 1f
+    // 被震動掌打中時左右高速抖動
+    val jx = if (e.vibrate > 0f) sin(w.time * 140f + e.id) * 7f else 0f
     fun sprite(s: Sprite, scale: Float = 1f, rotation: Float = 0f, flipX: Boolean = false, dy: Float = 0f) {
-        drawSprite(s, e.x, e.y + dy, scale, rotation, flipX = flipX, stretch = squash)
-        if (flash) drawSprite(s, e.x, e.y + dy, scale, rotation, alpha = 0.45f, flipX = flipX, colorFilter = WhiteFlash, stretch = squash)
+        drawSprite(s, e.x + jx, e.y + dy, scale, rotation, flipX = flipX, stretch = squash)
+        if (flash) drawSprite(s, e.x + jx, e.y + dy, scale, rotation, alpha = 0.45f, flipX = flipX, colorFilter = WhiteFlash, stretch = squash)
     }
     if (e is Diver) drawDiverWarning(e, w, sprites)
     when (e.kind) {
@@ -166,7 +166,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
             val drop = (e as Balloon).drop
             if (drop != null) {
                 val art = if (drop == ItemType.BOMB) sprites.ultButton(w.player.cat) else sprites.item(drop)
-                drawSprite(art, e.x, e.y + 140f, 0.85f)
+                drawSprite(art, e.x, e.y + 126f, 0.85f)
             }
         }
         EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> {
@@ -247,13 +247,13 @@ private fun DrawScope.drawItem(item: Item, w: World, sprites: SpriteCache) {
     }
     val bob = sin(item.age * 5f) * 4f
     if (item.type != ItemType.COIN) {
-        drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 1.6f + sin(item.age * 6f) * 0.25f, alpha = 0.35f, blendMode = BlendMode.Plus)
+        drawSprite(sprites.glow(0xFFFFFFFFL), item.x, item.y, 1.45f + sin(item.age * 6f) * 0.22f, alpha = 0.35f, blendMode = BlendMode.Plus)
     }
     val art = if (item.type == ItemType.BOMB) sprites.ultButton(w.player.cat) else sprites.item(item.type)
     drawSprite(art, item.x, item.y + bob, 0.95f)
     if (item.cycle != null && !DebugFlags.noArc) {
         // 倒數圈：繞一圈就換成下一種武器。
-        val r = 78f
+        val r = 70f
         drawArc(
             Color.White.copy(alpha = 0.9f), -90f, 360f * item.cycleProgress, false,
             Offset(item.x - r, item.y + bob - r), Size(r * 2f, r * 2f), style = Stroke(5f, cap = StrokeCap.Round),
@@ -567,85 +567,66 @@ private fun DrawScope.drawBeam(w: World, sprites: SpriteCache) {
     }
 }
 
-private val pawPoint = FloatArray(2)
-private val pawZig = Path()
-private val pawOutline = Path()
-private val pawTrail = Path()
+private val vibroPath = Path()
+private val vibroGhost = Path()
+
+/** 貓掌輪廓（可縮放、平移，並沿法線加上鋸齒）寫進 path。 */
+private fun pawOutlinePath(path: Path, cx: Float, cy: Float, size: Float, zig: Float = 0f, seed: Int = 0) {
+    path.reset()
+    val n = PawPath.count
+    for (i in 0 until n) {
+        // 鋸齒：相鄰點一內一外，幅度每格畫面隨機變化
+        val z = if (zig > 0f) zig * (if (i % 2 == 0) 1f else -1f) * (0.55f + 0.45f * (((i * 73 + seed * 37) % 17) / 16f)) else 0f
+        val x = cx + PawPath.xs[i] * size + PawPath.nx[i] * z
+        val y = cy + PawPath.ys[i] * size + PawPath.ny[i] * z
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+}
 
 /**
- * 黑貓專武「肉球閃電」：只繞貓掌外輪廓。淡淡的外輪廓＋閃電殘影（從淡到亮，沒有判定）＋閃電本體（鋸齒狀、有判定）；
- * 內部的肉球畫成淡淡的光暈。
+ * 黑貓專武「高周波震動掌」：貓掌輪廓高速震動。
+ * 往外擴散的淡淡震波＋掌心肉球光暈（隨震動脈動）＋紫／青兩層左右錯開的殘影＋跳動的鋸齒主輪廓；
+ * 每 0.5 秒的大震波畫成一圈從輪廓往外推開的粗光環。
  */
-private fun DrawScope.drawPawBolt(w: World, sprites: SpriteCache) {
+private fun DrawScope.drawVibroPaw(w: World, sprites: SpriteCache) {
     val b = w.pawBolt
     if (!b.active) return
-    val n = PawPath.count
-    val xs = PawPath.xs
-    val ys = PawPath.ys
-    fun px(i: Int) = b.x + xs[i] * b.size
-    fun py(i: Int) = b.y + ys[i] * b.size
-    // 0) 內部的肉球：淡淡的光暈（掌心一大顆＋四顆趾頭）
+    val frame = (w.time * 60f).toInt()
+    val amp = 3f + b.level * 1.5f
+    val zig = 5f + b.level * 1.2f
+    // 1) 往外擴散的震波（三圈接力）
+    for (k in 0 until 3) {
+        val f = ((w.time * 2.2f + k / 3f) % 1f)
+        pawOutlinePath(vibroGhost, b.x, b.y, b.size * (1f + f * 0.32f))
+        drawPath(vibroGhost, Violet.copy(alpha = 0.32f * (1f - f)), style = Stroke(3f, join = StrokeJoin.Round))
+    }
+    // 2) 掌心肉球光暈：跟著震動脈動
+    val throb = 1f + sin(w.time * 38f) * 0.06f
     for (pad in PawPath.PADS) {
-        val r = pad[2] * b.size
-        drawSprite(sprites.glow(0xFF00E5FFL), b.x + pad[0] * b.size, b.y + pad[1] * b.size, r * 2.4f / 100f, alpha = 0.32f, blendMode = BlendMode.Plus)
-        drawCircle(Cyan.copy(alpha = 0.12f), r, Offset(b.x + pad[0] * b.size, b.y + pad[1] * b.size))
+        val r = pad[2] * b.size * throb
+        drawSprite(sprites.glow(0xFFB388FFL), b.x + pad[0] * b.size, b.y + pad[1] * b.size, r * 2.4f / 100f, alpha = 0.3f, blendMode = BlendMode.Plus)
+        drawCircle(Violet.copy(alpha = 0.1f), r, Offset(b.x + pad[0] * b.size, b.y + pad[1] * b.size))
     }
-    // 1) 外輪廓：讓貓掌形狀一直看得出來（整條路徑一次畫完）
-    pawOutline.reset()
-    var open = false
-    for (i in 0 until n) {
-        val j = (i + 1) % n
-        if (PawPath.jump[i]) {
-            open = false
-            continue
-        }
-        if (!open) pawOutline.moveTo(px(i), py(i))
-        pawOutline.lineTo(px(j), py(j))
-        open = true
+    // 3) 殘影：紫、青兩層左右錯開，每格畫面交換方向
+    val side = if (frame % 2 == 0) 1f else -1f
+    pawOutlinePath(vibroGhost, b.x - amp * side, b.y, b.size, zig * 0.6f, frame + 7)
+    drawPath(vibroGhost, Violet.copy(alpha = 0.7f), style = Stroke(4f, join = StrokeJoin.Round))
+    pawOutlinePath(vibroGhost, b.x + amp * side, b.y - amp * 0.4f, b.size, zig * 0.6f, frame + 13)
+    drawPath(vibroGhost, Cyan.copy(alpha = 0.6f), style = Stroke(3.5f, join = StrokeJoin.Round))
+    // 4) 主輪廓：跳動的鋸齒（有判定的那一圈）
+    pawOutlinePath(vibroPath, b.x, b.y, b.size, zig, frame)
+    if (FxSettings.high) drawPath(vibroPath, Violet.copy(alpha = 0.4f), style = Stroke(20f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+    drawPath(vibroPath, Navy.copy(alpha = 0.4f), style = Stroke(9f, join = StrokeJoin.Round))
+    drawPath(vibroPath, Cyan, style = Stroke(5.5f, join = StrokeJoin.Round))
+    drawPath(vibroPath, Color.White, style = Stroke(2f, join = StrokeJoin.Round))
+    // 5) 大震波：從輪廓往外推開的粗光環
+    if (b.pulseAge < 0.3f) {
+        val k = b.pulseAge / 0.3f
+        pawOutlinePath(vibroGhost, b.x, b.y, b.size * (1f + k * 0.45f), zig * (1f - k))
+        if (FxSettings.high) drawPath(vibroGhost, Violet.copy(alpha = 0.5f * (1f - k)), style = Stroke(34f * (1f - k) + 6f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+        drawPath(vibroGhost, Color.White.copy(alpha = 0.9f * (1f - k)), style = Stroke(6f * (1f - k) + 1f, join = StrokeJoin.Round))
     }
-    drawPath(pawOutline, Navy.copy(alpha = 0.35f), style = Stroke(8f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    drawPath(pawOutline, Cyan.copy(alpha = 0.4f), style = Stroke(3.5f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    // 2) 殘影：閃電頭後面 75% 的路徑分成幾段，越接近頭越亮越粗（沒有判定）
-    val head = ((b.progress % 1f) + 1f) % 1f
-    val headSeg = PawPath.segmentAt(head)
-    val trailSegs = (n * 0.75f).toInt()
-    val bands = 6
-    for (band in 0 until bands) {
-        pawTrail.reset()
-        var drawing = false
-        val from = trailSegs - trailSegs * band / bands
-        val to = trailSegs - trailSegs * (band + 1) / bands
-        for (k in from downTo to + 1) {
-            val i = (headSeg - k + n) % n
-            if (PawPath.jump[i]) {
-                drawing = false
-                continue
-            }
-            val j = (i + 1) % n
-            if (!drawing) pawTrail.moveTo(px(i), py(i))
-            pawTrail.lineTo(px(j), py(j))
-            drawing = true
-        }
-        val f = (band + 1f) / bands
-        if (FxSettings.high && f > 0.5f) {
-            drawPath(pawTrail, Cyan.copy(alpha = 0.3f * f), style = Stroke(18f * f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-        }
-        drawPath(pawTrail, Cyan.copy(alpha = 0.35f + 0.6f * f), style = Stroke(3f + 5f * f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        if (f > 0.5f) drawPath(pawTrail, Color.White.copy(alpha = f), style = Stroke(1.5f + 2f * f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    }
-    // 3) 閃電本體：頭前後一小段畫成跳動的鋸齒
-    val rnd = Random((w.time / 0.035f).toInt())
-    pawZig.reset()
-    for (k in 0..8) {
-        PawPath.point(head - 0.04f + k * 0.005f, pawPoint)
-        val x = b.x + pawPoint[0] * b.size + (if (k in 1..7) (rnd.nextFloat() - 0.5f) * 22f else 0f)
-        val y = b.y + pawPoint[1] * b.size + (if (k in 1..7) (rnd.nextFloat() - 0.5f) * 22f else 0f)
-        if (k == 0) pawZig.moveTo(x, y) else pawZig.lineTo(x, y)
-    }
-    if (FxSettings.high) drawPath(pawZig, Cyan.copy(alpha = 0.45f), style = Stroke(22f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-    drawPath(pawZig, Cyan, style = Stroke(8f, join = StrokeJoin.Round))
-    drawPath(pawZig, Color.White, style = Stroke(3f, join = StrokeJoin.Round))
-    drawSprite(sprites.glow(0xFF00E5FFL), b.headX, b.headY, 1.2f + b.level * 0.1f, alpha = 0.9f, blendMode = BlendMode.Plus)
 }
 
 private val hexScratch = Path()
@@ -902,30 +883,6 @@ private fun DrawScope.drawParticle(p: Particle, w: World, sprites: SpriteCache) 
             drawNumber(p.tag, p.x, p.y, p.size * pop, sprites, plus = true, alpha = minOf(1f, (1f - t) * 3f))
         }
     }
-}
-
-private val boltPath = Path()
-
-/** 連鎖閃電：每一段之間畫成鋸齒狀，青色外光＋白色核心，每 0.04 秒換一次形狀。 */
-private fun DrawScope.drawBolt(b: Bolt) {
-    val fade = 1f - b.age / b.life
-    val rnd = Random(b.seed + (b.age / 0.04f).toInt())
-    boltPath.reset()
-    boltPath.moveTo(b.xs[0], b.ys[0])
-    for (i in 1 until b.count) {
-        val x0 = b.xs[i - 1]
-        val y0 = b.ys[i - 1]
-        val x1 = b.xs[i]
-        val y1 = b.ys[i]
-        for (k in 1..3) {
-            val f = k / 4f
-            boltPath.lineTo(x0 + (x1 - x0) * f + (rnd.nextFloat() - 0.5f) * 36f, y0 + (y1 - y0) * f + (rnd.nextFloat() - 0.5f) * 36f)
-        }
-        boltPath.lineTo(x1, y1)
-    }
-    if (FxSettings.high) drawPath(boltPath, Cyan.copy(alpha = 0.35f * fade), style = Stroke(22f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-    drawPath(boltPath, Cyan.copy(alpha = fade), style = Stroke(8f, join = StrokeJoin.Round))
-    drawPath(boltPath, Color.White.copy(alpha = fade), style = Stroke(3f, join = StrokeJoin.Round))
 }
 
 private val digitBuffer = IntArray(10)

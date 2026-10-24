@@ -448,7 +448,7 @@ class WorldTest {
     }
 
     @Test
-    fun blackCatPawBoltTracesAPawAndHitsWhatItTouches() {
+    fun blackCatVibroPawOnlyHurtsWhatTouchesItsOutline() {
         val w = World(Stages.mouse, CatType.BLACK, 2000f)
         repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
         w.enemies.clear()
@@ -456,24 +456,23 @@ class WorldTest {
         w.player.mainWeapon = MainWeapon.SPECIAL
         w.player.mainLevel = 3
         w.firing = true
-        // 放在貓掌輪廓的正下方（掌心底部）
-        val target = BallTurret(w.player.x).also { it.y = w.player.y + 230f; it.hp = 10000f }
-        w.enemies += target
-        var minX = Float.MAX_VALUE
-        var maxX = -Float.MAX_VALUE
-        var minY = Float.MAX_VALUE
+        w.update(STEP)
+        val size = w.pawBolt.size
+        // 一隻壓在輪廓上（掌心正下方的邊），一隻在掌心裡面
+        val onEdge = BallTurret(w.player.x).also { it.hp = 10000f }
+        val inside = BallTurret(w.player.x).also { it.hp = 10000f }
+        w.enemies += onEdge
+        w.enemies += inside
         repeat(60 * 2) {
+            onEdge.x = w.player.x
+            onEdge.y = w.player.y + size
+            inside.x = w.player.x
+            inside.y = w.player.y + size * 0.15f
             w.update(STEP)
-            target.y = w.player.y + w.pawBolt.size
-            target.x = w.player.x
             assertTrue(w.pawBolt.active)
-            minX = minOf(minX, w.pawBolt.headX - w.player.x)
-            maxX = maxOf(maxX, w.pawBolt.headX - w.player.x)
-            minY = minOf(minY, w.pawBolt.headY - w.player.y)
         }
-        assertTrue("paw bolt damaged the enemy", target.hp < 10000f)
-        assertTrue("outline is wider than tall-ish paw", maxX - minX > w.pawBolt.size * 2f)
-        assertTrue("toes are above the cat", minY < -w.pawBolt.size)
-        assertTrue("no claw shots any more", w.playerShots.isEmpty())
+        assertTrue("enemy on the outline is hurt", onEdge.hp < 10000f)
+        assertEquals("enemy inside the paw is untouched", 10000f, inside.hp, 0.01f)
+        assertTrue("no projectiles", w.playerShots.isEmpty())
     }
 }

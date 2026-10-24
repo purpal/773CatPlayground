@@ -24,7 +24,7 @@ enum class CatType(
 ) {
     ORANGE("橘斑貓 小橘", "小橘", 100f, 560f, "重力肉球砲", "猛虎咆哮"),
     /** 移動特化：速度快、判定點小，快速甩動手指會「影閃」（短暫無敵＋殘影）。 */
-    BLACK("黑貓 小黑", "小黑", 40f, 780f, "肉球閃電", "黑豹咆哮"),
+    BLACK("黑貓 小黑", "小黑", 40f, 780f, "高周波震動掌", "黑豹咆哮"),
 }
 
 enum class MainWeapon(val label: String) { SPREAD("散射"), FOCUS("集中"), SPECIAL("專武") }

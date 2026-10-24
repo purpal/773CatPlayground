@@ -61,8 +61,10 @@ abstract class Enemy(
     /** 還沒顯示成傷害數字的累積傷害（一小段時間合併成一個數字）。 */
     var pendingDamage = 0f
     var pendingTime = 0f
-    /** 上一次被肉球閃電打中的時間。 */
+    /** 上一次被震動掌打中的時間。 */
     var pawHitTime = -1f
+    /** 被震動掌打中後抖動的剩餘秒數（畫面用）。 */
+    var vibrate = 0f
 
     abstract fun update(w: World, dt: Float)
 

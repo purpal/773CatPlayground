@@ -184,9 +184,9 @@ class Item(var x: Float, var y: Float, type: ItemType) {
     var vx = 0f
     var vy = 0f
     val radius = when (type) {
-        ItemType.COIN -> 36f
+        ItemType.COIN -> 32f
         ItemType.DATA -> 16f
-        else -> 54f
+        else -> 49f
     }
     val cycle: List<ItemType>? = when (type) {
         in MAIN_CYCLE -> MAIN_CYCLE
@@ -268,13 +268,6 @@ enum class ParticleKind {
     DAMAGE,
     /** 黑貓影閃的殘影，tag 為跑步姿勢（0 直、1 左、2 右）。 */
     GHOST,
-}
-
-/** 連鎖閃電：依序跳過的點（第一個是起點）。 */
-class Bolt(val xs: FloatArray, val ys: FloatArray, val count: Int, val seed: Int) {
-    var age = 0f
-    val life = 0.28f
-    val alive: Boolean get() = age < life
 }
 
 class Particle(

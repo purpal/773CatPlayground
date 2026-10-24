@@ -29,8 +29,6 @@ class World(
     val walls = ArrayList<SonicWall>()
     val items = ArrayList<Item>()
     val particles = ArrayList<Particle>()
-    /** 連鎖閃電（畫面用）。 */
-    val bolts = ArrayList<Bolt>()
 
     /** 這一幀產生的音效，畫面播放後清空。 */
     val cues = ArrayList<SoundCue>()
@@ -47,7 +45,7 @@ class World(
     /** 集中型光束。 */
     val beam = BeamState()
 
-    /** 黑貓專武：肉球閃電。 */
+    /** 黑貓專武：高周波震動掌。 */
     val pawBolt = PawBoltState()
 
     /** 大爆炸時整個畫面閃白的強度（0～1）。 */
@@ -98,8 +96,6 @@ class World(
     private var lastCasing = 0f
     private var lastDamageNumber = -1f
     private var lastGhost = 0f
-    /** 肉球閃電命中次數；每隔幾下觸發一次連鎖閃電。 */
-    private var clawHits = 0
 
     private val script = stage.script.sorted()
     private var scriptIndex = 0
@@ -124,8 +120,6 @@ class World(
     fun update(dt: Float) {
         if (!running) return
         updateParticles(dt)
-        for (b in bolts) b.age += dt
-        bolts.removeAll { !it.alive }
         if (screenFlash > 0f) screenFlash = (screenFlash - dt * 3f).coerceAtLeast(0f)
         if (hitStop > 0f) {
             hitStop -= dt
@@ -345,14 +339,13 @@ class World(
                 if (every(time, dt, 0.16f)) cue(SoundCue.BEAM)
             }
             if (p.mainWeapon == MainWeapon.SPECIAL && p.cat == CatType.BLACK) {
-                val hit = Weapons.updatePawBolt(this, p, dt)
+                val hit = Weapons.updateVibroPaw(this, p, dt)
                 if (hit != null) {
-                    sparks(pawBolt.headX, pawBolt.headY, 3, 0xFFBFF8FFL, speed = 420f)
+                    sparks(hit.x, hit.y, 3, 0xFFD9CCFFL, speed = 420f)
                     if (time - lastHitMark > 0.12f) {
                         lastHitMark = time
-                        particles += Particle(pawBolt.headX, pawBolt.headY, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
+                        particles += Particle(hit.x, hit.y, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
                     }
-                    if (++clawHits % CHAIN_EVERY == 0) chainLightning(hit)
                 }
                 if (every(time, dt, 0.25f)) cue(SoundCue.BEAM)
             }
@@ -489,6 +482,7 @@ class World(
         while (i < enemies.size) {
             val e = enemies[i]
             if (e.hitFlash > 0f) e.hitFlash -= dt
+            if (e.vibrate > 0f) e.vibrate -= dt
             if (e.alive && !(e.isBoss && phase == Phase.BOSS_DEFEATED)) e.update(this, dt)
             if (e.isBoss) {
                 if (phase != Phase.BOSS_DEFEATED) bossBody(e)
@@ -721,37 +715,6 @@ class World(
                 }
             }
         }
-    }
-
-    /**
-     * 黑貓肉球閃電的連鎖閃電：從被打中的敵人跳到附近還沒被電到的敵人，等級越高跳越多下。
-     */
-    private fun chainLightning(from: Enemy) {
-        val hops = 2 + player.mainLevel
-        val xs = FloatArray(hops + 1)
-        val ys = FloatArray(hops + 1)
-        xs[0] = from.x
-        ys[0] = from.y
-        val hit = HashSet<Int>()
-        hit += from.id
-        var current = from
-        var n = 1
-        while (n <= hops) {
-            val next = enemies.filter { it.alive && !it.invulnerable && it.id !in hit && it !is Balloon && it.y > -20f }
-                .minByOrNull { dist2(current.x, current.y, it.x, it.y) } ?: break
-            if (dist2(current.x, current.y, next.x, next.y) > CHAIN_RANGE * CHAIN_RANGE) break
-            hit += next.id
-            xs[n] = next.x
-            ys[n] = next.y
-            n++
-            particles += Particle(next.x, next.y, 0f, 0f, 0.22f, 1f, 0, ParticleKind.HITMARK)
-            damageEnemy(next, CHAIN_DAMAGE)
-            current = next
-        }
-        if (n < 2) return
-        bolts += Bolt(xs, ys, n, random.nextInt())
-        cue(SoundCue.LASER)
-        if (n >= 4) sfx(xs[n - 1], ys[n - 1] - 60f, SfxText.CHAIN)
     }
 
     fun damageEnemy(e: Enemy, damage: Float, crit: Boolean = false) {
@@ -1045,9 +1008,6 @@ class World(
         const val DAMAGE_DISPLAY = 10f
         const val DAMAGE_NUMBER_INTERVAL = 0.12f
 
-        const val CHAIN_EVERY = 12
-        const val CHAIN_RANGE = 300f
-        const val CHAIN_DAMAGE = 9f
 
         /** 黑貓影閃：手指移動速度超過基本速度的這個倍數就觸發。 */
         const val DASH_TRIGGER = 2.6f

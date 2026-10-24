@@ -156,7 +156,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     // ── 道具 ──
 
     fun item(type: ItemType): Sprite = when (type) {
-        ItemType.COIN -> art("item_coin", 83f)
+        ItemType.COIN -> art("item_coin", 75f)
         ItemType.DATA -> art("item_data", 34f)
         else -> art(ITEMS[type.ordinal], ITEM_WIDTH)
     }
@@ -258,7 +258,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         const val CAT_WIDTH = 130f
         const val BOSS_WIDTH = 540f
         const val ELITE_WIDTH = 175f
-        const val ITEM_WIDTH = 137f
+        const val ITEM_WIDTH = 123f
         const val ULT_WIDTH = 760f
         const val DIGIT_WIDTH = 30f
 
