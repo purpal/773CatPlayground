@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/purpal/773CatPlayground/compare/v0.6.1...v0.7.0) (2026-10-24)
+
+
+### Features
+
+* v2 mochi-style characters, prop/body melee attacks, elites and loadout carry-over ([94e8a8e](https://github.com/purpal/773CatPlayground/commit/94e8a8e3e2253688a67a1829fcb5fad1f54eb543))
+
+
+### Bug Fixes
+
+* keep auto-shrinking text visible while it changes, add emulator probe switches ([df6ad6e](https://github.com/purpal/773CatPlayground/commit/df6ad6e2b41f2a93c36f0de5d4e507913799c129))
+
 ## [0.6.1](https://github.com/purpal/773CatPlayground/compare/v0.6.0...v0.6.1) (2026-10-23)
 
 
