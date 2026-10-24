@@ -1,0 +1,2 @@
+10-24 02:18:26.663 I/ActivityManager(  519): Killing 2723:com.purpal.catplayground/u0a192 (adj 0): stop com.purpal.catplayground due to from pid 3692
+10-24 02:18:39.204 I/ActivityManager(  519): Killing 3732:com.purpal.catplayground/u0a192 (adj 0): stop com.purpal.catplayground due to from pid 4452
