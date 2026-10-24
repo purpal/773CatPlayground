@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/purpal/773CatPlayground/compare/v0.12.0...v0.13.0) (2026-10-24)
+
+
+### Features
+
+* high-frequency vibration palm for the black cat, items at 90% ([8ca7569](https://github.com/purpal/773CatPlayground/commit/8ca756997a5048c75f075befc31a339578af3721))
+
 ## [0.12.0](https://github.com/purpal/773CatPlayground/compare/v0.11.1...v0.12.0) (2026-10-24)
 
 
