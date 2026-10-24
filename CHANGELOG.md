@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/purpal/773CatPlayground/compare/v0.11.1...v0.12.0) (2026-10-24)
+
+
+### Features
+
+* bigger bosses and items, stronger lightning paw, smaller ultimate button ([e57f70d](https://github.com/purpal/773CatPlayground/commit/e57f70d59786f1f923d4e5103beb902ba33fb89e))
+
 ## [0.11.1](https://github.com/purpal/773CatPlayground/compare/v0.11.0...v0.11.1) (2026-10-24)
 
 
