@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/purpal/773CatPlayground/compare/v0.13.1...v0.13.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* tone down the vibration palm (damage -30%, reach -15%) ([d8a7b4b](https://github.com/purpal/773CatPlayground/commit/d8a7b4bff9173c543f514cb7d1e98380c0cbacf1))
+
 ## [0.13.1](https://github.com/purpal/773CatPlayground/compare/v0.13.0...v0.13.1) (2026-10-24)
 
 
