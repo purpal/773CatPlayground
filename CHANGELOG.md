@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/purpal/773CatPlayground/compare/v0.8.0...v0.9.0) (2026-10-24)
+
+
+### Features
+
+* capybara v4 boss with orange, Zuipower Studio splash, roaring-cat ultimate button, all-black cat portrait ([606c90c](https://github.com/purpal/773CatPlayground/commit/606c90cc465bfccfe1ba6fb9401e33f0286db081))
+
 ## [0.8.0](https://github.com/purpal/773CatPlayground/compare/v0.7.0...v0.8.0) (2026-10-24)
 
 
