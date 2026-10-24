@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/purpal/773CatPlayground/compare/v0.11.0...v0.11.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* paw-card outline for the lightning paw, logo background tint, bigger fish missiles, glowing shield arc ([9a62e92](https://github.com/purpal/773CatPlayground/commit/9a62e92fd078e51e2fa03540338f1bc1c5d9fcb1))
+
 ## [0.11.0](https://github.com/purpal/773CatPlayground/compare/v0.10.0...v0.11.0) (2026-10-24)
 
 
