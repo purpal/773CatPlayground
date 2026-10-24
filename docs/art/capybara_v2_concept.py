@@ -106,45 +106,46 @@ def callout(x1, y1, x2, y2, s):
     return line + "".join(label(40, y2 - 12 - (len(rows) - 1 - i) * 26, r, 19, INK) for i, r in enumerate(rows))
 
 
-W, H = 1400, 1060
-out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">']
-out.append(f'<defs>{COMMON_DEFS}<radialGradient id="bg" cx="50%" cy="40%" r="80%"><stop offset="0" stop-color="#FFFBF2"/><stop offset="1" stop-color="#E3F4F1"/></radialGradient></defs>')
-out.append(f'<rect width="{W}" height="{H}" fill="url(#bg)"/>')
-out.append(label(60, 80, "第 4 關 Boss「溫泉大王 卡皮」造型 v2", 44, INK))
-out.append(label(62, 122, "修正 v1 像熊的問題：改用 3/4 側臉，抓住卡皮巴拉的辨識點", 24, "#B48A95"))
+if __name__ == "__main__":
+    W, H = 1400, 1060
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">']
+    out.append(f'<defs>{COMMON_DEFS}<radialGradient id="bg" cx="50%" cy="40%" r="80%"><stop offset="0" stop-color="#FFFBF2"/><stop offset="1" stop-color="#E3F4F1"/></radialGradient></defs>')
+    out.append(f'<rect width="{W}" height="{H}" fill="url(#bg)"/>')
+    out.append(label(60, 80, "第 4 關 Boss「溫泉大王 卡皮」造型 v2", 44, INK))
+    out.append(label(62, 122, "修正 v1 像熊的問題：改用 3/4 側臉，抓住卡皮巴拉的辨識點", 24, "#B48A95"))
 
-# 主圖
-out.append(f'<g transform="translate(560 560)">{capy(0, 1.35)}</g>')
-cx, cy, k = 560, 560, 1.35
-pts = {
-    "head": (-60 * k, -120 * k), "nose": (-150 * k, -70 * k), "eye": (-30 * k, -92 * k), "ear": (34 * k, -146 * k),
-    "lip": (-142 * k, -20 * k), "body": (180 * k, -20 * k),
-}
-out.append(callout(cx + pts["nose"][0], cy + pts["nose"][1], 250, 380, "鼻孔在吻部頂端|（兩道縫，不是圓鼻頭）"))
-out.append(callout(cx + pts["lip"][0], cy + pts["lip"][1], 250, 540, "Y 字上唇|嘴巴小小的"))
-out.append(callout(cx - 165 * k, cy + 20 * k, 250, 680, "長方形磚頭臉：|前臉幾乎垂直、|吻部又長又平"))
-out.append(callout(cx + pts["eye"][0], cy + pts["eye"][1], 960, 250, "眼睛小、位置高、靠後；半閉的放空眼"))
-out.append(callout(cx + pts["ear"][0], cy + pts["ear"][1], 960, 330, "小耳朵貼在頭頂後方（不是頭頂兩側的圓耳）"))
-out.append(callout(cx + pts["body"][0], cy + pts["body"][1], 1000, 470, "沒有脖子，木桶般的身體往後延伸"))
-out.append(callout(cx - 50 * k, cy - 184 * k, 960, 170, "毛巾＋柚子（冬至柚子湯）"))
+    # 主圖
+    out.append(f'<g transform="translate(560 560)">{capy(0, 1.35)}</g>')
+    cx, cy, k = 560, 560, 1.35
+    pts = {
+        "head": (-60 * k, -120 * k), "nose": (-150 * k, -70 * k), "eye": (-30 * k, -92 * k), "ear": (34 * k, -146 * k),
+        "lip": (-142 * k, -20 * k), "body": (180 * k, -20 * k),
+    }
+    out.append(callout(cx + pts["nose"][0], cy + pts["nose"][1], 250, 380, "鼻孔在吻部頂端|（兩道縫，不是圓鼻頭）"))
+    out.append(callout(cx + pts["lip"][0], cy + pts["lip"][1], 250, 540, "Y 字上唇|嘴巴小小的"))
+    out.append(callout(cx - 165 * k, cy + 20 * k, 250, 680, "長方形磚頭臉：|前臉幾乎垂直、|吻部又長又平"))
+    out.append(callout(cx + pts["eye"][0], cy + pts["eye"][1], 960, 250, "眼睛小、位置高、靠後；半閉的放空眼"))
+    out.append(callout(cx + pts["ear"][0], cy + pts["ear"][1], 960, 330, "小耳朵貼在頭頂後方（不是頭頂兩側的圓耳）"))
+    out.append(callout(cx + pts["body"][0], cy + pts["body"][1], 1000, 470, "沒有脖子，木桶般的身體往後延伸"))
+    out.append(callout(cx - 50 * k, cy - 184 * k, 960, 170, "毛巾＋柚子（冬至柚子湯）"))
 
-# v1 對照
-out.append(f'<rect x="1080" y="560" width="280" height="250" rx="20" fill="#FFFFFF" opacity="0.8" stroke="#E0C9D0" stroke-width="2"/>')
-v1_sprite = v1.boss_capy(0, 0)
-out.append(f'<g transform="translate(1220 700) scale(0.55)">{v1_sprite.body}</g>')
-out.append(label(1220, 600, "v1（像熊）", 20, "#B48A95", "middle"))
-out.append(f'<path d="M1110,640 L1330,790 M1330,640 L1110,790" stroke="#FF5C7A" stroke-width="6" opacity="0.6"/>')
-out.append(label(1220, 840, "正面圓臉＋圓耳＋圓鼻＝熊", 17, "#B48A95", "middle"))
+    # v1 對照
+    out.append(f'<rect x="1080" y="560" width="280" height="250" rx="20" fill="#FFFFFF" opacity="0.8" stroke="#E0C9D0" stroke-width="2"/>')
+    v1_sprite = v1.boss_capy(0, 0)
+    out.append(f'<g transform="translate(1220 700) scale(0.55)">{v1_sprite.body}</g>')
+    out.append(label(1220, 600, "v1（像熊）", 20, "#B48A95", "middle"))
+    out.append(f'<path d="M1110,640 L1330,790 M1330,640 L1110,790" stroke="#FF5C7A" stroke-width="6" opacity="0.6"/>')
+    out.append(label(1220, 840, "正面圓臉＋圓耳＋圓鼻＝熊", 17, "#B48A95", "middle"))
 
-# 三種心情
-out.append(label(60, 890, "表情與裝甲：", 22, INK))
-for i, (m, name) in enumerate(((0, "放空（裝甲前）"), (1, "裝甲：護目鏡＋肩甲"), (2, "裝甲被打哭：鏡片裂、柚子掉"))):
-    x = 300 + i * 360
-    out.append(f'<g transform="translate({x} 950) scale(0.42)">{capy(m)}</g>')
-    out.append(label(x, 1045, name, 18, "#7D6470", "middle"))
-out.append("</svg>")
+    # 三種心情
+    out.append(label(60, 890, "表情與裝甲：", 22, INK))
+    for i, (m, name) in enumerate(((0, "放空（裝甲前）"), (1, "裝甲：護目鏡＋肩甲"), (2, "裝甲被打哭：鏡片裂、柚子掉"))):
+        x = 300 + i * 360
+        out.append(f'<g transform="translate({x} 950) scale(0.42)">{capy(m)}</g>')
+        out.append(label(x, 1045, name, 18, "#7D6470", "middle"))
+    out.append("</svg>")
 
-path_svg = os.path.join(HERE, "capybara-v2-concept.svg")
-with open(path_svg, "w") as f:
-    f.write("\n".join(out))
-print(path_svg)
+    path_svg = os.path.join(HERE, "capybara-v2-concept.svg")
+    with open(path_svg, "w") as f:
+        f.write("\n".join(out))
+    print(path_svg)
