@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/purpal/773CatPlayground/compare/v0.10.0...v0.11.0) (2026-10-24)
+
+
+### Features
+
+* lightning paw for the black cat, paw-print graviton, double boss HP, armor 100/40, HUD cleanup ([82233af](https://github.com/purpal/773CatPlayground/commit/82233aff5ccee2b9b01dae7ee396a7619078a94d))
+
+
+### Bug Fixes
+
+* draw the lightning paw larger and brighter with batched paths ([1667754](https://github.com/purpal/773CatPlayground/commit/166775410bff20efa6a94a23b511529b6921ff8f))
+
 ## [0.10.0](https://github.com/purpal/773CatPlayground/compare/v0.9.1...v0.10.0) (2026-10-24)
 
 
