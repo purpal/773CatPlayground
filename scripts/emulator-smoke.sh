@@ -42,6 +42,7 @@ shot 02_menu
 # 3. 實際遊玩（autotest：無敵、自動放大絕、記錄幀耗時）
 adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true > /dev/null
 REC_START=$(uptime_ms)
+echo "$REC_START" > "$OUT/rec-start.txt"
 "$ADB_BIN" shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
 sleep 1
 adb shell dumpsys gfxinfo $PKG reset > /dev/null
@@ -87,23 +88,13 @@ adb shell pkill -INT screenrecord || true
 sleep 4
 adb shell ls -l /sdcard/run.mp4 > "$OUT/video-diagnostics.txt" 2>&1 || true
 timeout 120 "$ADB_BIN" pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
-which ffmpeg >> "$OUT/video-diagnostics.txt" 2>&1 || echo "no ffmpeg" >> "$OUT/video-diagnostics.txt"
 adb logcat -d -s ShooterPerf:I > "$OUT/perf.txt"
 kill "$LOGCAT_PID" 2> /dev/null || true
 grep -E -A20 "FATAL EXCEPTION|ANR in|Fatal signal" "$OUT/logcat-full.txt" > "$OUT/crashes.txt" || true
 grep -E "lowmemorykiller|Killing .*catplayground|am_kill|onTrimMemory" "$OUT/logcat-full.txt" > "$OUT/memory.txt" || true
 gzip -f "$OUT/logcat-full.txt"
 
-# 整段每 3 秒一張影格，大絕動畫附近每秒 10 張
-if [ -f "$OUT/run.mp4" ]; then
-  ffmpeg -loglevel error -i "$OUT/run.mp4" -vf "fps=1/3,scale=360:-1" "$OUT/frames/all_%03d.png" || true
-  ult=$(grep -o 'ULTIMATE uptimeMs=[0-9]*' "$OUT/perf.txt" | head -1 | grep -o '[0-9]*$')
-  if [ -n "$ult" ]; then
-    offset=$(awk -v u="$ult" -v s="$REC_START" 'BEGIN { o = (u - s) / 1000 - 0.3; if (o < 0) o = 0; printf "%.2f", o }')
-    ffmpeg -loglevel error -ss "$offset" -t 2.4 -i "$OUT/run.mp4" -vf "fps=10,scale=360:-1" "$OUT/frames/ultimate_%02d.png" || true
-  fi
-  rm -f "$OUT/run.mp4"
-fi
+# 錄影檔留給下一步（scripts/extract-frames.sh）在模擬器關掉後再抽影格。
 
 {
   echo "# Emulator smoke test"
