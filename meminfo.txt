@@ -1,0 +1,36 @@
+== 15s
+  Native Heap    24764    24728        0        0    28068    36756    27890     5564
+           Java Heap:    11044                          40456
+         Native Heap:    24728                          28068
+            Graphics:        0                              0
+           TOTAL PSS:    74629            TOTAL RSS:   193212      TOTAL SWAP (KB):        0
+== 30s
+  Native Heap    24616    24580        0        0    27916    36572    27958     5349
+           Java Heap:    12500                          41952
+         Native Heap:    24580                          27916
+            Graphics:        0                              0
+           TOTAL PSS:    75963            TOTAL RSS:   195048      TOTAL SWAP (KB):        0
+== 45s
+  Native Heap    25056    25020        0        0    28340    36596    28112     5248
+           Java Heap:    11060                          40512
+         Native Heap:    25020                          28340
+            Graphics:        0                              0
+           TOTAL PSS:    74852            TOTAL RSS:   194048      TOTAL SWAP (KB):        0
+== 60s
+  Native Heap    25811    25776        0        0    29072    36892    28382     5105
+           Java Heap:    11288                          40740
+         Native Heap:    25776                          29072
+            Graphics:        0                              0
+           TOTAL PSS:    75711            TOTAL RSS:   195224      TOTAL SWAP (KB):        0
+== 90s
+  Native Heap    25399    25364        0        0    28640    37196    28517     5257
+           Java Heap:    13480                          42932
+         Native Heap:    25364                          28640
+            Graphics:        0                              0
+           TOTAL PSS:    77937            TOTAL RSS:   197928      TOTAL SWAP (KB):        0
+== 105s
+  Native Heap    25491    25456        0        0    28724    37196    28530     5324
+           Java Heap:    12584                          42036
+         Native Heap:    25456                          28724
+            Graphics:        0                              0
+           TOTAL PSS:    77263            TOTAL RSS:   197308      TOTAL SWAP (KB):        0
