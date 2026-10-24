@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/purpal/773CatPlayground/compare/v0.9.0...v0.9.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* restore the original Zuipower Studio logo shape for the logo and ultimate button ([e9e4537](https://github.com/purpal/773CatPlayground/commit/e9e45372a172f1795b090d9d885b536041f26e44))
+
 ## [0.9.0](https://github.com/purpal/773CatPlayground/compare/v0.8.0...v0.9.0) (2026-10-24)
 
 
