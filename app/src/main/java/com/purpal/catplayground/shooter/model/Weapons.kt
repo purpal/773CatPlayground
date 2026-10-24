@@ -14,8 +14,8 @@ object Weapons {
     private val pawRadius = floatArrayOf(20f, 24f, 28f, 32f, 36f)
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
     /** 高周波震動掌：輪廓大小、持續震動每次的傷害、震動帶的半寬。 */
-    private val vibroSize = floatArrayOf(226f, 252f, 278f, 306f, 334f)
-    private val vibroDamage = floatArrayOf(43f, 54f, 65f, 79f, 94f)
+    private val vibroSize = floatArrayOf(192f, 214f, 236f, 260f, 284f)
+    private val vibroDamage = floatArrayOf(30f, 38f, 46f, 55f, 66f)
     private val vibroBand = floatArrayOf(26f, 29f, 32f, 35f, 38f)
 
     private fun level(p: Player) = p.mainLevel.coerceIn(1, Player.MAX_MAIN_LEVEL) - 1
