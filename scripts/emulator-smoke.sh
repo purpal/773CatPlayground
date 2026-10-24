@@ -10,6 +10,9 @@ PKG=com.purpal.catplayground
 OUT=emulator-results-out
 mkdir -p "$OUT/frames"
 
+# 每個 adb 指令最多等 30 秒：模擬器掛掉時才不會整個工作卡到逾時。
+adb() { timeout 30 command adb "$@"; }
+alive() { adb get-state > /dev/null 2>&1; }
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 uptime_ms() { adb shell cat /proc/uptime | awk '{printf "%d", $1 * 1000}'; }
 
@@ -23,6 +26,9 @@ size=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1)
 W=${size%x*}
 H=${size#*x}
 adb logcat -c
+# 從頭到尾把 logcat 存下來，模擬器中途消失也看得到最後發生什麼事。
+command adb logcat -v time > "$OUT/logcat-full.txt" 2>&1 &
+LOGCAT_PID=$!
 
 # 1. 大廳、2. 射擊遊戲選單
 adb shell am start -W -n $PKG/.MainActivity > /dev/null
@@ -35,7 +41,7 @@ shot 02_menu
 # 3. 實際遊玩（autotest：無敵、自動放大絕、記錄幀耗時）
 adb shell am start -W -S -n $PKG/.MainActivity --es open shooter_play --ei stage "$STAGE" --es cat "$CAT" --ez autotest true > /dev/null
 REC_START=$(uptime_ms)
-adb shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
+command adb shell screenrecord --bit-rate 6000000 --time-limit 175 /sdcard/run.mp4 > "$OUT/screenrecord.log" 2>&1 &
 sleep 1
 adb shell dumpsys gfxinfo $PKG reset > /dev/null
 sleep 1.5
@@ -58,6 +64,10 @@ while true; do
   y=$(( cy - ((i / 16) % 2) * H / 12 ))
   adb shell input motionevent MOVE $x $y
   i=$((i + 1))
+  if [ $((i % 10)) -eq 0 ] && ! alive; then
+    echo "device lost after ${elapsed}s of play" > "$OUT/device-lost.txt"
+    break
+  fi
   # 大絕一開始就連拍，記錄動畫過程（錄影失敗時也有影格可看）
   if [ "$burst_done" -lt 2 ] && [ "$(adb logcat -d -s ShooterPerf:I | grep -c ULTIMATE)" -gt "$burst_done" ]; then
     burst_done=$((burst_done + 1))
@@ -75,10 +85,13 @@ adb shell dumpsys gfxinfo $PKG > "$OUT/gfxinfo.txt"
 adb shell pkill -INT screenrecord || true
 sleep 4
 adb shell ls -l /sdcard/run.mp4 > "$OUT/video-diagnostics.txt" 2>&1 || true
-adb pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
+timeout 120 command adb pull /sdcard/run.mp4 "$OUT/run.mp4" >> "$OUT/video-diagnostics.txt" 2>&1 || true
 which ffmpeg >> "$OUT/video-diagnostics.txt" 2>&1 || echo "no ffmpeg" >> "$OUT/video-diagnostics.txt"
 adb logcat -d -s ShooterPerf:I > "$OUT/perf.txt"
-adb logcat -d | grep -E -A20 "FATAL EXCEPTION|ANR in" > "$OUT/crashes.txt" || true
+kill "$LOGCAT_PID" 2> /dev/null || true
+grep -E -A20 "FATAL EXCEPTION|ANR in|Fatal signal" "$OUT/logcat-full.txt" > "$OUT/crashes.txt" || true
+grep -E "lowmemorykiller|Killing .*catplayground|am_kill|onTrimMemory" "$OUT/logcat-full.txt" > "$OUT/memory.txt" || true
+gzip -f "$OUT/logcat-full.txt"
 
 # 整段每 3 秒一張影格，大絕動畫附近每秒 10 張
 if [ -f "$OUT/run.mp4" ]; then
@@ -95,6 +108,8 @@ fi
   echo "# Emulator smoke test"
   echo "- stage $STAGE, cat $CAT, played ${PLAY_SECONDS}s, screen ${W}x${H}"
   echo "- crashes: $( [ -s "$OUT/crashes.txt" ] && echo YES || echo none )"
+  [ -f "$OUT/device-lost.txt" ] && echo "- $(cat "$OUT/device-lost.txt")"
+  [ -s "$OUT/memory.txt" ] && echo "- memory kills: $(wc -l < "$OUT/memory.txt")"
   echo
   echo "## gfxinfo"
   grep -E "Total frames rendered|Janky frames|percentile|Number Slow|Number Frozen" "$OUT/gfxinfo.txt" | head -20
