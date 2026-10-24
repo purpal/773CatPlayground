@@ -1,0 +1,66 @@
+Applications Graphics Acceleration Info:
+Uptime: 191439 Realtime: 191439
+
+** Graphics info for pid 4716 [com.purpal.catplayground] **
+
+Stats since: 77138045718ns
+Total frames rendered: 1543
+Janky frames: 1476 (95.66%)
+Janky frames (legacy): 1543 (100.00%)
+50th percentile: 129ms
+90th percentile: 150ms
+95th percentile: 200ms
+99th percentile: 350ms
+Number Missed Vsync: 1351
+Number High input latency: 90
+Number Slow UI thread: 1316
+Number Slow bitmap uploads: 997
+Number Slow issue draw commands: 1475
+Number Frame deadline missed: 1476
+Number Frame deadline missed (legacy): 1520
+HISTOGRAM: 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=0 13ms=0 14ms=0 15ms=0 16ms=0 17ms=0 18ms=0 19ms=0 20ms=0 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=1 28ms=0 29ms=0 30ms=0 31ms=1 32ms=0 34ms=1 36ms=0 38ms=0 40ms=0 42ms=0 44ms=0 46ms=2 48ms=3 53ms=4 57ms=4 61ms=4 65ms=15 69ms=21 73ms=15 77ms=12 81ms=24 85ms=24 89ms=29 93ms=42 97ms=38 101ms=52 105ms=61 109ms=53 113ms=66 117ms=79 121ms=77 125ms=69 129ms=78 133ms=79 150ms=566 200ms=79 250ms=21 300ms=7 350ms=6 400ms=3 450ms=0 500ms=1 550ms=1 600ms=0 650ms=1 700ms=1 750ms=1 800ms=1 850ms=0 900ms=0 950ms=0 1000ms=0 1050ms=0 1100ms=0 1150ms=0 1200ms=0 1250ms=0 1300ms=0 1350ms=0 1400ms=0 1450ms=0 1500ms=0 1550ms=0 1600ms=0 1650ms=0 1700ms=0 1750ms=0 1800ms=0 1850ms=0 1900ms=0 1950ms=0 2000ms=0 2050ms=0 2100ms=0 2150ms=0 2200ms=0 2250ms=0 2300ms=0 2350ms=0 2400ms=0 2450ms=0 2500ms=0 2550ms=0 2600ms=0 2650ms=0 2700ms=0 2750ms=0 2800ms=0 2850ms=0 2900ms=0 2950ms=0 3000ms=0 3050ms=0 3100ms=0 3150ms=0 3200ms=0 3250ms=1 3300ms=0 3350ms=0 3400ms=0 3450ms=0 3500ms=0 3550ms=0 3600ms=0 3650ms=0 3700ms=0 3750ms=0 3800ms=0 3850ms=0 3900ms=0 3950ms=0 4000ms=0 4050ms=0 4100ms=0 4150ms=0 4200ms=0 4250ms=0 4300ms=0 4350ms=0 4400ms=0 4450ms=0 4500ms=0 4550ms=0 4600ms=0 4650ms=0 4700ms=0 4750ms=0 4800ms=0 4850ms=0 4900ms=0 4950ms=0
+50th gpu percentile: 4950ms
+90th gpu percentile: 4950ms
+95th gpu percentile: 4950ms
+99th gpu percentile: 4950ms
+GPU HISTOGRAM: 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=1 7ms=0 8ms=1 9ms=1 10ms=0 11ms=2 12ms=3 13ms=7 14ms=12 15ms=9 16ms=19 17ms=17 18ms=12 19ms=20 20ms=15 21ms=16 22ms=24 23ms=28 24ms=22 25ms=25 4950ms=1309
+
+Pipeline=Skia (OpenGL)
+Memory policy:
+  Max surface area: 2073600
+  Max resource usage: 99.53MB (x48)
+  Background retention: 50% (altUiHidden = true)
+  GPU Context timeout: 10
+Contexts: 1 (stopped = 0)
+CPU Caches:
+  Glyph Cache: 620.59 KB (1 entry)
+  Glyph Count: 57 
+Total CPU memory usage:
+  635480 bytes, 620.59 KB (0.00 bytes is purgeable)
+GPU Caches:
+  Other:
+    Other: 4.28 KB (1 entry)
+    Buffer Object: 2.50 KB (4 entries)
+    StencilAttachment: 888.00 KB (8 entries)
+  Image:
+    Texture: 5.92 MB (97 entries)
+  Scratch:
+    RenderTarget: 7.08 MB (10 entries)
+    Buffer Object: 238.00 KB (7 entries)
+    Texture: 4.00 MB (2 entries)
+Total GPU memory usage:
+  18992124 bytes, 18.11 MB (12.78 MB is purgeable)
+
+Profile data in ms:
+
+	com.purpal.catplayground/com.purpal.catplayground.MainActivity/android.view.ViewRootImpl@95737ec (visibility=0)
+View hierarchy:
+
+  com.purpal.catplayground/com.purpal.catplayground.MainActivity/android.view.ViewRootImpl@95737ec
+  6 views, 10.71 kB of render nodes
+
+
+Total ViewRootImpl   : 1
+Total attached Views : 6
+Total RenderNode     : 10.71 kB (used) / 34.78 kB (capacity)
+

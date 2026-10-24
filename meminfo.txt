@@ -1,0 +1,30 @@
+== 15s
+  Native Heap    25085    25048        0        0    28352    35012    26438     4764
+           Java Heap:    13708                          43160
+         Native Heap:    25048                          28352
+            Graphics:        0                              0
+           TOTAL PSS:    77320            TOTAL RSS:   195640      TOTAL SWAP (KB):        0
+== 45s
+  Native Heap    26543    26508        0        0    29732    35536    27191     4563
+           Java Heap:    13204                          42696
+         Native Heap:    26508                          29732
+            Graphics:        0                              0
+           TOTAL PSS:    78030            TOTAL RSS:   197040      TOTAL SWAP (KB):        0
+== 75s
+  Native Heap    24351    24316        0        0    27540    35536    27401     4555
+           Java Heap:    11924                          41416
+         Native Heap:    24316                          27540
+            Graphics:        0                              0
+           TOTAL PSS:    74935            TOTAL RSS:   194448      TOTAL SWAP (KB):        0
+== 90s
+  Native Heap    24403    24368        0        0    27592    35536    27398     4591
+           Java Heap:    10728                          40220
+         Native Heap:    24368                          27592
+            Graphics:        0                              0
+           TOTAL PSS:    73823            TOTAL RSS:   193512      TOTAL SWAP (KB):        0
+== 105s
+  Native Heap    27819    27784        0        0    31008    39260    31351     3560
+           Java Heap:    12624                          42116
+         Native Heap:    27784                          31008
+            Graphics:        0                              0
+           TOTAL PSS:    79518            TOTAL RSS:   199396      TOTAL SWAP (KB):        0

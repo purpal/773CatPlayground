@@ -1,0 +1,21 @@
+10-24 02:17:53.888 E/ActivityManager(  518): ANR in com.google.android.apps.nexuslauncher (com.google.android.apps.nexuslauncher/.NexusLauncherActivity)
+10-24 02:17:53.888 E/ActivityManager(  518): PID: 1054
+10-24 02:17:53.888 E/ActivityManager(  518): Reason: Input dispatching timed out (Application does not have a focused window)
+10-24 02:17:53.888 E/ActivityManager(  518): Parent: com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+10-24 02:17:53.888 E/ActivityManager(  518): ErrorId: d7403f4d-47fd-4a83-a5ff-dfe4dd72f14e
+10-24 02:17:53.888 E/ActivityManager(  518): Frozen: false
+10-24 02:17:53.888 E/ActivityManager(  518): Load: 1.71 / 0.43 / 0.14
+10-24 02:17:53.888 E/ActivityManager(  518): ----- Output from /proc/pressure/memory -----
+10-24 02:17:53.888 E/ActivityManager(  518): some avg10=3.82 avg60=0.79 avg300=0.17 total=632678
+10-24 02:17:53.888 E/ActivityManager(  518): full avg10=0.12 avg60=0.02 avg300=0.00 total=75118
+10-24 02:17:53.888 E/ActivityManager(  518): ----- End output from /proc/pressure/memory -----
+10-24 02:17:53.888 E/ActivityManager(  518): ----- Output from /proc/pressure/cpu -----
+10-24 02:17:53.888 E/ActivityManager(  518): some avg10=66.32 avg60=23.37 avg300=5.66 total=18224622
+10-24 02:17:53.888 E/ActivityManager(  518): full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+10-24 02:17:53.888 E/ActivityManager(  518): ----- End output from /proc/pressure/cpu -----
+10-24 02:17:53.888 E/ActivityManager(  518): ----- Output from /proc/pressure/io -----
+10-24 02:17:53.888 E/ActivityManager(  518): some avg10=14.84 avg60=4.79 avg300=1.17 total=3816988
+10-24 02:17:53.888 E/ActivityManager(  518): full avg10=0.58 avg60=0.35 avg300=0.09 total=451126
+10-24 02:17:53.888 E/ActivityManager(  518): ----- End output from /proc/pressure/io -----
+10-24 02:17:53.888 E/ActivityManager(  518): 
+10-24 02:17:53.888 E/ActivityManager(  518): CPU usage from 2038ms to -7940ms ago (2026-10-24 02:17:40.873 to 2026-10-24 02:17:50.851):
