@@ -449,7 +449,7 @@ class World(
             s.age += dt
             if (s.style == ShotStyle.MISSILE) {
                 steerMissile(s, dt)
-                if (every(s.age, dt, 0.035f)) particles += Particle(s.x, s.y, 0f, 0f, 0.4f, 16f, 0xFFDDE6EEL, ParticleKind.SMOKE)
+                if (every(s.age, dt, 0.035f)) particles += Particle(s.x, s.y, 0f, 0f, 0.4f, 24f, 0xFFDDE6EEL, ParticleKind.SMOKE)
             }
             s.x += s.vx * dt
             s.y += s.vy * dt

@@ -122,7 +122,7 @@ object Weapons {
                 for (i in 0 until count) {
                     val side = if (i % 2 == 0) -1f else 1f
                     val a = -HALF_PI + side * (50f + (i / 2) * 18f) * DEG
-                    w.playerShots += PlayerShot(p.x + side * 26f, p.y, cos(a) * 420f, sin(a) * 420f, 10f, 12f, ShotStyle.MISSILE)
+                    w.playerShots += PlayerShot(p.x + side * 30f, p.y, cos(a) * 420f, sin(a) * 420f, 10f, 18f, ShotStyle.MISSILE)
                 }
                 p.subTimer = 0.6f
                 w.cue(SoundCue.MISSILE)

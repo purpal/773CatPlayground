@@ -3,60 +3,87 @@ package com.purpal.catplayground.shooter.model
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
- * 黑貓專武「肉球閃電」的路徑：以機體為中心的貓掌輪廓（掌心＋四顆趾頭，趾頭朝上）。
- * 座標以 1 為單位（實際大小乘上 [PawBoltState.size]），閃電依序繞掌心一圈、再跳到每顆趾頭各繞一圈。
+ * 黑貓專武「肉球閃電」的路徑：以機體為中心的貓掌外輪廓（像貓掌造型的票卡，四顆趾頭在上方鼓起），
+ * 閃電只繞外圍一圈；掌心與趾頭的肉球只畫成淡淡的光暈。
+ * 座標以 1 為單位（實際大小乘上 [PawBoltState.size]），y 往下為正。
  */
 object PawPath {
-    private const val PAD_POINTS = 40
-    private const val TOE_POINTS = 18
+    private const val POINTS = 120
+
+    /** 掌心（大橢圓）。 */
+    private const val BODY_Y = 0.15f
+    private const val BODY_RX = 0.95f
+    private const val BODY_RY = 0.85f
+
+    /** 四顆趾頭的位置與半徑（外輪廓用）。 */
+    private val TOES = arrayOf(
+        floatArrayOf(-0.78f, -0.55f, 0.36f),
+        floatArrayOf(-0.28f, -0.92f, 0.36f),
+        floatArrayOf(0.28f, -0.92f, 0.36f),
+        floatArrayOf(0.78f, -0.55f, 0.36f),
+    )
+
+    /** 內部的肉球（畫成淡淡的光暈）：x, y, 半徑。第一個是掌心肉球。 */
+    val PADS = arrayOf(
+        floatArrayOf(0f, 0.3f, 0.42f),
+        floatArrayOf(-0.72f, -0.48f, 0.19f),
+        floatArrayOf(-0.25f, -0.82f, 0.2f),
+        floatArrayOf(0.25f, -0.82f, 0.2f),
+        floatArrayOf(0.72f, -0.48f, 0.19f),
+    )
 
     val xs: FloatArray
     val ys: FloatArray
-    /** 第 i 點到第 i+1 點是不是「跳躍」段（不同形狀之間，畫成淡淡的電弧）。 */
+    /** 保留給畫面使用：外輪廓沒有跳躍段。 */
     val jump: BooleanArray
     /** 走到第 i 點時累積的路徑比例（0～1）。 */
     val at: FloatArray
-    val count: Int
+    val count = POINTS
 
-    init {
-        val px = ArrayList<Float>()
-        val py = ArrayList<Float>()
-        val pj = ArrayList<Boolean>()
-        fun loop(cx: Float, cy: Float, rx: Float, ry: Float, n: Int, start: Float, widen: Float = 0f) {
-            for (i in 0..n) {
-                val a = start + i * TWO_PI / n
-                // widen：越往下越寬，掌心看起來像圓角三角形
-                px += cx + rx * cos(a) * (1f + widen * sin(a))
-                py += cy + ry * sin(a)
-                pj += i == n
-            }
-        }
-        // 掌心：從頂端出發
-        loop(0f, 0.28f, 0.82f, 0.6f, PAD_POINTS, -HALF_PI, widen = 0.14f)
-        // 四顆趾頭（由左到右）
-        for ((tx, ty, r) in listOf(Triple(-0.98f, -0.52f, 0.3f), Triple(-0.38f, -1.02f, 0.32f), Triple(0.38f, -1.02f, 0.32f), Triple(0.98f, -0.52f, 0.3f))) {
-            loop(tx, ty, r, r * 1.12f, TOE_POINTS, HALF_PI)
-        }
-        count = px.size
-        xs = px.toFloatArray()
-        ys = py.toFloatArray()
-        jump = pj.toBooleanArray()
-        // 跳躍段走得比較快（長度只算三分之一），讓閃電大部分時間在描輪廓
-        val seg = FloatArray(count)
-        var total = 0f
-        for (i in 0 until count) {
-            val j = (i + 1) % count
-            val len = hypot(xs[j] - xs[i], ys[j] - ys[i]) * (if (jump[i]) 0.33f else 1f)
-            seg[i] = len
-            total += len
-        }
-        at = FloatArray(count + 1)
-        for (i in 0 until count) at[i + 1] = at[i] + seg[i] / total
+    /** 從中心往 angle 方向，射線離開一個圓（或橢圓）的距離；沒碰到回傳 0。 */
+    private fun exitCircle(dx: Float, dy: Float, cx: Float, cy: Float, rx: Float, ry: Float): Float {
+        // 把橢圓縮放成單位圓再解：|(t*dx - cx)/rx, (t*dy - cy)/ry| = 1
+        val ax = dx / rx
+        val ay = dy / ry
+        val bx = -cx / rx
+        val by = -cy / ry
+        val a = ax * ax + ay * ay
+        val b = 2f * (ax * bx + ay * by)
+        val c = bx * bx + by * by - 1f
+        val disc = b * b - 4f * a * c
+        if (disc < 0f) return 0f
+        return ((-b + sqrt(disc)) / (2f * a)).coerceAtLeast(0f)
     }
 
-    /** 路徑比例 t（0～1）所在的線段索引。 */
+    init {
+        xs = FloatArray(POINTS)
+        ys = FloatArray(POINTS)
+        jump = BooleanArray(POINTS)
+        // 從正上方開始順時針繞一圈，每個方向取所有形狀裡最遠的邊界（聯集的外輪廓）
+        for (i in 0 until POINTS) {
+            val a = -HALF_PI + i * TWO_PI / POINTS
+            val dx = cos(a)
+            val dy = sin(a)
+            var r = exitCircle(dx, dy, 0f, BODY_Y, BODY_RX, BODY_RY)
+            for (t in TOES) r = maxOf(r, exitCircle(dx, dy, t[0], t[1], t[2], t[2]))
+            xs[i] = dx * r
+            ys[i] = dy * r
+        }
+        val seg = FloatArray(POINTS)
+        var total = 0f
+        for (i in 0 until POINTS) {
+            val j = (i + 1) % POINTS
+            seg[i] = hypot(xs[j] - xs[i], ys[j] - ys[i])
+            total += seg[i]
+        }
+        at = FloatArray(POINTS + 1)
+        for (i in 0 until POINTS) at[i + 1] = at[i] + seg[i] / total
+    }
+
+    /** 路徑比例 t 所在的線段索引。 */
     fun segmentAt(t: Float): Int {
         var lo = 0
         var hi = count - 1

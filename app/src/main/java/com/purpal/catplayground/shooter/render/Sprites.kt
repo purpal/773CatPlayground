@@ -165,7 +165,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     fun catHolo() = art("fx_catholo", 110f)
     fun graviton() = art("shot_graviton", 120f)
     fun gravitonPaw() = art("shot_graviton_paw", 50f)
-    fun fishMissile() = art("shot_fish2", 64f)
+    fun fishMissile() = art("shot_fish2", 96f)
     fun reticle() = art("fx_reticle", 110f)
     fun hexPaw() = art("fx_hexpaw", 52f)
     fun hitMark() = art("fx_hitmark", 34f)

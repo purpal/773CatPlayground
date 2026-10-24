@@ -24,7 +24,8 @@ def logo_disc(fill, clip_id):
 
 def logo_mark(size=512, name="brand_logo"):
     clip, disc = logo_disc(BRAND_BLUE, "logoClip")
-    b = f'<circle cx="79.5" cy="79.5" r="79.5" fill="{BRAND_BLUE}"/><circle cx="79.5" cy="79.5" r="77.6" fill="#FFFFFF"/>' + disc
+    # 原圖的白色部分改成品牌頁的底色，logo 才會和背景融在一起
+    b = f'<circle cx="79.5" cy="79.5" r="79.5" fill="{BRAND_BLUE}"/><circle cx="79.5" cy="79.5" r="77.6" fill="{BRAND_BG}"/>' + disc
     return Sprite(name, size, size, "0 0 160 160", b, clip)
 
 

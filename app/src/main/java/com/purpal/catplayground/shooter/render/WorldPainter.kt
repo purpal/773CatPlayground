@@ -478,7 +478,10 @@ private fun DrawScope.drawShot(s: PlayerShot, w: World, sprites: SpriteCache) {
             // 黑洞中央的橘色肉球（不跟著轉，永遠朝上）
             drawSprite(sprites.gravitonPaw(), s.x, s.y, scale * (1f + sin(s.age * 14f) * 0.05f))
         }
-        ShotStyle.MISSILE -> drawSprite(sprites.fishMissile(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD)
+        ShotStyle.MISSILE -> {
+            if (FxSettings.high) drawSprite(sprites.glow(0xFF00E5FFL), s.x, s.y, 0.7f, alpha = 0.45f, blendMode = BlendMode.Plus)
+            drawSprite(sprites.fishMissile(), s.x, s.y, 1f, atan2(s.vy, s.vx) * RAD)
+        }
         ShotStyle.SONIC -> for (k in 0..2) {
             // 力場盾的發射體：往上飛的青色 V 形
             val y = s.y + k * 14f
@@ -566,8 +569,8 @@ private val pawOutline = Path()
 private val pawTrail = Path()
 
 /**
- * 黑貓專武「肉球閃電」：淡淡的貓掌全輪廓＋閃電殘影（從淡到亮，沒有判定）＋閃電本體（鋸齒狀、有判定）。
- * 跳躍段（掌心到趾頭之間）畫成更淡的細線。
+ * 黑貓專武「肉球閃電」：只繞貓掌外輪廓。淡淡的外輪廓＋閃電殘影（從淡到亮，沒有判定）＋閃電本體（鋸齒狀、有判定）；
+ * 內部的肉球畫成淡淡的光暈。
  */
 private fun DrawScope.drawPawBolt(w: World, sprites: SpriteCache) {
     val b = w.pawBolt
@@ -577,7 +580,13 @@ private fun DrawScope.drawPawBolt(w: World, sprites: SpriteCache) {
     val ys = PawPath.ys
     fun px(i: Int) = b.x + xs[i] * b.size
     fun py(i: Int) = b.y + ys[i] * b.size
-    // 1) 全輪廓：讓貓掌形狀一直看得出來（整條路徑一次畫完）
+    // 0) 內部的肉球：淡淡的光暈（掌心一大顆＋四顆趾頭）
+    for (pad in PawPath.PADS) {
+        val r = pad[2] * b.size
+        drawSprite(sprites.glow(0xFF00E5FFL), b.x + pad[0] * b.size, b.y + pad[1] * b.size, r * 2.4f / 100f, alpha = 0.32f, blendMode = BlendMode.Plus)
+        drawCircle(Cyan.copy(alpha = 0.12f), r, Offset(b.x + pad[0] * b.size, b.y + pad[1] * b.size))
+    }
+    // 1) 外輪廓：讓貓掌形狀一直看得出來（整條路徑一次畫完）
     pawOutline.reset()
     var open = false
     for (i in 0 until n) {
@@ -812,6 +821,9 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
     val degrees = w.halfAngle * RAD
     val topLeft = Offset(w.x - w.radius, w.centerY - w.radius)
     val size = Size(w.radius * 2f, w.radius * 2f)
+    // 光暈：一寬一窄兩層相加混色的青光
+    drawArc(Cyan.copy(alpha = 0.22f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 4.5f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+    drawArc(Cyan.copy(alpha = 0.35f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2.2f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
     drawArc(Cyan.copy(alpha = 0.18f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(w.thickness * 2f))
     val cell = 15f
     val steps = (w.radius * w.halfAngle * 2f / (cell * 1.7f)).toInt().coerceAtLeast(3)
@@ -823,7 +835,8 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
             drawPath(hexPath(w.x + cos(a) * r, w.centerY + sin(a) * r, cell, 0.5235988f), Cyan.copy(alpha = 0.55f * fade), style = Stroke(2f))
         }
     }
-    drawArc(Color.White.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(4f))
+    drawArc(Cyan.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(10f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+    drawArc(Color.White.copy(alpha = 0.95f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(5f, cap = StrokeCap.Round))
 }
 
 private val CritRed = ColorFilter.lighting(Color(0xFFFF3D5A), Color(0xFF3A0010))
