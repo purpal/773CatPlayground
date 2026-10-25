@@ -5,7 +5,7 @@ import com.purpal.catplayground.audio.Synth.addNoise
 import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
-enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, BOSS }
+enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, STAGE_PANDA, BOSS }
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
 internal object MusicBank {
@@ -20,6 +20,7 @@ internal object MusicBank {
         Music.STAGE_PENGUIN -> penguinStage()
         Music.STAGE_KOALA -> koalaStage()
         Music.STAGE_OTTER -> otterStage()
+        Music.STAGE_PANDA -> pandaStage()
         Music.BOSS -> boss()
     }
 
@@ -284,6 +285,36 @@ internal object MusicBank {
         )
         bass(intArrayOf(45, 40, 42, 38, 45, 42, 38, 40), 0.28)
         drums(8, kickEveryBeat = true, hatSixteenths = false)
+        pcm()
+    }
+
+    /**
+     * 第 9 關：翠綠竹林。古箏般的撥弦（三角波＋高八度泛音），A 小調五聲音階（A C D E G），
+     * 長音用十六分音符反覆撥奏模仿古箏的輪指。
+     */
+    private fun pandaStage(): ShortArray = Song(bpm = 120.0, bars = 8).run {
+        melody(
+            "81:1 84:1 86:2 88:1 86:1 84:2 " +
+                "81:1 79:1 76:2 79:0.5 79:0.5 79:0.5 79:0.5 r:2 " +
+                "76:1 79:1 81:2 84:1 81:1 79:2 " +
+                "76:1 74:1 72:2 76:0.5 76:0.5 76:0.5 76:0.5 r:2 " +
+                "88:1 86:1 84:2 86:1 88:1 91:2 " +
+                "88:1 86:1 84:1 81:1 84:0.5 84:0.5 84:0.5 84:0.5 r:2 " +
+                "81:1 84:1 79:1 76:1 74:2 76:2 " +
+                "81:0.5 81:0.5 81:0.5 81:0.5 81:0.5 81:0.5 81:0.5 81:0.5 r:4",
+            volume = 0.2,
+            wave = Wave.TRIANGLE,
+            octaveUp = 0.07,
+        )
+        chords(
+            listOf(
+                intArrayOf(57, 64, 69), intArrayOf(55, 62, 67), intArrayOf(57, 64, 69), intArrayOf(52, 59, 64),
+                intArrayOf(53, 60, 65), intArrayOf(55, 62, 67), intArrayOf(52, 59, 64), intArrayOf(57, 64, 69),
+            ),
+            volume = 0.03,
+        )
+        bass(intArrayOf(45, 43, 45, 40, 41, 43, 40, 45), 0.26)
+        drums(8, kickEveryBeat = false, hatSixteenths = false)
         pcm()
     }
 

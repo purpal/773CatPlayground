@@ -160,10 +160,113 @@ def bamboo_staff():
     return Sprite("prop_bamboo_head", 330, 70, "-8 -17 165 34", b, GLOW)
 
 
+def lost_staff():
+    """卸甲時被打飛的整根電漿竹節棍。"""
+    b = path("M-92,-7 L-60,-7 L-60,7 L-92,7 Z", "url(#steel)", NAVY, 3)
+    b += f'<g transform="translate(-64 0) scale(0.95)">{bamboo_staff().body}</g>'
+    return Sprite("lost_staff", 400, 90, "-100 -22 200 44", b, GLOW)
+
+
+# ───────────── 小怪 ─────────────
+
+def mini(name, body, size=180, view="-60 -60 120 120"):
+    return Sprite(name, size, size, view, g(wob(body)))
+
+
+def panda_cub(frame):
+    """熊貓寶寶：抱成一顆球滾下來，自毀俯衝型（遊戲裡會旋轉）。frame 1 眨眼。"""
+    b = ellipse(-26, -28, 13, 12, BLACK, INK, 3) + ellipse(26, -28, 13, 12, BLACK, INK, 3)
+    b += ellipse(0, 0, 40, 38, FUR, INK, 4)
+    for s in (-1, 1):
+        b += ellipse(s * 15, -2, 9, 11, BLACK, "none", None, f'transform="rotate({s * -30} {s * 15} -2)"')
+        if frame:
+            b += path(f"M{s * 15 - 5},-1 Q{s * 15},-5 {s * 15 + 5},-1", "none", "#FFFFFF", 2.5)
+        else:
+            b += ellipse(s * 14, -2, 3.5, 4, "#FFFFFF", "none") + ellipse(s * 14, -1.5, 2.2, 2.6, "#2E2128", "none")
+    b += ellipse(0, 10, 4.5, 3, BLACK, "none")
+    b += path("M-4,15 Q0,18 4,15", "none", None, 2)
+    b += blush(-24, 10, 7, lines=False) + blush(24, 10, 7, lines=False)
+    # 抱著的小手小腳
+    b += ellipse(-16, 30, 11, 8, BLACK, INK, 3) + ellipse(16, 30, 11, 8, BLACK, INK, 3)
+    return mini(f"min_pandacub_{frame}", b, 140, "-50 -48 100 100")
+
+
+def steamer(frame):
+    """蒸籠砲台：竹編蒸籠，蓋子掀開時（frame 1）冒出蒸氣和兩顆包子。地面固定型。"""
+    weave = "#E9C98C"
+    rim = "#C9A25E"
+    b = path("M-46,6 L46,6 L42,40 L-42,40 Z", weave, INK, 4)
+    for k in range(-3, 4):
+        b += path(f"M{k * 12},10 L{k * 11},36", "none", rim, 2.5)
+    b += path("M-46,20 L46,20", "none", rim, 3)
+    if frame:
+        b += ellipse(-16, 0, 17, 13, "#FFF8EE", INK, 3) + ellipse(16, 0, 17, 13, "#FFF8EE", INK, 3)
+        for x in (-16, 16):
+            b += path(f"M{x - 6},-6 Q{x},-14 {x + 6},-6", "none", "#E8D9C4", 2.5)
+            b += arc_eye(x - 5, 2, 3, up=True, sw=2) + arc_eye(x + 5, 2, 3, up=True, sw=2)
+        b += f'<g transform="rotate(-24 -40 -10)">' + path("M-46,-6 Q0,-34 46,-6 Z", weave, INK, 4) + ellipse(0, -22, 8, 5, rim, INK, 2.5) + "</g>"
+        for x in (-22, 4, 28):
+            b += path(f"M{x},-24 Q{x - 8},-36 {x},-46 Q{x + 8},-56 {x},-64", "none", "#FFFFFF", 4, 'opacity="0.85"')
+    else:
+        b += path("M-48,8 Q0,-30 48,8 Z", weave, INK, 4)
+        for k in (-1, 0, 1):
+            b += path(f"M{k * 18 - 6},{-4 - (1 - abs(k)) * 8} L{k * 18 + 6},{-4 - (1 - abs(k)) * 8}", "none", rim, 2.5)
+        b += ellipse(0, -16, 8, 5, rim, INK, 2.5)
+        b += dot_eye(-12, 26, 3.5) + dot_eye(12, 26, 3.5)
+    return mini(f"min_steamer_{frame}", b, 150, "-56 -66 112 112")
+
+
+def bamboo_shoot():
+    """竹筍：從地上冒出來，熊貓師父最愛吃；沒打掉就會被拔去吃掉回血。"""
+    b = path("M-30,40 Q-34,0 -6,-46 Q0,-54 6,-46 Q34,0 30,40 Z", "#F3E2B3", INK, 4)
+    for k, (y, w) in enumerate(((-30, 12), (-10, 20), (12, 27), (32, 31))):
+        side = 1 if k % 2 == 0 else -1
+        b += path(f"M{-w},{y + 8} Q{side * 8},{y - 10} {w},{y + 8} L{w - 4},{y + 14} Q0,{y + 2} {-w + 4},{y + 14} Z", "#9CCB6A", INK, 3)
+    b += path("M-6,-46 Q0,-62 4,-50", "none", "#7FB056", 4)
+    b += ellipse(0, 44, 38, 8, "#8D6E63", INK, 3)
+    b += dot_eye(-9, 22, 3.2) + dot_eye(9, 22, 3.2)
+    b += path("M-3,28 Q0,31 3,28", "none", None, 2)
+    return mini("min_bambooshoot", b, 130, "-48 -66 96 120")
+
+
+def elite_red_panda(frame):
+    """菁英怪：小熊貓浪人。橘紅色毛、白色眉毛和口鼻，戴斗笠、圍紅色圍巾，背著木刀；條紋大尾巴。"""
+    fur, fur_d = "#E07A3F", "#A9502A"
+    swing = 16 if frame else -8
+    b = f'<g transform="rotate({swing} 40 60)">' + path("M30,56 Q78,60 84,20 Q90,-6 70,-14 Q74,16 52,34 Z", fur, INK, 4)
+    for k in range(3):
+        b += path(f"M{60 + k * 8},{40 - k * 18} q10,-2 14,6", "none", fur_d, 6)
+    b += "</g>"
+    b += path(mochi_path(0, 18, 124, 116), fur, INK, 4.5)
+    b += ellipse(0, 50, 38, 26, "#5A3A2E", "none", None, 'opacity="0.55"')
+    for s in (-1, 1):
+        b += path(f"M{s * 34},-30 L{s * 56},-56 L{s * 62},-22 Z", fur, INK, 3.5)
+        b += path(f"M{s * 40},-32 L{s * 54},-48 L{s * 56},-28 Z", "#FFF3E6", "none")
+        b += ellipse(s * 22, -10, 12, 7, "#FFFFFF", "none")
+        b += ellipse(s * 26, 12, 13, 10, "#FFFFFF", "none")
+    b += ellipse(0, 16, 20, 14, "#FFFFFF", "none")
+    b += dot_eye(-20, 2, 5.5) + dot_eye(20, 2, 5.5)
+    b += brows("angry", -20, 20, -12, w=9, sw=4)
+    b += ellipse(0, 12, 6, 4.5, "#3B2A2A", "none") + omega_mouth(0, 18, 6, 2.5)
+    # 紅圍巾
+    b += path("M-46,34 Q0,48 46,34 L44,46 Q0,60 -44,46 Z", "#E5484D", INK, 3.5)
+    b += path("M30,44 L40,74 L26,72 Z", "#E5484D", INK, 3)
+    # 斗笠
+    b += path("M-78,-30 L0,-74 L78,-30 Q0,-40 -78,-30 Z", "#E8C77E", INK, 4)
+    for k in (-2, -1, 1, 2):
+        b += path(f"M0,-72 L{k * 32},-34", "none", "#C9A25E", 2.5)
+    # 背著的木刀
+    b += path("M-60,-6 L-24,78", "none", "#8D6E63", 8) + path("M-54,8 L-46,4", "none", "#5A3A2E", 7)
+    b += ellipse(-50, 50, 13, 11, "#4A3030", INK, 3.5) + ellipse(50, 50, 13, 11, "#4A3030", INK, 3.5)
+    return mini(f"elite_redpanda_{frame}", b, 240, "-90 -100 180 200")
+
+
 def all_sprites():
     out = []
     for m in range(3):
         for f in range(2):
             out.append(panda_boss(m, f))
-    out += [lost_beard(), bamboo_staff()]
+    out += [lost_beard(), bamboo_staff(), lost_staff(), bamboo_shoot()]
+    for f in range(2):
+        out += [panda_cub(f), steamer(f), elite_red_panda(f)]
     return out

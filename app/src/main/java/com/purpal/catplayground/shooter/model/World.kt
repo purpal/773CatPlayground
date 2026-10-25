@@ -1057,6 +1057,7 @@ class World(
             BulletStyle.LEAF -> 12f
             BulletStyle.FISH -> 13f
             BulletStyle.SHELL -> 14f
+            BulletStyle.BAMBOO -> 11f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

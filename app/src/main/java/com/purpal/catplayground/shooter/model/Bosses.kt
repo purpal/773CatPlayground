@@ -1209,3 +1209,325 @@ class OtterTwin(val boss: OtterBoss) : Enemy(WORLD_WIDTH - boss.x, boss.y, 1f, 1
         if (!boss.alive) alive = false
     }
 }
+
+/**
+ * 第 9 關：竹林武館 熊貓師父 波波（熊貓）。下巴黏著假鬍子、拿著電漿竹節棍，裝成威嚴的功夫師父：
+ * 棍法橫掃、竹節連發、從地上長出來的竹林陣、紅白兩色的太極雙旋。愛面子但其實很軟，40% 就被打到「卸甲」：
+ * 竹棍飛走、變回熊貓寶寶——縮成一顆球在畫面裡反彈滾動、躺著耍賴亂踢、大口咬竹子噴竹葉。
+ * 招牌機制「竹筍」：地上冒出竹筍，沒在時限內打掉就會被拔去吃。吃的時候坐著不動、受到 1.5 倍傷害，
+ * 但會回 3% 血（整場最多 [MAX_FEASTS] 次）。
+ */
+class PandaBoss : Boss(hp = 46000f, radius = 200f, score = 100000, homeY = 420f) {
+    override val kind = EnemyKind.BOSS_PANDA
+    override val name = "熊貓師父 波波"
+    override val breakAt = 0.4f
+    override val breakKind = BreakKind.DISARM
+    override val weapon = HazardStyle.STAFF
+    override val lostWeapon = LostProp.STAFF
+    override val lostProps = intArrayOf(LostProp.BEARD)
+    override val handX = 165f
+    override val handY = 150f
+
+    /** 正在吃竹筍：坐著不動，受到 [EAT_DAMAGE] 倍傷害。 */
+    var eating = false
+        private set
+    private var eatStep = false
+    /** 已經吃竹筍回血的次數。 */
+    var feasts = 0
+        private set
+
+    /** 縮成球在畫面裡反彈滾動中。 */
+    var rolling = false
+        private set
+    private var rollStep = false
+    private val ball = RollBall()
+    /** 縮成球前的預告剩餘秒數；預告時畫出預測的滾動路線。 */
+    var rollWarn = 0f
+        private set
+    /** 預測的滾動路線（x, y 交錯），在開始預告時算好。 */
+    val rollPath = ArrayList<Float>()
+    private var rollAngle = 0f
+    /** 躺著耍賴時左右搖晃的角度。 */
+    private var rock = 0f
+    private var rockStep = false
+    /** 這一步移動用的速度上限（在 move 裡決定，滾動結束的那一步也照滾動的速度算）。 */
+    private var speed = 520f
+    override val maxMoveSpeed: Float get() = speed
+    override val damageScale: Float get() = if (eating) EAT_DAMAGE else 1f
+    override val tilt: Float get() = rollAngle + rock
+
+    override fun update(w: World, dt: Float) {
+        super.update(w, dt)
+        eating = eatStep
+        eatStep = false
+        // 滾動被換階段打斷時也要停下來
+        if (!rollStep) {
+            rolling = false
+            rollWarn = 0f
+        }
+        rollStep = false
+        if (rollWarn > 0f) rollWarn -= dt
+        rock = if (rockStep) rock else 0f
+        rockStep = false
+        rollAngle = when {
+            rolling -> rollAngle + ball.vx * dt * 0.45f
+            rollWarn > 0f -> rollAngle + sin(age * 30f) * 2f
+            else -> {
+                // 滾完慢慢轉正
+                val upright = kotlin.math.round(rollAngle / 360f) * 360f
+                val a = approach(rollAngle, upright, 10f, dt)
+                if (near(a, upright, 0.5f)) 0f else a
+            }
+        }
+    }
+
+    override fun move(w: World, dt: Float) {
+        speed = if (rolling) ROLL_SPEED + 40f else 520f
+        when {
+            rolling -> {
+                ball.x = x
+                ball.y = y
+                if (ball.step(dt, homeY - 60f, rollBottom(w))) {
+                    w.shake(0.2f)
+                    w.cue(SoundCue.EXPLODE_SMALL)
+                    w.ring(x, y, 8, 150f, age, BulletStyle.LEAF, Tint.GREEN)
+                }
+                x = ball.x
+                y = ball.y
+            }
+            // 吃竹筍、縮成球預告時坐著不動
+            eating || rollWarn > 0f -> Unit
+            else -> {
+                x = WORLD_WIDTH / 2f + if (broken) sin(moveTime * 0.8f) * 230f else sin(moveTime * 0.55f) * 190f
+                y = approach(y, homeY, 3f, dt)
+            }
+        }
+    }
+
+    /** 滾動範圍的下緣：離玩家平常的位置留一段距離。 */
+    private fun rollBottom(w: World) = maxOf(homeY + 200f, w.height * 0.72f - 300f)
+
+    /** 回血，但不會回到上一個階段（不會重新觸發換階段）。 */
+    private fun feast(w: World) {
+        feasts++
+        val cap = when (phase) {
+            0 -> 1f
+            1 -> 0.6f
+            else -> 0.25f
+        } - 0.002f
+        hp = minOf(hp + maxHp * FEAST_HEAL, maxHp * cap).coerceAtLeast(hp)
+        w.burst(x, y - 40f, 0xFF69F0AEL, 12, 260f, ParticleKind.HEART)
+        w.cue(SoundCue.POWER_UP)
+    }
+
+    private fun shoots(w: World) = w.enemies.filter { it is BambooShoot && it.alive && it.owner === this }
+
+    /** 這一輪竹筍有吃到（坐下來吃）。 */
+    private var fed = false
+
+    /** 竹節連發：從竹棍前端射出三波扇形竹節彈。 */
+    private val segmentVolley = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f) || crossed(t, dt, 1.1f) || crossed(t, dt, 1.9f)) {
+            w.fan(x + handX, y + handY, aimFrom(w, handX, handY), 5, 48f * DEG, 330f, BulletStyle.BAMBOO, Tint.HONEY)
+        }
+    }
+    /** 竹棍朝玩家突刺兩次。 */
+    private val staffThrust = Attack(2.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.3f)) melee(w, HazardStyle.STAFF, aimFrom(w, handX, handY), 42f, warn = 0.7f)
+        if (every(t, dt, 1.3f, offset = 0.8f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.BAMBOO, Tint.HONEY)
+    }
+    /** 棍法橫掃：從玩家的另一側掃過來 70°，玩家那一側的外緣是安全區。 */
+    private val staffSweep = Attack(3.8f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val playerLeft = w.player.x < x + handX
+            melee(
+                w, HazardStyle.STAFF, if (playerLeft) HALF_PI - 55f * DEG else HALF_PI + 55f * DEG, 44f,
+                warn = 0.9f, active = 1.4f, extend = 0.2f, sweep = if (playerLeft) 70f * DEG else -70f * DEG, length = 1150f,
+            )
+        }
+        if (every(t, dt, 1.1f, offset = 1f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.BAMBOO, Tint.HONEY)
+    }
+    /**
+     * 竹林陣：地上先畫出預告線，接著一排竹子從畫面下方長出來，把玩家關在竹子之間的縫裡，
+     * 師父再從上面射竹節彈。
+     */
+    private val bambooGrove = Attack(4.4f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val gap = 230f
+            var gx = 60f + w.random.nextFloat() * gap
+            val top = homeY + 280f
+            while (gx < WORLD_WIDTH - 40f) {
+                w.lasers += Laser(
+                    gx, w.height + 20f, -HALF_PI, w.height + 20f - top, 64f, warnTime = 0.9f, activeTime = 2.6f,
+                    color = Tint.RED, damage = MELEE_DAMAGE, style = HazardStyle.BAMBOO, extendTime = 0.35f,
+                )
+                gx += gap
+            }
+            w.cue(SoundCue.SWING)
+        }
+        if (t > 1.2f && every(t, dt, 0.6f, offset = 1.2f)) w.aimed(x + handX, y + handY, 300f, BulletStyle.BAMBOO, Tint.HONEY)
+    }
+    /** 太極雙旋：紅、白兩道螺旋往同一個方向捲，互相繞著擴散。 */
+    private val taijiSpiral = Attack(4.6f) { w, t, dt ->
+        if (every(t, dt, 0.1f)) {
+            val a = t * 1.9f
+            w.shoot(x, y + 40f, a, 200f, BulletStyle.ORB, Tint.RED).turn = 0.7f
+            w.shoot(x, y + 40f, a + HALF_PI * 2f, 200f, BulletStyle.BUBBLE, Tint.PINK).turn = 0.7f
+        }
+    }
+    /** 叫熊貓寶寶滾下來。 */
+    private val summonCubs = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) for (i in 0 until 6) w.spawn(PandaCub(130f + i * 148f, (i % 3) * 0.12f))
+        if (every(t, dt, 1f, offset = 0.8f)) w.aimed(x, y + 80f, 220f, BulletStyle.BIG_ORB, Tint.HONEY)
+    }
+    /**
+     * 竹筍：地上冒出三根竹筍，[BambooShoot.RIPE] 秒內沒打掉的會被拔去吃——
+     * 吃的時候坐著不動、受到 1.5 倍傷害，但會回血。
+     */
+    private val bambooFeast = Attack(6f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) {
+            fed = false
+            for (k in 0 until 3) {
+                val sx = 230f + k * 270f + w.jitter(50f)
+                val sy = homeY + 300f + w.random.nextFloat() * 140f
+                w.spawn(BambooShoot(this, sx, sy))
+            }
+            w.cue(SoundCue.ITEM)
+        }
+        if (t < 4.3f && every(t, dt, 1.2f, offset = 0.9f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 30f * DEG, 260f, BulletStyle.LEAF, Tint.GREEN)
+        if (crossed(t, dt, 4.3f)) {
+            val ripe = shoots(w)
+            for (s in ripe) {
+                s.alive = false
+                w.puff(s.x, s.y, Tint.GREEN)
+                w.burst(s.x, s.y, 0xFF9CCB6AL, 8, 220f)
+            }
+            if (ripe.isNotEmpty() && feasts < MAX_FEASTS) {
+                feast(w)
+                fed = true
+            } else if (ripe.isEmpty()) {
+                // 竹筍全被打掉：師父氣得跺腳
+                w.sfx(x, y - 150f, SfxText.CRITICAL)
+                w.ring(x, y + 40f, 14, 180f, t, BulletStyle.LEAF, Tint.GREEN)
+            }
+        }
+        // 有吃到才會坐下來吃
+        eatStep = fed && t > 4.3f && t < 4.3f + EAT_TIME
+    }
+
+    /** 卸甲後：縮成一顆球，先畫出預測路線，再在畫面裡反彈滾動，沿路掉竹葉。 */
+    private val rollBall = Attack(4.6f) { w, t, dt ->
+        rollStep = t < 3.9f
+        if (crossed(t, dt, 0.01f)) {
+            var a = w.aimAt(x, y).coerceIn(30f * DEG, 150f * DEG)
+            if (kotlin.math.abs(cos(a)) < 0.35f) a = if (w.random.nextBoolean()) 60f * DEG else 120f * DEG
+            ball.vx = cos(a) * ROLL_SPEED
+            ball.vy = sin(a) * ROLL_SPEED
+            rollWarn = ROLL_WARN
+            // 預測路線：和實際滾動用同一套反彈規則
+            val ghost = RollBall()
+            ghost.x = x
+            ghost.y = y
+            ghost.vx = ball.vx
+            ghost.vy = ball.vy
+            rollPath.clear()
+            rollPath += x
+            rollPath += y
+            var s = 0f
+            while (s < ROLL_TIME) {
+                if (ghost.step(STEP, homeY - 60f, rollBottom(w))) {
+                    rollPath += ghost.x
+                    rollPath += ghost.y
+                }
+                s += STEP
+            }
+            rollPath += ghost.x
+            rollPath += ghost.y
+            w.cue(SoundCue.SWING)
+        }
+        if (crossed(t, dt, ROLL_WARN)) rolling = true
+        if (rolling && every(t, dt, 0.2f)) w.shoot(x, y, w.random.nextFloat() * TWO_PI, 70f, BulletStyle.LEAF, Tint.GREEN)
+        if (t >= ROLL_WARN + ROLL_TIME) rolling = false
+    }
+    /** 卸甲後：躺著耍賴亂踢，子彈往下方亂噴，但會留一條慢慢移動的空隙。 */
+    private val tantrum = Attack(4f) { w, t, dt ->
+        rockStep = t < 3.8f
+        rock = sin(t * 14f) * 22f
+        if (every(t, dt, 0.06f)) {
+            val a = HALF_PI + w.jitter(1.35f)
+            val gapCenter = HALF_PI + sin(t * 0.9f) * 0.9f
+            if (kotlin.math.abs(a - gapCenter) > 0.24f) w.shoot(x, y + 120f, a, 230f + w.random.nextFloat() * 60f, BulletStyle.ORB, Tint.RED)
+        }
+    }
+    /** 卸甲後：大口咬竹子，碎竹葉像散彈一樣噴出來。 */
+    private val leafSpray = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.9f, offset = 0.3f)) w.fan(x, y + 80f, w.aimAt(x, y), 7, 70f * DEG, 320f, BulletStyle.LEAF, Tint.GREEN)
+        if (every(t, dt, 0.9f, offset = 0.75f)) w.fan(x, y + 80f, w.aimAt(x, y), 4, 40f * DEG, 220f, BulletStyle.BAMBOO, Tint.HONEY)
+    }
+
+    override fun attacks(phase: Int) = when {
+        !broken && phase == 0 -> listOf(segmentVolley, staffThrust, bambooFeast, taijiSpiral, summonCubs)
+        !broken -> listOf(staffSweep, bambooGrove, segmentVolley, bambooFeast, taijiSpiral)
+        phase < 2 -> listOf(rollBall, leafSpray, bambooFeast, tantrum, summonCubs)
+        else -> listOf(rollBall, tantrum, bambooGrove, leafSpray, bambooFeast)
+    }
+
+    companion object {
+        const val EAT_DAMAGE = 1.5f
+        const val EAT_TIME = 1.5f
+        const val FEAST_HEAL = 0.03f
+        const val MAX_FEASTS = 3
+        const val ROLL_SPEED = 820f
+        const val ROLL_WARN = 0.9f
+        const val ROLL_TIME = 3f
+        /** 滾動時離左右邊的距離（球的中心）。 */
+        const val ROLL_MARGIN = 190f
+    }
+}
+
+/** 縮成球的熊貓：等速直線滾動，碰到範圍邊緣就反彈。 */
+private class RollBall {
+    var x = 0f
+    var y = 0f
+    var vx = 0f
+    var vy = 0f
+
+    /** 走一步；有反彈時回傳 true。 */
+    fun step(dt: Float, top: Float, bottom: Float): Boolean {
+        x += vx * dt
+        y += vy * dt
+        var bounced = false
+        if (x < PandaBoss.ROLL_MARGIN && vx < 0f || x > WORLD_WIDTH - PandaBoss.ROLL_MARGIN && vx > 0f) {
+            vx = -vx
+            bounced = true
+        }
+        if (y < top && vy < 0f || y > bottom && vy > 0f) {
+            vy = -vy
+            bounced = true
+        }
+        return bounced
+    }
+}
+
+/** 熊貓師父的竹筍：從地上冒出來，[RIPE] 秒後被拔去吃；沒人管的話 [WITHER] 秒後自己枯掉。 */
+class BambooShoot(val owner: PandaBoss, x: Float, y: Float) : Enemy(x, y, 70f, 42f, 300) {
+    override val kind = EnemyKind.BAMBOO_SHOOT
+    override val contactDamage = 0f
+    /** 長出來的程度（畫面用）：0～1。 */
+    val grow: Float get() = (age / 0.4f).coerceIn(0f, 1f)
+    /** 快被吃掉的程度（畫面用來畫倒數圈）：0～1。 */
+    val ripeness: Float get() = (age / RIPE).coerceIn(0f, 1f)
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        if (!owner.alive || age > WITHER) {
+            alive = false
+            w.puff(x, y, Tint.GREEN)
+        }
+    }
+
+    companion object {
+        const val RIPE = 4f
+        const val WITHER = 6f
+    }
+}

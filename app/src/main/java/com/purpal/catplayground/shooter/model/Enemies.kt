@@ -31,8 +31,11 @@ enum class EnemyKind {
     PENGUIN_SLIDER, SNOWMAN,
     LEAF_STAR, OWL, SNOT_BUBBLE,
     LEAP_FISH, CLAM,
-    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE, ELITE_SEAL, ELITE_KANGAROO, ELITE_BEAVER,
-    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT, BOSS_PENGUIN, BOSS_KOALA, BOSS_OTTER,
+    PANDA_CUB, STEAMER,
+    /** 熊貓師父愛吃的竹筍（沒打掉會被吃掉回血）。 */
+    BAMBOO_SHOOT,
+    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE, ELITE_SEAL, ELITE_KANGAROO, ELITE_BEAVER, ELITE_RED_PANDA,
+    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT, BOSS_PENGUIN, BOSS_KOALA, BOSS_OTTER, BOSS_PANDA,
     /** 水獺姊妹的妹妹嚕嚕（和姊姊共用血量）。 */
     OTTER_TWIN,
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
@@ -660,7 +663,36 @@ class ClamTurret(x: Float) : GroundShooter(x, 90f, 46f, 240) {
     }
 }
 
-// ───────────── 第 6～8 關的菁英怪 ─────────────
+// ───────────── 第 9 關：翠綠竹林 ─────────────
+
+/** 熊貓寶寶：抱成一顆球滾下來、左右搖晃，再朝玩家滾過去（中速、微追）。 */
+class PandaCub(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 22f, 36f, 90, diveAt = 1.2f + delay, diveSpeed = 500f, homing = 0.6f) {
+    override val kind = EnemyKind.PANDA_CUB
+    private val baseX = x
+    /** 滾動的角度（弧度，畫面用）。 */
+    val spin: Float get() = age * 6f
+
+    override fun cruise(w: World, dt: Float) {
+        y += 200f * dt
+        x = baseX + sin(age * 2.5f + delay * 4f) * 36f
+    }
+}
+
+/** 蒸籠砲台：蓋子掀開時噴出一圈包子（慢速），再補兩發瞄準的竹節彈（快速）。 */
+class SteamerTurret(x: Float) : GroundShooter(x, 90f, 48f, 240) {
+    override val kind = EnemyKind.STEAMER
+    /** 蓋子掀開（畫面用）。 */
+    val open: Boolean get() = (age % 2.4f) > 1.3f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.4f, offset = 0.7f)) w.ring(x, y, 8, 140f, age, BulletStyle.BIG_ORB, Tint.CHEESE)
+        val c = t % 2.4f
+        if (t > 1f && (crossed(c, dt, 1.2f) || crossed(c, dt, 1.4f))) w.aimed(x, y, 400f, BulletStyle.BAMBOO, Tint.HONEY)
+    }
+}
+
+// ───────────── 第 6～9 關的菁英怪 ─────────────
 
 /** 海豹教官：在冰上左右滑行，吹哨叫滑行小企鵝，扇形冰晶會在半空中凍住一下。 */
 class EliteSeal(x: Float) : Elite(x, 470f, 66f, 2600, ItemType.SPREAD) {
@@ -743,6 +775,37 @@ class EliteBeaver(x: Float) : Elite(x, 500f, 68f, 2600, ItemType.FOCUS) {
                     }
                 }
                 if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(LeapFish(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 小熊貓浪人：快步閃到別處，停下來「居合」砍出一道扇形快刀，還會撒星形手裏劍、叫熊貓寶寶滾過來。 */
+class EliteRedPanda(x: Float) : Elite(x, 480f, 64f, 2600, ItemType.SONIC) {
+    override val kind = EnemyKind.ELITE_RED_PANDA
+    private var fromX = x
+    private var toX = x
+    private var dashT = 1f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 330f, 2.5f, dt)
+            age < 12f -> {
+                if (every(age, dt, 1.8f, offset = 1.5f)) {
+                    fromX = x
+                    toX = 150f + w.random.nextFloat() * (WORLD_WIDTH - 300f)
+                    dashT = 0f
+                }
+                if (dashT < 1f) {
+                    dashT = (dashT + dt / 0.35f).coerceAtMost(1f)
+                    x = fromX + (toX - fromX) * dashT
+                    if (dashT >= 1f) w.fan(x, y + 30f, w.aimAt(x, y), 5, 50f * DEG, 360f, BulletStyle.RICE, Tint.RED)
+                }
+                if (every(age, dt, 3.6f, offset = 2.6f)) w.ring(x, y, 12, 170f, age, BulletStyle.STAR, Tint.STAR)
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(PandaCub(200f + i * 150f, i * 0.12f))
             }
             else -> y += 240f * dt
         }

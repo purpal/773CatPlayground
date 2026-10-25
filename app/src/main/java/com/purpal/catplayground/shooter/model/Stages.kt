@@ -1,6 +1,6 @@
 package com.purpal.catplayground.shooter.model
 
-enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN, CARROT_FIELD, ICE_FIELD, EUCALYPTUS, STREAM }
+enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN, CARROT_FIELD, ICE_FIELD, EUCALYPTUS, STREAM, BAMBOO }
 
 /** 對話的說話者：貓咪本人或該關 Boss。 */
 enum class Speaker { CAT, BOSS }
@@ -367,6 +367,45 @@ object Stages {
         },
     )
 
+    val panda = StageDef(
+        number = 9,
+        animal = "熊貓",
+        title = "翠綠竹林",
+        theme = StageTheme.BAMBOO,
+        bossName = "熊貓師父 波波",
+        bossArt = "boss_panda",
+        createBoss = ::PandaBoss,
+        outro = listOf(
+            boss("嗚哇…鬍子是黏上去的啦…師父其實才三歲…（吸鼻子）竹子分你一根…"),
+            cat("難怪黑眼圈這麼重喵，原來是熬夜在練裝大人！下一站，出發！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(PandaCub(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(SteamerTurret(220f + i * 280f)) }
+            line(9f, 10, 0.14f) { w, i -> w.spawn(LeafStar(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(PandaCub(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(BearCub(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(SteamerTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteRedPanda(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(Bunny(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(PandaCub(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(SteamerTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 1, startY = 200f + (i / 2) * 40f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteRedPanda(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(OwlTurret(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(PandaCub(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteKangaroo(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
     val all = listOf(
         StageEntry(1, "老鼠", "起司倉庫", "🐭", mouse),
         StageEntry(2, "狗狗", "汪汪公園", "🐶", dog),
@@ -376,7 +415,7 @@ object Stages {
         StageEntry(6, "企鵝", "冰雪南極", "🐧", penguin),
         StageEntry(7, "無尾熊", "尤加利樹林", "🐨", koala),
         StageEntry(8, "水獺", "清澈溪流", "🦦", otter),
-        StageEntry(9, "熊貓", "翠綠竹林", "🐼", null),
+        StageEntry(9, "熊貓", "翠綠竹林", "🐼", panda),
         StageEntry(10, "樹懶", "雨林樹冠", "🦥", null),
         StageEntry(11, "浣熊", "月夜小鎮", "🦝", null),
         StageEntry(12, "猴子", "叢林遺跡", "🐵", null),

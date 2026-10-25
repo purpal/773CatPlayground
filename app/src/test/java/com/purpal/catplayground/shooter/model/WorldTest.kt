@@ -590,4 +590,112 @@ class WorldTest {
         assertTrue(otter.broken)
         assertEquals(null, otter.heldProp())
     }
+
+    /** 跑到熊貓師父種下竹筍為止（不開火）。 */
+    private fun untilShootsPlanted(w: World): List<BambooShoot> {
+        w.firing = false
+        var t = 0f
+        while (w.enemies.none { it is BambooShoot } && t < 30f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        return w.enemies.filterIsInstance<BambooShoot>()
+    }
+
+    /** 熊貓師父：沒打掉的竹筍會被拔去吃，吃的時候受到 1.5 倍傷害，但會回血。 */
+    @Test
+    fun pandaEatsUneatenBambooShootsAndHeals() {
+        val w = bossFight(Stages.panda)
+        val panda = w.boss as PandaBoss
+        panda.hp = panda.maxHp * 0.7f
+        val shoots = untilShootsPlanted(w)
+        assertEquals(3, shoots.size)
+        val before = panda.hp
+        var t = 0f
+        while (!panda.eating && t < 10f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        assertTrue("the panda sits down to eat", panda.eating)
+        assertEquals(1, panda.feasts)
+        assertEquals(before + panda.maxHp * PandaBoss.FEAST_HEAL, panda.hp, 1f)
+        assertTrue("the shoots are gone", w.enemies.none { it is BambooShoot })
+        val hp = panda.hp
+        w.damageEnemy(panda, 100f)
+        assertEquals(150f, hp - panda.hp, 0.01f)
+    }
+
+    /** 竹筍全部打掉就吃不到：不回血、也不會坐下來。 */
+    @Test
+    fun clearingTheBambooShootsDeniesTheFeast() {
+        val w = bossFight(Stages.panda)
+        val panda = w.boss as PandaBoss
+        panda.hp = panda.maxHp * 0.7f
+        for (s in untilShootsPlanted(w)) w.damageEnemy(s, 1000f)
+        val before = panda.hp
+        repeat((6f / STEP).toInt()) {
+            w.update(STEP)
+            w.cues.clear()
+            assertFalse(panda.eating)
+        }
+        assertEquals(0, panda.feasts)
+        assertEquals(before, panda.hp, 0.01f)
+    }
+
+    /** 回血不會把師父拉回上一個階段。 */
+    @Test
+    fun pandaFeastNeverUndoesAPhase() {
+        val w = bossFight(Stages.panda)
+        val panda = w.boss as PandaBoss
+        panda.hp = panda.maxHp * 0.59f
+        w.update(STEP)
+        assertEquals(1, panda.phase)
+        untilShootsPlanted(w)
+        var t = 0f
+        while (panda.feasts == 0 && t < 10f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        assertEquals(1, panda.feasts)
+        assertTrue(panda.hpRatio < 0.6f)
+        assertEquals(1, panda.phase)
+    }
+
+    /** 熊貓師父 40% 卸甲（竹棍飛走），之後會縮成球滾動，而且先畫出預測路線、不會滾出範圍。 */
+    @Test
+    fun pandaDisarmsThenRollsInsideItsLane() {
+        val w = bossFight(Stages.panda)
+        val panda = w.boss as PandaBoss
+        assertEquals(HazardStyle.STAFF, panda.heldProp())
+        panda.hp = panda.maxHp * 0.42f
+        w.update(STEP)
+        assertFalse(panda.broken)
+        panda.hp = panda.maxHp * 0.38f
+        repeat(10) { w.update(STEP) }
+        assertTrue(panda.broken)
+        assertEquals(null, panda.heldProp())
+        w.firing = false
+        var sawWarning = false
+        var rolled = 0f
+        var t = 0f
+        while (t < 40f && w.phase == Phase.BOSS) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+            if (panda.rollWarn > 0f) {
+                sawWarning = true
+                assertTrue(panda.rollPath.size >= 4)
+            }
+            if (panda.rolling) {
+                rolled += STEP
+                assertTrue(panda.x >= PandaBoss.ROLL_MARGIN - 20f && panda.x <= WORLD_WIDTH - PandaBoss.ROLL_MARGIN + 20f)
+                assertTrue("rolls away from the player's row", panda.y < w.player.y - panda.radius)
+            }
+        }
+        assertTrue("warns before rolling", sawWarning)
+        assertTrue("rolls for a while ($rolled s)", rolled > 2f)
+    }
 }

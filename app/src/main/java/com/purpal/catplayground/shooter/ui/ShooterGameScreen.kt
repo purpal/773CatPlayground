@@ -346,6 +346,10 @@ private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
         EnemyKind.LEAP_FISH, EnemyKind.CLAM, EnemyKind.DUCKLING, EnemyKind.BUCKET, EnemyKind.PENGUIN_SLIDER, EnemyKind.FRISBEE,
         EnemyKind.BABY_CAPY, EnemyKind.BALLOON, EnemyKind.ELITE_BEAVER, EnemyKind.ELITE_MONKEY, EnemyKind.BOSS_OTTER, EnemyKind.OTTER_TWIN,
     )
+    9 -> listOf(
+        EnemyKind.PANDA_CUB, EnemyKind.STEAMER, EnemyKind.LEAF_STAR, EnemyKind.BEAR_CUB, EnemyKind.BUNNY, EnemyKind.MOUSE_PLANE,
+        EnemyKind.OWL, EnemyKind.BALLOON, EnemyKind.ELITE_RED_PANDA, EnemyKind.ELITE_KANGAROO, EnemyKind.BOSS_PANDA, EnemyKind.BAMBOO_SHOOT,
+    )
     else -> listOf(
         EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
         EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_BEE, EnemyKind.BOSS_CAPY,
@@ -397,6 +401,7 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.ICE_FIELD -> Music.STAGE_PENGUIN
     StageTheme.EUCALYPTUS -> Music.STAGE_KOALA
     StageTheme.STREAM -> Music.STAGE_OTTER
+    StageTheme.BAMBOO -> Music.STAGE_PANDA
 }
 
 // ───────────── HUD ─────────────
