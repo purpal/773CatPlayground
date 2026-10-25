@@ -1,6 +1,6 @@
 package com.purpal.catplayground.shooter.model
 
-enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN }
+enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN, CARROT_FIELD }
 
 /** 對話的說話者：貓咪本人或該關 Boss。 */
 enum class Speaker { CAT, BOSS }
@@ -211,12 +211,51 @@ object Stages {
         },
     )
 
+    val rabbit = StageDef(
+        number = 5,
+        animal = "兔子",
+        title = "胡蘿蔔田",
+        theme = StageTheme.CARROT_FIELD,
+        bossName = "兔兔隊長 蘿蔔",
+        bossArt = "boss_rabbit",
+        createBoss = ::RabbitBoss,
+        outro = listOf(
+            boss("嗚嗚…兔子急了也會咬人，可是你更兇喵…胡蘿蔔分你一根…"),
+            cat("謝謝！不過我比較想要小魚乾喵～下一站！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(Bunny(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(CarrotTurret(220f + i * 280f)) }
+            line(9f, 6, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 0, startY = 240f + (i / 2) * 40f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(Bunny(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(Puppy(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(CarrotTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteHare(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(Duckling(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(Bunny(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(CarrotTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i % 4) * 50f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteHare(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(BabyCapy(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(Bunny(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteMonkey(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
     val all = listOf(
         StageEntry(1, "老鼠", "起司倉庫", "🐭", mouse),
         StageEntry(2, "狗狗", "汪汪公園", "🐶", dog),
         StageEntry(3, "熊熊", "蜂蜜森林", "🐻", bear),
         StageEntry(4, "卡皮巴拉", "溫泉河畔", "♨️", capybara),
-        StageEntry(5, "兔子", "胡蘿蔔田", "🐰", null),
+        StageEntry(5, "兔子", "胡蘿蔔田", "🐰", rabbit),
         StageEntry(6, "企鵝", "冰雪南極", "🐧", null),
         StageEntry(7, "無尾熊", "尤加利樹林", "🐨", null),
         StageEntry(8, "水獺", "清澈溪流", "🦦", null),

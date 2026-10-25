@@ -5,7 +5,7 @@ import com.purpal.catplayground.audio.Synth.addNoise
 import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
-enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, BOSS }
+enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, BOSS }
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
 internal object MusicBank {
@@ -16,6 +16,7 @@ internal object MusicBank {
         Music.STAGE_DOG -> dogStage()
         Music.STAGE_BEAR -> bearStage()
         Music.STAGE_CAPY -> capyStage()
+        Music.STAGE_RABBIT -> rabbitStage()
         Music.BOSS -> boss()
     }
 
@@ -172,6 +173,33 @@ internal object MusicBank {
         )
         bass(intArrayOf(38, 43, 40, 38, 43, 47, 45, 38), 0.28)
         drums(8, kickEveryBeat = false, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 5 關：胡蘿蔔田。蹦蹦跳跳的切分音旋律（大調五聲音階），節奏輕快。 */
+    private fun rabbitStage(): ShortArray = Song(bpm = 160.0, bars = 8).run {
+        melody(
+            "76:1 79:1 r:1 81:1 84:2 81:1 79:1 " +
+                "76:1 74:1 76:2 72:4 " +
+                "74:1 76:1 r:1 79:1 81:2 79:1 76:1 " +
+                "79:6 r:2 " +
+                "84:1 86:1 r:1 84:1 81:2 79:1 81:1 " +
+                "84:1 81:1 79:2 76:4 " +
+                "74:1 76:1 79:1 81:1 79:2 76:1 74:1 " +
+                "72:6 r:2",
+            volume = 0.2,
+            wave = Wave.SQUARE,
+            octaveUp = 0.06,
+        )
+        chords(
+            listOf(
+                intArrayOf(60, 64, 67), intArrayOf(57, 60, 64), intArrayOf(62, 65, 69), intArrayOf(55, 59, 62),
+                intArrayOf(60, 64, 67), intArrayOf(57, 60, 64), intArrayOf(62, 65, 67), intArrayOf(60, 64, 67),
+            ),
+            volume = 0.035,
+        )
+        bass(intArrayOf(36, 33, 38, 31, 36, 33, 38, 36), 0.28)
+        drums(8, kickEveryBeat = true, hatSixteenths = false)
         pcm()
     }
 

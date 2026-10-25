@@ -96,7 +96,7 @@ class EnemyBullet(
  * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或科技道具的攻擊
  * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱）。
  */
-enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER }
+enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER, CARROT }
 
 /**
  * 雷射／近身攻擊：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。
@@ -230,6 +230,7 @@ object LostProp {
     const val BONE = 5
     const val DIPPER = 6
     const val YUZU = 7
+    const val RIBBON = 8
 }
 
 /** 畫面上的 HUD 字樣（科技風）。 */

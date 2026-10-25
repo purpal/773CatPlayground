@@ -99,6 +99,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.BOSS_DOG -> 1
             EnemyKind.BOSS_BEAR -> 2
             EnemyKind.BOSS_CAPY -> 3
+            EnemyKind.BOSS_RABBIT -> 4
             else -> 0
         }
         return art(BOSS[index][mood.coerceIn(0, 2)][frame and 1], BOSS_WIDTH)
@@ -126,8 +127,11 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.YUZU -> art("min_yuzu", 84f)
             EnemyKind.BUCKET -> art("min_bucket", 96f)
             EnemyKind.BABY_CAPY -> art(BABY_CAPY[f], 118f)
+            EnemyKind.BUNNY -> art(BUNNY[f], 92f)
+            EnemyKind.CARROT_TURRET -> art("min_carrot", 112f)
+            EnemyKind.ELITE_HARE -> art(ELITE_HARE[f], ELITE_WIDTH)
             EnemyKind.THROWN_BONE -> art("lost_bone", 200f)
-            EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY -> boss(kind, 0, f)
+            EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT -> boss(kind, 0, f)
         }
     }
 
@@ -140,11 +144,13 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         HazardStyle.BONE -> art("prop_bone_end", 75f)
         HazardStyle.DIPPER -> art("prop_dipper_head", 125f)
         HazardStyle.WATER -> art("prop_yuzu_head", 135f)
+        HazardStyle.CARROT -> art("prop_carrot_head", 135f)
         else -> null
     }
 
     fun lostProp(id: Int): Sprite = when (id) {
         LostProp.CROWN -> art("lost_crown", 100f)
+        LostProp.RIBBON -> art("lost_ribbon", 110f)
         LostProp.HAT -> art("lost_hat", 170f)
         LostProp.POT -> art("lost_pot", 170f)
         LostProp.BONE -> art("lost_bone", 200f)
@@ -225,7 +231,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {
             for (f in 0..1) {
-                if (kind == EnemyKind.BOSS_MOUSE || kind == EnemyKind.BOSS_DOG || kind == EnemyKind.BOSS_BEAR || kind == EnemyKind.BOSS_CAPY) {
+                if (kind == EnemyKind.BOSS_MOUSE || kind == EnemyKind.BOSS_DOG || kind == EnemyKind.BOSS_BEAR || kind == EnemyKind.BOSS_CAPY || kind == EnemyKind.BOSS_RABBIT) {
                     for (mood in 0..2) boss(kind, mood, f)
                 } else {
                     enemy(kind, f)
@@ -234,7 +240,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         }
         cheeseWheel(); barrel()
         HazardStyle.entries.forEach { propHead(it) }
-        listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT, LostProp.FORK, LostProp.BONE, LostProp.DIPPER, LostProp.YUZU).forEach { lostProp(it) }
+        listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT, LostProp.FORK, LostProp.BONE, LostProp.DIPPER, LostProp.YUZU, LostProp.RIBBON).forEach { lostProp(it) }
         ItemType.entries.forEach { item(it) }
         plasma(); casing(); catHolo(); graviton(); gravitonPaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
         star(); heart(); comboLabel(); roar(); overdrive()
@@ -274,7 +280,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val CAT_KINDS = listOf("orange", "black", "tiger", "panther")
         private val POSES = listOf("c", "l", "r")
         private val RUN = Array(4) { k -> Array(3) { p -> Array(4) { f -> "run_${CAT_KINDS[k]}_${POSES[p]}_$f" } } }
-        private val BOSS = Array(4) { b -> Array(3) { m -> Array(2) { f -> "boss_${listOf("mouse", "dog", "bear", "capy")[b]}_m${m}_$f" } } }
+        private val BOSS = Array(5) { b -> Array(3) { m -> Array(2) { f -> "boss_${listOf("mouse", "dog", "bear", "capy", "rabbit")[b]}_m${m}_$f" } } }
         private fun frames(base: String) = Array(2) { "${base}_$it" }
         private val MOUSE = frames("min_mouse")
         private val PLANE = frames("min_plane")
@@ -288,6 +294,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val ELITE_MONKEY = frames("elite_monkey")
         private val DUCK = frames("min_duck")
         private val BABY_CAPY = frames("min_babycapy")
+        private val BUNNY = frames("min_bunny")
+        private val ELITE_HARE = frames("elite_hare")
         private val ITEMS = ItemType.entries.map { "item_${it.name.lowercase()}" }.toTypedArray()
         private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor", "sfx_chain")
         private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f, 220f)

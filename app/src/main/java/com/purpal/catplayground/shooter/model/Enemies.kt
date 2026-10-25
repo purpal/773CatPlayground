@@ -27,8 +27,9 @@ enum class EnemyKind {
     BEE, HONEY_POT, BEAR_CUB, BEEHIVE,
     BALLOON,
     DUCKLING, YUZU, BUCKET, BABY_CAPY,
-    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY,
-    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY,
+    BUNNY, CARROT_TURRET,
+    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE,
+    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT,
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
     THROWN_BONE,
 }
@@ -384,6 +385,34 @@ class BabyCapy(x: Float) : GroundShooter(x, 90f, 50f, 260) {
     }
 }
 
+// ───────────── 第 5 關：胡蘿蔔田 ─────────────
+
+/** 跳跳小兔：一蹦一蹦地成群跳下來，接著高速撲向玩家（快速、微追）。 */
+class Bunny(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 18f, 32f, 90, diveAt = 1.1f + delay, diveSpeed = 580f, homing = 0.5f) {
+    override val kind = EnemyKind.BUNNY
+    private val baseX = x
+
+    override fun cruise(w: World, dt: Float) {
+        // 一蹦一蹦：前進速度跟著跳躍節奏忽快忽慢
+        y += (120f + kotlin.math.abs(sin(age * 7f)) * 260f) * dt
+        x = baseX + sin(age * 3.5f + delay * 5f) * 24f
+    }
+}
+
+/** 胡蘿蔔砲台：從土裡冒出來的大胡蘿蔔，三連發瞄準的胡蘿蔔飛彈（快速）＋偶爾一小扇（慢速）。 */
+class CarrotTurret(x: Float) : GroundShooter(x, 75f, 46f, 230) {
+    override val kind = EnemyKind.CARROT_TURRET
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        val c = t % 2.6f
+        if (t > 0.6f && (crossed(c, dt, 0.2f) || crossed(c, dt, 0.42f) || crossed(c, dt, 0.64f))) {
+            w.aimed(x, y - 30f, 390f, BulletStyle.RICE, Tint.ORANGE)
+        }
+        if (every(t, dt, 3.4f, offset = 1.8f)) w.fan(x, y - 30f, w.aimAt(x, y), 3, 40f * DEG, 170f, BulletStyle.RICE, Tint.ORANGE)
+    }
+}
+
 // ───────────── 菁英怪 ─────────────
 
 abstract class Elite(x: Float, hp: Float, radius: Float, score: Int, item: ItemType) : Enemy(x, -90f, hp, radius, score) {
@@ -492,6 +521,38 @@ class EliteMonkey(x: Float) : Elite(x, 450f, 64f, 2400, ItemType.SONIC) {
                 }
                 if (every(age, dt, 0.9f, offset = 2f)) w.fan(x, y + 30f, w.aimAt(x, y), 3, 26f * DEG, 300f, BulletStyle.ORB, Tint.CYAN)
                 if (crossed(age, dt, 5f)) for (i in 0 until 4) w.spawn(Duckling(200f + i * 200f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 野兔隊長：在田裡蹦來蹦去，落地時炸開一圈星星，空中丟胡蘿蔔扇，還會叫小兔子來。 */
+class EliteHare(x: Float) : Elite(x, 460f, 64f, 2400, ItemType.FOCUS) {
+    override val kind = EnemyKind.ELITE_HARE
+    private var hopFromX = x
+    private var hopToX = x
+    private var hopT = 1f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 330f, 2.5f, dt)
+            age < 12f -> {
+                if (every(age, dt, 1.5f, offset = 1.5f)) {
+                    hopFromX = x
+                    hopToX = 150f + w.random.nextFloat() * (WORLD_WIDTH - 300f)
+                    hopT = 0f
+                }
+                if (hopT < 1f) {
+                    hopT = (hopT + dt / 0.45f).coerceAtMost(1f)
+                    x = hopFromX + (hopToX - hopFromX) * hopT
+                    y = 330f - sin(hopT * HALF_PI * 2f) * 110f
+                    if (hopT >= 1f) w.ring(x, y, 12, 180f, age, BulletStyle.STAR, Tint.STAR)
+                }
+                if (every(age, dt, 1f, offset = 2f)) w.fan(x, y + 30f, w.aimAt(x, y), 5, 50f * DEG, 300f, BulletStyle.RICE, Tint.ORANGE)
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(Bunny(200f + i * 150f, i * 0.12f))
             }
             else -> y += 240f * dt
         }

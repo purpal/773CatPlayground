@@ -330,6 +330,10 @@ private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
         EnemyKind.BEE, EnemyKind.HONEY_POT, EnemyKind.BEAR_CUB, EnemyKind.BEEHIVE, EnemyKind.CHEESE_DRONE, EnemyKind.PUPPY,
         EnemyKind.BALLOON, EnemyKind.ELITE_BEE, EnemyKind.ELITE_DOG, EnemyKind.BOSS_BEAR,
     )
+    5 -> listOf(
+        EnemyKind.BUNNY, EnemyKind.CARROT_TURRET, EnemyKind.MOUSE_PLANE, EnemyKind.PUPPY, EnemyKind.DUCKLING, EnemyKind.FRISBEE,
+        EnemyKind.BABY_CAPY, EnemyKind.BALLOON, EnemyKind.ELITE_HARE, EnemyKind.ELITE_MONKEY, EnemyKind.BOSS_RABBIT,
+    )
     else -> listOf(
         EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
         EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_BEE, EnemyKind.BOSS_CAPY,
@@ -377,6 +381,7 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.PARK -> Music.STAGE_DOG
     StageTheme.HONEY_FOREST -> Music.STAGE_BEAR
     StageTheme.ONSEN -> Music.STAGE_CAPY
+    StageTheme.CARROT_FIELD -> Music.STAGE_RABBIT
 }
 
 // ───────────── HUD ─────────────

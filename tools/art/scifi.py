@@ -211,6 +211,23 @@ def dipper_head():
     return Sprite("prop_dipper_head", 250, 200, "-8 -50 125 100", b, GLOW)
 
 
+def carrot_drill():
+    """兔兔隊長裝甲後拿出的「胡蘿蔔鑽頭」：鋼製軸環＋胡蘿蔔色的錐形鑽頭，螺旋溝發出琥珀色的光，尾端兩片能量葉。朝 +x。"""
+    b = path("M-4,-20 L14,-20 L14,20 L-4,20 Z", "url(#steel)", NAVY, 3)
+    for y in (-14, 14):
+        b += path(f"M-2,{y} L-14,{y * 2.2} L-6,{y * 0.6} Z", "#6FD36B", NAVY, 2)
+    b += path("M14,-28 L124,-3 Q130,0 124,3 L14,28 Z", "#FF8A2B", NAVY, 3)
+    b += path("M14,-28 L124,-3 L118,-2 L14,-14 Z", "#FFB067", "none")
+    grooves = ""
+    for k in range(5):
+        x0 = 22 + k * 20
+        h = 26 * (1 - (x0 - 14) / 112)
+        grooves += f'<path d="M{x0},{-h} Q{x0 + 12},0 {x0 + 4},{h}" fill="none" stroke="{AMBER}" stroke-width="3.5"/>'
+    b += lit(grooves, 2)
+    b += lit(f'<circle cx="126" cy="0" r="5" fill="{WHITE}"/>', 3)
+    return Sprite("prop_carrot_head", 270, 140, "-14 -35 135 70", b, GLOW)
+
+
 def yuzu_cannon():
     """卡皮巴拉裝甲後拿出的「橘子砲」：鋼管砲身，砲口是發光的橘子核心。朝 +x。"""
     b = path("M0,-16 L80,-20 L80,20 L0,16 Z", "url(#steel)", NAVY, 3)
@@ -243,7 +260,7 @@ def lost_props():
 
 def all_sprites():
     out = [plasma_bolt(), casing(), cat_holo(), graviton(), graviton_paw(), fish_missile(), reticle(), hex_paw(),
-           hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon()]
+           hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon(), carrot_drill()]
     out += lost_props()
     out += [
         tech_text("sfx_hit", "HIT", WHITE, 34),

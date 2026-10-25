@@ -159,7 +159,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.BEEHIVE -> sprite(sprites.enemy(e.kind, 0), rotation = e.age * 200f)
         EnemyKind.MOUSE_PLANE -> sprite(sprites.enemy(e.kind, fast), flipX = (e as MousePlane).facing < 0f)
         EnemyKind.MINI_MOUSE -> sprite(sprites.enemy(e.kind, fast), 0.8f)
-        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY, EnemyKind.DUCKLING -> sprite(sprites.enemy(e.kind, fast))
+        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY, EnemyKind.DUCKLING, EnemyKind.BUNNY -> sprite(sprites.enemy(e.kind, fast))
         EnemyKind.BALLOON -> {
             // 氣球本體在判定圓上，道具掛在線的下端。
             sprite(sprites.enemy(e.kind, 0), dy = 30f)
@@ -169,7 +169,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
                 drawSprite(art, e.x, e.y + 126f, 0.85f)
             }
         }
-        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> {
+        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_HARE -> {
             val pulse = 3.4f + sin(w.time * 6f + e.id) * 0.3f
             drawSprite(sprites.glow(0xFFFF2BD6L), e.x, e.y, pulse, alpha = 0.45f, blendMode = BlendMode.Plus)
             sprite(sprites.enemy(e.kind, if (e.kind == EnemyKind.ELITE_BEE) fast else slow))
@@ -179,7 +179,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
             drawSprite(sprites.glow(0xFFFF3D5AL), e.x, e.y, 2.6f, alpha = 0.5f, blendMode = BlendMode.Plus)
             drawSprite(sprites.enemy(e.kind, 0), e.x, e.y, 0.9f, (e as ThrownBone).spin)
         }
-        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY -> drawBoss(e as Boss, w, sprites, flash, squash)
+        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT -> drawBoss(e as Boss, w, sprites, flash, squash)
         else -> sprite(sprites.enemy(e.kind, slow))
     }
 }
@@ -230,6 +230,7 @@ private fun idleLength(style: HazardStyle) = when (style) {
     HazardStyle.BONE -> 190f
     HazardStyle.DIPPER -> 210f
     HazardStyle.WATER -> 135f
+    HazardStyle.CARROT -> 200f
     else -> 120f
 }
 
@@ -237,6 +238,7 @@ private fun propWidth(style: HazardStyle) = when (style) {
     HazardStyle.FORK -> 16f
     HazardStyle.BONE -> 28f
     HazardStyle.DIPPER -> 18f
+    HazardStyle.CARROT -> 18f
     else -> 24f
 }
 
@@ -286,6 +288,7 @@ private fun themeEdge(theme: StageTheme): Color = when (theme) {
     StageTheme.PARK -> Color(0xFF3E7D3A)
     StageTheme.HONEY_FOREST -> Color(0xFF1B3A22)
     StageTheme.ONSEN -> Color(0xFF3B6E66)
+    StageTheme.CARROT_FIELD -> Color(0xFF5E8C3A)
 }
 
 private const val TILE = 300f
@@ -296,6 +299,7 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
         StageTheme.PARK -> drawRect(Color(0xFF8ED47F), size = Size(WORLD_WIDTH, height))
         StageTheme.HONEY_FOREST -> drawRect(Color(0xFF2E5E3A), size = Size(WORLD_WIDTH, height))
         StageTheme.ONSEN -> drawRect(Color(0xFF7CCFC4), size = Size(WORLD_WIDTH, height))
+        StageTheme.CARROT_FIELD -> drawRect(Color(0xFFA9D67A), size = Size(WORLD_WIDTH, height))
     }
     val first = floor(scroll / TILE).toInt() - 1
     val last = floor((scroll + height) / TILE).toInt() + 1
@@ -307,6 +311,7 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.PARK -> parkRow(y, random, row)
             StageTheme.HONEY_FOREST -> forestRow(y, random)
             StageTheme.ONSEN -> onsenRow(y, random, row, time)
+            StageTheme.CARROT_FIELD -> carrotRow(y, random, row)
         }
     }
     val drift = Random(theme.ordinal)
@@ -319,6 +324,8 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.HONEY_FOREST -> oval(x, y, 14f, 8f, Color(0xFF9CCC65).copy(alpha = 0.7f))
             // 溫泉的熱氣往上飄
             StageTheme.ONSEN -> oval(x, height - y, 26f, 14f, Color.White.copy(alpha = 0.35f))
+            // 飄落的小白花瓣
+            StageTheme.CARROT_FIELD -> oval(x, y, 9f, 6f, Color.White.copy(alpha = 0.8f))
         }
     }
 }
@@ -452,6 +459,44 @@ private fun DrawScope.onsenRow(y: Float, random: Random, row: Int, time: Float) 
         oval(fx + 8f, fy - 16f, 12f, 6f, Color(0xFF7ED957))
     }
 }
+/** 胡蘿蔔田：一條條土壟，上面冒出胡蘿蔔葉，田埂邊有小花和石頭。 */
+private fun DrawScope.carrotRow(y: Float, random: Random, row: Int) {
+    val furrow = TILE / 3f
+    for (k in 0 until 3) {
+        val fy = y + k * furrow
+        // 土壟（深淺交錯）
+        drawRoundRect(if ((row * 3 + k) % 2 == 0) Color(0xFFB07A4F) else Color(0xFFA06C44), Offset(70f, fy + 14f), Size(WORLD_WIDTH - 140f, furrow - 28f), CornerRadius(40f))
+        drawRect(Color(0xFF8A5A36).copy(alpha = 0.5f), Offset(90f, fy + furrow / 2f - 2f), Size(WORLD_WIDTH - 180f, 4f))
+        // 胡蘿蔔葉
+        var x = 110f + random.nextFloat() * 40f
+        while (x < WORLD_WIDTH - 110f) {
+            val cy = fy + furrow / 2f
+            oval(x, cy + 6f, 10f, 6f, Color(0xFFFF8A2B))
+            for (leaf in -1..1) {
+                drawLine(Color(0xFF45A84A), Offset(x, cy), Offset(x + leaf * 10f, cy - 22f), 6f, StrokeCap.Round)
+                circle(x + leaf * 10f, cy - 24f, 6f, Color(0xFF6FD36B))
+            }
+            x += 70f + random.nextFloat() * 50f
+        }
+    }
+    // 田埂：小花、石頭
+    for (side in 0..1) {
+        repeat(2) {
+            val fx = (if (side == 0) 20f else WORLD_WIDTH - 50f) + random.nextFloat() * 30f
+            val fy = y + random.nextFloat() * TILE
+            if (random.nextBoolean()) {
+                for (p in 0 until 5) {
+                    val a = p * 1.2566f
+                    circle(fx + kotlin.math.cos(a) * 6f, fy + kotlin.math.sin(a) * 6f, 5f, Color.White)
+                }
+                circle(fx, fy, 4f, Color(0xFFFFD54F))
+            } else {
+                oval(fx, fy, 16f, 11f, Color(0xFFB8B0A6))
+            }
+        }
+    }
+}
+
 // ───────────── 子彈、武器與特效 ─────────────
 
 private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
@@ -649,6 +694,7 @@ private fun energy(style: HazardStyle): Color = when (style) {
     HazardStyle.BONE, HazardStyle.CLAW, HazardStyle.BEAM -> Color(0xFFFF3D5A)
     HazardStyle.DIPPER -> Amber
     HazardStyle.WATER -> Color(0xFFFF7A45)
+    HazardStyle.CARROT -> Amber
 }
 
 /** 雷射與 Boss 的道具攻擊。預告時畫紅色虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
@@ -725,6 +771,10 @@ private fun DrawScope.drawProp(
                 drawSprite(it, tipX - dx * 32f, tipY - dy * 32f, 1f, angle * RAD)
                 drawSprite(it, x0 + dx * 32f, y0 + dy * 32f, 1f, angle * RAD + 180f)
             }
+        }
+        HazardStyle.CARROT -> {
+            shaft(0f, 110f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 60f, tipY - dy * 60f, 1f, angle * RAD) }
         }
         HazardStyle.DIPPER -> {
             shaft(0f, 100f)

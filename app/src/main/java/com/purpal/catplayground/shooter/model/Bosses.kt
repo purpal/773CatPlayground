@@ -549,3 +549,105 @@ class CapyBoss : Boss(hp = 32000f, radius = 210f, score = 50000, homeY = 440f) {
         else -> listOf(jetCross, yuzuMissiles, waterJet, callDucks, yuzuRoll)
     }
 }
+
+/**
+ * 第 5 關：兔兔隊長 蘿蔔（兔子）。在胡蘿蔔田裡蹦來蹦去，落地就炸開一圈星星；
+ * 看起來膽小溫和，但「兔子急了也會咬人」——打到 40% 才「裝甲」：戴上護目鏡、裝上肩甲，
+ * 拿出胡蘿蔔鑽頭——突刺、橫掃，再加上會轉彎的胡蘿蔔飛彈。
+ */
+class RabbitBoss : Boss(hp = 36000f, radius = 180f, score = 60000, homeY = 430f) {
+    override val kind = EnemyKind.BOSS_RABBIT
+    override val name = "兔兔隊長 蘿蔔"
+    override val breakAt = 0.4f
+    override val breakKind = BreakKind.ARMOR
+    override val weapon = HazardStyle.CARROT
+    override val lostProps = intArrayOf(LostProp.RIBBON)
+    override val handX = 130f
+    override val handY = 153f
+    private var baseY = Float.NaN
+    private var hopFromX = WORLD_WIDTH / 2f
+    private var hopToX = WORLD_WIDTH / 2f
+    private var hopT = 1f
+    private var hopTimer = 0f
+
+    /** 得意（裝甲前）→ 裝甲暴怒 → 裝甲被打哭。 */
+    override fun mood(): Int = when {
+        !broken -> 0
+        hpRatio > 0.15f -> 1
+        else -> 2
+    }
+
+    override fun move(w: World, dt: Float) {
+        if (baseY.isNaN()) baseY = y
+        // 蹦蹦跳：每隔一段時間跳到新的位置，落地時炸開一圈星星（裝甲後跳得更勤）
+        hopTimer += dt
+        val interval = if (broken) 1.6f else 2.4f
+        if (hopT >= 1f && hopTimer >= interval) {
+            hopTimer = 0f
+            hopFromX = x
+            hopToX = 240f + w.random.nextFloat() * (WORLD_WIDTH - 480f)
+            hopT = 0f
+        }
+        if (hopT < 1f) {
+            hopT = (hopT + dt / 0.6f).coerceAtMost(1f)
+            x = hopFromX + (hopToX - hopFromX) * hopT
+            y = baseY - sin(hopT * HALF_PI * 2f) * 90f
+            if (hopT >= 1f) {
+                y = baseY
+                w.shake(0.2f)
+                w.ring(x, y + 120f, 10, 160f, w.random.nextFloat(), BulletStyle.STAR, Tint.STAR)
+            }
+        }
+    }
+
+    /** 胡蘿蔔雨：從畫面上方隨機落下。 */
+    private val carrotRain = Attack(4.2f) { w, t, dt ->
+        if (every(t, dt, 0.22f)) {
+            val cx = 40f + w.random.nextFloat() * (WORLD_WIDTH - 80f)
+            w.bullet(cx, -20f, 0f, 230f + w.random.nextFloat() * 90f, BulletStyle.RICE, Tint.ORANGE)
+        }
+    }
+    /** 月亮兔的星星環：一圈圈旋轉擴散。 */
+    private val moonRings = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.9f)) w.ring(x, y + 40f, 16, 180f, t * 0.8f, BulletStyle.STAR, Tint.STAR)
+    }
+    /** 胡蘿蔔扇形連射。 */
+    private val carrotFans = Attack(3.4f) { w, t, dt ->
+        if (every(t, dt, 0.65f)) w.fan(x, y + 80f, w.aimAt(x, y), 5, 46f * DEG, 300f, BulletStyle.RICE, Tint.ORANGE)
+    }
+    /** 叫跳跳小兔來幫忙。 */
+    private val callBunnies = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) for (i in 0 until 6) w.spawn(Bunny(130f + i * 150f, i * 0.1f))
+        if (every(t, dt, 1f, offset = 0.8f)) w.aimed(x, y + 80f, 200f, BulletStyle.BIG_ORB, Tint.ORANGE)
+    }
+    /** 裝甲後：胡蘿蔔鑽頭朝玩家突刺兩次。 */
+    private val drillThrust = Attack(2.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.3f)) melee(w, HazardStyle.CARROT, aimFrom(w, handX, handY), 48f, warn = 0.7f)
+    }
+    /** 裝甲後：鑽頭從玩家的另一側橫掃 70°，玩家那一側的外緣是安全區。 */
+    private val drillSweep = Attack(3.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val playerLeft = w.player.x < x + handX
+            melee(
+                w, HazardStyle.CARROT, if (playerLeft) HALF_PI - 55f * DEG else HALF_PI + 55f * DEG, 46f,
+                warn = 0.9f, active = 1.4f, extend = 0.2f, sweep = if (playerLeft) 70f * DEG else -70f * DEG, length = 1150f,
+            )
+        }
+        if (every(t, dt, 1.1f, offset = 1f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.STAR, Tint.STAR)
+    }
+    /** 裝甲後：會轉彎的胡蘿蔔飛彈，左右輪流射出。 */
+    private val carrotMissiles = Attack(3.4f) { w, t, dt ->
+        if (every(t, dt, 0.28f, offset = 0.2f)) {
+            val side = if ((t * 10).toInt() % 2 == 0) 1f else -1f
+            val b = w.shoot(x + side * handX, y + handY - 20f, -HALF_PI + side * 50f * DEG, 270f, BulletStyle.RICE, Tint.ORANGE)
+            b.turn = -side * 2.4f
+        }
+    }
+
+    override fun attacks(phase: Int) = when {
+        !broken && phase == 0 -> listOf(carrotRain, carrotFans, moonRings, callBunnies)
+        !broken -> listOf(moonRings, carrotRain, callBunnies, carrotFans)
+        phase < 2 -> listOf(drillThrust, carrotMissiles, drillSweep, moonRings)
+        else -> listOf(drillSweep, carrotMissiles, drillThrust, carrotRain, callBunnies)
+    }
+}
