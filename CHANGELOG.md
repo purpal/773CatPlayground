@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/purpal/773CatPlayground/compare/v0.13.3...v0.14.0) (2026-10-25)
+
+
+### Features
+
+* stage 5 carrot field with the rabbit captain boss ([47eb93d](https://github.com/purpal/773CatPlayground/commit/47eb93d6952c78f258525b5a73e8a9fc07ce72d9))
+
 ## [0.13.3](https://github.com/purpal/773CatPlayground/compare/v0.13.2...v0.13.3) (2026-10-25)
 
 
