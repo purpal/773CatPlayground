@@ -1217,7 +1217,7 @@ class OtterTwin(val boss: OtterBoss) : Enemy(WORLD_WIDTH - boss.x, boss.y, 1f, 1
  * 招牌機制「竹筍」：地上冒出竹筍，沒在時限內打掉就會被拔去吃。吃的時候坐著不動、受到 1.5 倍傷害，
  * 但會回 3% 血（整場最多 [MAX_FEASTS] 次）。
  */
-class PandaBoss : Boss(hp = 46000f, radius = 200f, score = 100000, homeY = 420f) {
+class PandaBoss : Boss(hp = 38000f, radius = 200f, score = 100000, homeY = 420f) {
     override val kind = EnemyKind.BOSS_PANDA
     override val name = "熊貓師父 波波"
     override val breakAt = 0.4f
@@ -1510,7 +1510,7 @@ private class RollBall {
 }
 
 /** 熊貓師父的竹筍：從地上冒出來，[RIPE] 秒後被拔去吃；沒人管的話 [WITHER] 秒後自己枯掉。 */
-class BambooShoot(val owner: PandaBoss, x: Float, y: Float) : Enemy(x, y, 70f, 42f, 300) {
+class BambooShoot(val owner: PandaBoss, x: Float, y: Float) : Enemy(x, y, 50f, 42f, 300) {
     override val kind = EnemyKind.BAMBOO_SHOOT
     override val contactDamage = 0f
     /** 長出來的程度（畫面用）：0～1。 */
