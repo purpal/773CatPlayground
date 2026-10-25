@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/purpal/773CatPlayground/compare/v0.14.1...v0.15.0) (2026-10-25)
+
+
+### Features
+
+* stages 6-8 with the penguin captain, the sleepy koala elder and the otter sisters ([efafc4b](https://github.com/purpal/773CatPlayground/commit/efafc4b158edc0f826714a3cd4fa2bb7f6a7217e))
+
 ## [0.14.1](https://github.com/purpal/773CatPlayground/compare/v0.14.0...v0.14.1) (2026-10-25)
 
 
