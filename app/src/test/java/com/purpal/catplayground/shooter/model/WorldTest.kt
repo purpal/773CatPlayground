@@ -505,4 +505,32 @@ class WorldTest {
             assertTrue("${stage.title}: saw a sweeping attack", sweeps > 0)
         }
     }
+
+    /** Boss 不會瞬間移動：掃擊暫停後、換階段或裝甲時都用滑的過去。 */
+    @Test
+    fun bossesNeverTeleport() {
+        for (entry in Stages.all.filter { it.stage != null }) {
+            val w = World(entry.stage!!, CatType.ORANGE, height = 2000f)
+            w.godMode = true
+            autoplayUntil(w) { it.phase == Phase.BOSS }
+            val boss = w.boss!!
+            w.player.mainWeapon = MainWeapon.FOCUS
+            w.player.mainLevel = Player.MAX_MAIN_LEVEL
+            w.firing = true
+            var lastX = boss.x
+            var lastY = boss.y
+            var t = 0f
+            while (t < 120f && w.phase == Phase.BOSS) {
+                w.moveX = if (abs(boss.x - w.player.x) > 20f) sign(boss.x - w.player.x) else 0f
+                w.update(STEP)
+                w.cues.clear()
+                t += STEP
+                val step = boss.maxMoveSpeed * STEP + 0.5f
+                assertTrue("${entry.title}: boss jumped ${abs(boss.x - lastX)} at $t s", abs(boss.x - lastX) <= step)
+                assertTrue("${entry.title}: boss jumped vertically at $t s", abs(boss.y - lastY) <= step)
+                lastX = boss.x
+                lastY = boss.y
+            }
+        }
+    }
 }

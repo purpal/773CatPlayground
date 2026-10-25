@@ -93,8 +93,15 @@ abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Flo
 
     protected abstract fun attacks(phase: Int): List<Attack>
 
-    /** 每一步都會執行的移動。 */
+    /** 移動。用 [moveTime]（只在真的移動時才前進）而不是 age，暫停後才不會跳到別的位置。 */
     protected abstract fun move(w: World, dt: Float)
+
+    /** 移動用的時鐘：掃擊時暫停，之後從原地接著走。 */
+    protected var moveTime = 0f
+        private set
+
+    /** 每秒最多移動的距離；換招式或換移動方式時用滑的過去，不會瞬間移動。 */
+    open val maxMoveSpeed: Float get() = 520f
 
     override fun update(w: World, dt: Float) {
         age += dt
@@ -107,7 +114,15 @@ abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Flo
             return
         }
         // 掃擊中（道具或雷射正在掃過去）原地站穩，掃的範圍才跟預告線一致、玩家看得出安全區
-        if (w.lasers.none { it.owner === this && it.sweep != 0f && it.alive }) move(w, dt)
+        if (w.lasers.none { it.owner === this && it.sweep != 0f && it.alive }) {
+            val fromX = x
+            val fromY = y
+            moveTime += dt
+            move(w, dt)
+            val limit = maxMoveSpeed * dt
+            x = fromX + (x - fromX).coerceIn(-limit, limit)
+            y = fromY + (y - fromY).coerceIn(-limit, limit)
+        }
         if (!broken && hpRatio <= breakAt) {
             broken = true
             attackIndex = 0
@@ -165,7 +180,7 @@ class MouseBoss : Boss(hp = 15000f, radius = 180f, score = 20000, homeY = 410f) 
 
     override fun move(w: World, dt: Float) {
         // 卸甲後慌張地快速左右跑
-        x = if (broken) WORLD_WIDTH / 2f + sin(age * 1.5f) * 240f else WORLD_WIDTH / 2f + sin(age * 0.6f) * 180f
+        x = if (broken) WORLD_WIDTH / 2f + sin(moveTime * 1.5f) * 240f else WORLD_WIDTH / 2f + sin(moveTime * 0.6f) * 180f
     }
 
     private val cheeseRings = Attack(4f) { w, t, dt ->
@@ -252,13 +267,14 @@ class DogBoss : Boss(hp = 21000f, radius = 180f, score = 30000, homeY = 420f) {
     override val handY = 129f
     private var targetX = WORLD_WIDTH / 2f
     private var dashing = false
+    override val maxMoveSpeed = 1100f
     /** 骨頭丟出去還沒回來。 */
     var boneOut = false
 
     override fun heldProp(): HazardStyle? = if (boneOut) null else super.heldProp()
 
     override fun move(w: World, dt: Float) {
-        if (!dashing) targetX = WORLD_WIDTH / 2f + sin(age * 0.8f) * 220f
+        if (!dashing) targetX = WORLD_WIDTH / 2f + sin(moveTime * 0.8f) * 220f
         x = approach(x, targetX, if (dashing) 4f else 3f, dt)
     }
 
@@ -390,7 +406,7 @@ class BearBoss : Boss(hp = 28000f, radius = 210f, score = 40000, homeY = 440f) {
     override val handY = 138f
 
     override fun move(w: World, dt: Float) {
-        x = WORLD_WIDTH / 2f + sin(age * 0.45f) * 150f
+        x = WORLD_WIDTH / 2f + sin(moveTime * 0.45f) * 150f
     }
 
     private val honeyCurtain = Attack(4.5f) { w, t, dt ->
@@ -487,8 +503,8 @@ class CapyBoss : Boss(hp = 32000f, radius = 210f, score = 50000, homeY = 440f) {
 
     override fun move(w: World, dt: Float) {
         // 漂在溫泉上慢慢晃；裝甲後稍微積極一點
-        x = WORLD_WIDTH / 2f + sin(age * (if (broken) 0.7f else 0.35f)) * (if (broken) 220f else 140f)
-        y += sin(age * 1.3f) * 6f * dt
+        x = WORLD_WIDTH / 2f + sin(moveTime * (if (broken) 0.7f else 0.35f)) * (if (broken) 220f else 140f)
+        y += sin(moveTime * 1.3f) * 6f * dt
     }
 
     /** 慢慢吐出一串大泡泡。 */
@@ -565,6 +581,7 @@ class RabbitBoss : Boss(hp = 36000f, radius = 180f, score = 60000, homeY = 430f)
     override val handX = 130f
     override val handY = 153f
     private var baseY = Float.NaN
+    override val maxMoveSpeed = 1500f
     private var hopFromX = WORLD_WIDTH / 2f
     private var hopToX = WORLD_WIDTH / 2f
     private var hopT = 1f
