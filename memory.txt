@@ -1,0 +1,8 @@
+10-25 19:31:19.925 I/ActivityManager(  520): Killing 2878:com.purpal.catplayground/u0a192 (adj 0): stop com.purpal.catplayground due to from pid 3752
+10-25 19:31:31.292 I/ActivityManager(  520): Killing 3812:com.purpal.catplayground/u0a192 (adj 0): stop com.purpal.catplayground due to from pid 4424
+10-25 19:34:43.696 I/lowmemorykiller(  134): lmkd data connection established
+10-25 19:34:43.726 I/lowmemorykiller(  134): Using psi monitors for memory pressure detection
+10-25 19:34:43.726 I/lowmemorykiller(  134): Properties reinitilized
+10-25 19:34:43.748 I/lowmemorykiller(12939): lmkd updated properties successfully
+10-25 19:34:43.748 I/lowmemorykiller(  134): lmkd data connection dropped
+10-25 19:34:43.748 I/lowmemorykiller(  134): closing lmkd data connection
