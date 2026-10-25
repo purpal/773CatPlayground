@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.3](https://github.com/purpal/773CatPlayground/compare/v0.13.2...v0.13.3) (2026-10-25)
+
+
+### Bug Fixes
+
+* every sweeping boss attack leaves a dodgeable safe zone ([ee9e254](https://github.com/purpal/773CatPlayground/commit/ee9e254e4ac381f8a83712849af5c4f6f5e8455d))
+
 ## [0.13.2](https://github.com/purpal/773CatPlayground/compare/v0.13.1...v0.13.2) (2026-10-24)
 
 
