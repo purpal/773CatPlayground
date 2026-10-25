@@ -106,7 +106,8 @@ abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Flo
             }
             return
         }
-        move(w, dt)
+        // 掃擊中（道具或雷射正在掃過去）原地站穩，掃的範圍才跟預告線一致、玩家看得出安全區
+        if (w.lasers.none { it.owner === this && it.sweep != 0f && it.alive }) move(w, dt)
         if (!broken && hpRatio <= breakAt) {
             broken = true
             attackIndex = 0
@@ -216,7 +217,8 @@ class MouseBoss : Boss(hp = 15000f, radius = 180f, score = 20000, homeY = 410f) 
             val playerLeft = w.player.x < x
             melee(
                 w, HazardStyle.TAIL, if (playerLeft) HALF_PI - 62f * DEG else HALF_PI + 62f * DEG, 34f,
-                warn = 0.8f, active = 1.5f, extend = 0.25f, sweep = if (playerLeft) 84f * DEG else -84f * DEG,
+                // 掃 70°，掃完停在正下方偏玩家那一側，玩家那一側的外緣一直是安全區
+                warn = 0.8f, active = 1.5f, extend = 0.25f, sweep = if (playerLeft) 70f * DEG else -70f * DEG,
                 length = 1150f, fromX = 0f, fromY = 110f,
             )
         }
@@ -300,13 +302,16 @@ class DogBoss : Boss(hp = 21000f, radius = 180f, score = 30000, homeY = 420f) {
         }
         if (every(t, dt, 0.8f, offset = 0.8f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.NOTE, Tint.NOTE)
     }
-    /** 卸甲後：雙眼光束。 */
+    /**
+     * 卸甲後：雙眼光束。從窄窄的 V 字往兩側張開，柴犬正下方那條通道一直是安全區
+     * （光束掃到哪裡，預告線就畫到哪裡）。
+     */
     private val eyeBeams = Attack(4.6f) { w, t, dt ->
         if (crossed(t, dt, 0.01f)) {
             for (side in listOf(-1f, 1f)) {
                 w.lasers += Laser(
-                    x + side * 40f, y + 20f, HALF_PI + side * 30f * DEG, length = 2400f, width = 26f, warnTime = 0.9f,
-                    activeTime = 2.8f, color = Tint.RED, damage = BEAM_DAMAGE, sweep = -side * 14f * DEG,
+                    x + side * 40f, y + 20f, HALF_PI - side * 14f * DEG, length = 2400f, width = 26f, warnTime = 1f,
+                    activeTime = 2.8f, color = Tint.RED, damage = BEAM_DAMAGE, sweep = -side * 12f * DEG,
                     owner = this, offsetX = side * 40f, offsetY = 20f,
                 )
             }
@@ -412,10 +417,13 @@ class BearBoss : Boss(hp = 28000f, radius = 210f, score = 40000, homeY = 440f) {
         if (crossed(t, dt, 0.01f)) melee(w, HazardStyle.DIPPER, aimFrom(w, handX, handY), 50f, warn = 0.85f, active = 0.6f, extend = 0.1f)
         if (every(t, dt, 0.8f, offset = 1.4f)) w.fan(x, y + 60f, w.aimAt(x, y), 5, 40f * DEG, 240f, BulletStyle.RICE, Tint.ORANGE)
     }
-    /** 抓著蜂蜜鑽原地轉一整圈，熱熔的鑽頭掃過整個畫面。 */
+    /**
+     * 抓著蜂蜜鑽原地轉一大圈（312°），熱熔的鑽頭掃過畫面；
+     * 正下方留一個 48° 的缺口，鑽頭也搆不到畫面最下方，兩處都是安全區。
+     */
     private val dipperSpin = Attack(4.2f) { w, t, dt ->
         if (crossed(t, dt, 0.01f)) {
-            melee(w, HazardStyle.DIPPER, 0f, 50f, warn = 1f, active = 2.6f, extend = 0.3f, sweep = 140f * DEG, length = 820f, fromX = 0f, fromY = 40f)
+            melee(w, HazardStyle.DIPPER, HALF_PI + 24f * DEG, 50f, warn = 1f, active = 2.6f, extend = 0.3f, sweep = 120f * DEG, length = 700f, fromX = 0f, fromY = 40f)
         }
         if (every(t, dt, 0.5f, offset = 1f)) w.aimed(x, y + 60f, 230f, BulletStyle.HONEY, Tint.HONEY)
     }

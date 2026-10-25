@@ -475,4 +475,34 @@ class WorldTest {
         assertEquals("enemy inside the paw is untouched", 10000f, inside.hp, 0.01f)
         assertTrue("no projectiles", w.playerShots.isEmpty())
     }
+
+    /** 掃擊型的雷射／道具一定要留安全區：柴犬的雙眼光束與熊的旋轉蜂蜜鑽，正下方那一塊永遠打不到。 */
+    @Test
+    fun sweepingAttacksLeaveASafeZoneBelowTheBoss() {
+        for (stage in listOf(Stages.dog, Stages.bear)) {
+            val w = World(stage, CatType.ORANGE, height = 2000f)
+            w.godMode = true
+            autoplayUntil(w) { it.phase == Phase.BOSS }
+            val boss = w.boss!!
+            // 打到卸甲／後半段，讓雙眼光束與旋轉鑽都會出現
+            boss.hp = boss.maxHp * 0.3f
+            var sweeps = 0
+            var t = 0f
+            while (t < 90f && w.phase == Phase.BOSS) {
+                w.firing = false
+                w.update(STEP)
+                w.cues.clear()
+                t += STEP
+                val sx = boss.x
+                val sy = boss.y + boss.radius + 260f
+                for (l in w.lasers) {
+                    if (l.sweep == 0f || !l.active) continue
+                    if (l.style != HazardStyle.BEAM && l.style != HazardStyle.DIPPER) continue
+                    sweeps++
+                    assertTrue("${stage.title}: ${l.style} hits the safe zone", l.distance2To(sx, sy) > (l.width * 0.4f + 12f).let { it * it })
+                }
+            }
+            assertTrue("${stage.title}: saw a sweeping attack", sweeps > 0)
+        }
+    }
 }
