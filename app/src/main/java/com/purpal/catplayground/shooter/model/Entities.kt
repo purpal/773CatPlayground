@@ -69,7 +69,7 @@ class PlayerShot(
     var wallLevel = 0
 }
 
-enum class BulletStyle { ORB, BIG_ORB, RICE, CHEESE, BONE, NOTE, HONEY, STAR, SEED, BUBBLE }
+enum class BulletStyle { ORB, BIG_ORB, RICE, CHEESE, BONE, NOTE, HONEY, STAR, SEED, BUBBLE, ICE, LEAF, FISH, SHELL }
 
 class EnemyBullet(
     var x: Float,
@@ -89,14 +89,19 @@ class EnemyBullet(
     var alive = true
     /** 可被聲波牆擋下。 */
     var erasable = true
-    val spin = (style == BulletStyle.BONE || style == BulletStyle.STAR || style == BulletStyle.CHEESE)
+    val spin = (style == BulletStyle.BONE || style == BulletStyle.STAR || style == BulletStyle.CHEESE || style == BulletStyle.SHELL)
+    /** 急凍：從 [freezeAt] 秒起在空中停住 [freezeTime] 秒，再照原本的速度繼續飛（負數表示不會凍住）。 */
+    var freezeAt = -1f
+    var freezeTime = 0f
+    val frozen: Boolean get() = freezeAt >= 0f && age >= freezeAt && age < freezeAt + freezeTime
 }
 
 /**
  * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或科技道具的攻擊
- * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱）。
+ * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱、
+ * 胡蘿蔔鑽頭、急凍光線、尤加利葉刃、重力石錘）。
  */
-enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER, CARROT }
+enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER, CARROT, CRYO, LEAF, HAMMER }
 
 /**
  * 雷射／近身攻擊：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。
@@ -231,6 +236,11 @@ object LostProp {
     const val DIPPER = 6
     const val YUZU = 7
     const val RIBBON = 8
+    const val BEANIE = 9
+    const val NIGHTCAP = 10
+    const val SHELL = 11
+    const val CRYO = 12
+    const val HAMMER = 13
 }
 
 /** 畫面上的 HUD 字樣（科技風）。 */

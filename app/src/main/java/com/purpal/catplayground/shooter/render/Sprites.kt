@@ -100,6 +100,10 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.BOSS_BEAR -> 2
             EnemyKind.BOSS_CAPY -> 3
             EnemyKind.BOSS_RABBIT -> 4
+            EnemyKind.BOSS_PENGUIN -> 5
+            EnemyKind.BOSS_KOALA -> 6
+            EnemyKind.BOSS_OTTER -> 7
+            EnemyKind.OTTER_TWIN -> 8
             else -> 0
         }
         return art(BOSS[index][mood.coerceIn(0, 2)][frame and 1], BOSS_WIDTH)
@@ -130,8 +134,18 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.BUNNY -> art(BUNNY[f], 92f)
             EnemyKind.CARROT_TURRET -> art("min_carrot", 112f)
             EnemyKind.ELITE_HARE -> art(ELITE_HARE[f], ELITE_WIDTH)
+            EnemyKind.PENGUIN_SLIDER -> art(PENGUIN[f], 96f)
+            EnemyKind.SNOWMAN -> art("min_snowman", 120f)
+            EnemyKind.ELITE_SEAL -> art(ELITE_SEAL[f], ELITE_WIDTH)
+            EnemyKind.LEAF_STAR -> art("min_leafstar", 96f)
+            EnemyKind.OWL -> art(OWL[f], 110f)
+            EnemyKind.SNOT_BUBBLE -> art("min_leafstar", 96f)
+            EnemyKind.ELITE_KANGAROO -> art(ELITE_KANGAROO[f], ELITE_WIDTH)
+            EnemyKind.LEAP_FISH -> art(FISH[f], 88f)
+            EnemyKind.CLAM -> art(CLAM[f], 106f)
+            EnemyKind.ELITE_BEAVER -> art(ELITE_BEAVER[f], ELITE_WIDTH)
             EnemyKind.THROWN_BONE -> art("lost_bone", 200f)
-            EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT -> boss(kind, 0, f)
+            else -> boss(kind, 0, f)
         }
     }
 
@@ -145,6 +159,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         HazardStyle.DIPPER -> art("prop_dipper_head", 125f)
         HazardStyle.WATER -> art("prop_yuzu_head", 135f)
         HazardStyle.CARROT -> art("prop_carrot_head", 135f)
+        HazardStyle.CRYO -> art("prop_cryo_head", 135f)
+        HazardStyle.LEAF -> art("prop_leaf_head", 135f)
+        HazardStyle.HAMMER -> art("prop_hammer_head", 120f)
         else -> null
     }
 
@@ -156,6 +173,11 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         LostProp.BONE -> art("lost_bone", 200f)
         LostProp.DIPPER -> art("lost_dipper", 200f)
         LostProp.YUZU -> art("lost_yuzu", 70f)
+        LostProp.BEANIE -> art("lost_beanie", 120f)
+        LostProp.NIGHTCAP -> art("lost_nightcap", 140f)
+        LostProp.SHELL -> art("lost_shell", 70f)
+        LostProp.CRYO -> art("lost_cryo", 200f)
+        LostProp.HAMMER -> art("lost_hammer", 200f)
         else -> art("lost_fork", 200f)
     }
 
@@ -226,12 +248,32 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         drawPath(v, Color.White)
     }
 
+    /** 被急凍停在空中的子彈外面那層冰晶框。 */
+    fun frost() = get(103, 80f, 80f) {
+        val ice = Color(0xFFBDF3FF)
+        val p = androidx.compose.ui.graphics.Path()
+        for (i in 0 until 6) {
+            val a = i * 1.0471976f + 0.5235988f
+            val x = kotlin.math.cos(a) * 30f
+            val y = kotlin.math.sin(a) * 30f
+            if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
+        }
+        p.close()
+        drawCircle(Brush.radialGradient(listOf(ice.copy(alpha = 0.5f), ice.copy(alpha = 0f)), Offset.Zero, 40f), 40f, Offset.Zero)
+        drawPath(p, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(4f))
+        drawPath(p, ice, style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+        for (i in 0 until 6) {
+            val a = i * 1.0471976f
+            drawLine(Color.White.copy(alpha = 0.8f), Offset(kotlin.math.cos(a) * 30f, kotlin.math.sin(a) * 30f), Offset(kotlin.math.cos(a) * 38f, kotlin.math.sin(a) * 38f), 3f, StrokeCap.Round)
+        }
+    }
+
     /** 先在背景執行緒把這一關會用到的圖都載入好，避免開打時卡頓。 */
     fun prewarm(cat: CatType, kinds: Collection<EnemyKind>) {
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {
             for (f in 0..1) {
-                if (kind == EnemyKind.BOSS_MOUSE || kind == EnemyKind.BOSS_DOG || kind == EnemyKind.BOSS_BEAR || kind == EnemyKind.BOSS_CAPY || kind == EnemyKind.BOSS_RABBIT) {
+                if (isBossArt(kind)) {
                     for (mood in 0..2) boss(kind, mood, f)
                 } else {
                     enemy(kind, f)
@@ -240,7 +282,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         }
         cheeseWheel(); barrel()
         HazardStyle.entries.forEach { propHead(it) }
-        listOf(LostProp.CROWN, LostProp.HAT, LostProp.POT, LostProp.FORK, LostProp.BONE, LostProp.DIPPER, LostProp.YUZU, LostProp.RIBBON).forEach { lostProp(it) }
+        (1..LostProp.HAMMER).forEach { lostProp(it) }
         ItemType.entries.forEach { item(it) }
         plasma(); casing(); catHolo(); graviton(); gravitonPaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
         star(); heart(); comboLabel(); roar(); overdrive()
@@ -249,7 +291,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         plus(); times()
         ultimate(cat)
         ultButton(cat)
-        puff(); smoke(); muzzle()
+        puff(); smoke(); muzzle(); frost()
         GLOWS.forEach { glow(it) }
         for (style in BulletStyle.entries) {
             bullet(style, 11f)
@@ -280,7 +322,10 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val CAT_KINDS = listOf("orange", "black", "tiger", "panther")
         private val POSES = listOf("c", "l", "r")
         private val RUN = Array(4) { k -> Array(3) { p -> Array(4) { f -> "run_${CAT_KINDS[k]}_${POSES[p]}_$f" } } }
-        private val BOSS = Array(5) { b -> Array(3) { m -> Array(2) { f -> "boss_${listOf("mouse", "dog", "bear", "capy", "rabbit")[b]}_m${m}_$f" } } }
+        private val BOSS_NAMES = listOf("mouse", "dog", "bear", "capy", "rabbit", "penguin", "koala", "otter", "otter2")
+        private val BOSS = Array(BOSS_NAMES.size) { b -> Array(3) { m -> Array(2) { f -> "boss_${BOSS_NAMES[b]}_m${m}_$f" } } }
+
+        fun isBossArt(kind: EnemyKind) = kind.name.startsWith("BOSS_") || kind == EnemyKind.OTTER_TWIN
         private fun frames(base: String) = Array(2) { "${base}_$it" }
         private val MOUSE = frames("min_mouse")
         private val PLANE = frames("min_plane")
@@ -296,6 +341,13 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val BABY_CAPY = frames("min_babycapy")
         private val BUNNY = frames("min_bunny")
         private val ELITE_HARE = frames("elite_hare")
+        private val PENGUIN = frames("min_penguin")
+        private val ELITE_SEAL = frames("elite_seal")
+        private val OWL = frames("min_owl")
+        private val ELITE_KANGAROO = frames("elite_kangaroo")
+        private val FISH = frames("min_fish")
+        private val CLAM = frames("min_clam")
+        private val ELITE_BEAVER = frames("elite_beaver")
         private val ITEMS = ItemType.entries.map { "item_${it.name.lowercase()}" }.toTypedArray()
         private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor", "sfx_chain")
         private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f, 220f)
@@ -313,7 +365,7 @@ private val WarnMagenta = Color(0xFFFF2BD6)
  */
 private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
     val color = when (style) {
-        BulletStyle.RICE, BulletStyle.SEED, BulletStyle.ORB -> WarnRed
+        BulletStyle.RICE, BulletStyle.SEED, BulletStyle.ORB, BulletStyle.ICE, BulletStyle.FISH -> WarnRed
         else -> WarnMagenta
     }
     drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.5f), color.copy(alpha = 0f)), Offset.Zero, r * 2f), r * 2f, Offset.Zero)
@@ -366,6 +418,56 @@ private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
             shape(Shapes.star, 0f, 0f, r * 1.3f + 3.5f, BulletInk)
             shape(Shapes.star, 0f, 0f, r * 1.3f, color)
             drawCircle(Color.White, r * 0.38f, Offset.Zero)
+        }
+        BulletStyle.ICE -> {
+            // 冰晶：菱形尖刺（朝 +x，畫面依速度方向旋轉）
+            for (pass in 0..1) {
+                val c = if (pass == 0) BulletInk else color
+                val g = if (pass == 0) 2.5f else 0f
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(r * 1.5f + g, 0f); lineTo(0f, -r * 0.7f - g); lineTo(-r * 1.1f - g, 0f); lineTo(0f, r * 0.7f + g); close()
+                }
+                drawPath(p, c)
+            }
+            drawLine(Color.White, Offset(-r * 0.6f, 0f), Offset(r * 1.0f, 0f), r * 0.3f, StrokeCap.Round)
+        }
+        BulletStyle.LEAF -> {
+            // 葉片：兩道弧組成的葉子＋白色葉脈（朝 +x）
+            for (pass in 0..1) {
+                val c = if (pass == 0) BulletInk else color
+                val g = if (pass == 0) 2.5f else 0f
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(-r * 1.3f - g, 0f)
+                    quadraticTo(0f, -r * 1.3f - g * 1.5f, r * 1.3f + g, 0f)
+                    quadraticTo(0f, r * 1.3f + g * 1.5f, -r * 1.3f - g, 0f)
+                    close()
+                }
+                drawPath(p, c)
+            }
+            drawLine(Color.White, Offset(-r * 0.9f, 0f), Offset(r * 0.9f, 0f), r * 0.2f, StrokeCap.Round)
+        }
+        BulletStyle.FISH -> {
+            // 小魚：橢圓身體＋三角尾巴＋白眼（朝 +x）
+            for (pass in 0..1) {
+                val c = if (pass == 0) BulletInk else color
+                val g = if (pass == 0) 2.5f else 0f
+                drawOval(c, Offset(-r * 0.9f - g, -r * 0.65f - g), Size(r * 2.1f + g * 2, r * 1.3f + g * 2))
+                val tail = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(-r * 0.7f, 0f); lineTo(-r * 1.6f - g, -r * 0.7f - g); lineTo(-r * 1.6f - g, r * 0.7f + g); close()
+                }
+                drawPath(tail, c)
+            }
+            drawCircle(Color.White, r * 0.28f, Offset(r * 0.55f, -r * 0.1f))
+        }
+        BulletStyle.SHELL -> {
+            // 扇貝：半圓扇形＋放射紋
+            for (pass in 0..1) {
+                val c = if (pass == 0) BulletInk else color
+                val g = if (pass == 0) 2.5f else 0f
+                drawArc(c, 180f, 180f, true, Offset(-r * 1.2f - g, -r * 1.0f - g), Size(r * 2.4f + g * 2, r * 2.0f + g * 2))
+                drawRect(c, Offset(-r * 0.35f - g, -g), Size(r * 0.7f + g * 2, r * 0.5f + g * 2))
+            }
+            for (k in -2..2) drawLine(Color.White.copy(alpha = 0.85f), Offset(0f, 0f), Offset(k * r * 0.4f, -r * 0.8f), r * 0.14f, StrokeCap.Round)
         }
     }
 }

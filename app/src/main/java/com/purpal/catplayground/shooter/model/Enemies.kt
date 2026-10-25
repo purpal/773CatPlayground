@@ -28,8 +28,13 @@ enum class EnemyKind {
     BALLOON,
     DUCKLING, YUZU, BUCKET, BABY_CAPY,
     BUNNY, CARROT_TURRET,
-    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE,
-    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT,
+    PENGUIN_SLIDER, SNOWMAN,
+    LEAF_STAR, OWL, SNOT_BUBBLE,
+    LEAP_FISH, CLAM,
+    ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE, ELITE_SEAL, ELITE_KANGAROO, ELITE_BEAVER,
+    BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT, BOSS_PENGUIN, BOSS_KOALA, BOSS_OTTER,
+    /** 水獺姊妹的妹妹嚕嚕（和姊姊共用血量）。 */
+    OTTER_TWIN,
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
     THROWN_BONE,
 }
@@ -58,6 +63,12 @@ abstract class Enemy(
     open val contactDamage: Float get() = 20f
     /** 自毀俯衝型：撞到玩家就自爆。 */
     open val kamikaze: Boolean get() = false
+    /** 身體是實心的（Boss）：撞上去會受損並被推開。 */
+    open val solid: Boolean get() = isBoss
+    /** 受到的傷害轉給這隻（例如共用血量的雙胞胎 Boss）。 */
+    open val damageTarget: Enemy? get() = null
+    /** 受到的傷害倍率（例如打瞌睡時防禦變低）。 */
+    open val damageScale: Float get() = 1f
 
     /** 還沒顯示成傷害數字的累積傷害（一小段時間合併成一個數字）。 */
     var pendingDamage = 0f
@@ -564,3 +575,177 @@ internal fun approach(current: Float, target: Float, rate: Float, dt: Float): Fl
     current + (target - current) * minOf(1f, rate * dt)
 
 internal fun near(a: Float, b: Float, eps: Float) = abs(a - b) < eps
+
+// ───────────── 第 6 關：冰雪南極 ─────────────
+
+/** 滑行小企鵝：肚子貼地成群滑下來，接著高速直線撞向玩家（快速、幾乎不追）。 */
+class PenguinSlider(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 20f, 34f, 90, diveAt = 1.0f + delay, diveSpeed = 640f, homing = 0.2f) {
+    override val kind = EnemyKind.PENGUIN_SLIDER
+    private val baseX = x
+
+    override fun cruise(w: World, dt: Float) {
+        y += 260f * dt
+        x = baseX + sin(age * 2.5f + delay * 4f) * 18f
+    }
+}
+
+/** 雪人砲台：放出一圈會「急凍」停在空中的冰晶，再丟一顆瞄準的雪球（快速）。 */
+class SnowmanTurret(x: Float) : GroundShooter(x, 85f, 50f, 240) {
+    override val kind = EnemyKind.SNOWMAN
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.4f, offset = 0.6f)) {
+            for (k in 0 until 10) {
+                val b = w.shoot(x, y, age * 0.5f + k * TWO_PI / 10f, 190f, BulletStyle.ICE, Tint.CYAN)
+                b.freezeAt = 0.35f
+                b.freezeTime = 0.8f
+            }
+        }
+        if (every(t, dt, 2.4f, offset = 1.5f)) w.aimed(x, y - 20f, 360f, BulletStyle.ORB, Tint.CYAN)
+    }
+}
+
+// ───────────── 第 7 關：尤加利樹林 ─────────────
+
+/** 葉片手裏劍：轉著飛下來、左右蛇行，再追著玩家衝過去（中速、很會追）。 */
+class LeafStar(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 14f, 32f, 80, diveAt = 1.1f + delay, diveSpeed = 480f, homing = 1.2f) {
+    override val kind = EnemyKind.LEAF_STAR
+    private val baseX = x
+    val spin: Float get() = age * 10f
+
+    override fun cruise(w: World, dt: Float) {
+        y += 220f * dt
+        x = baseX + sin(age * 4f + delay * 5f) * 40f
+    }
+}
+
+/** 樹洞貓頭鷹：躲在樹樁裡，三向葉片（慢速）＋兩連發羽毛（快速）。 */
+class OwlTurret(x: Float) : GroundShooter(x, 80f, 50f, 240) {
+    override val kind = EnemyKind.OWL
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.2f, offset = 0.5f)) w.fan(x, y, w.aimAt(x, y), 3, 40f * DEG, 180f, BulletStyle.LEAF, Tint.GREEN)
+        val c = t % 2.2f
+        if (t > 1f && (crossed(c, dt, 1.3f) || crossed(c, dt, 1.5f))) w.aimed(x, y, 420f, BulletStyle.RICE, Tint.ORANGE)
+    }
+}
+
+// ───────────── 第 8 關：清澈溪流 ─────────────
+
+/** 跳躍魚：從溪裡一躍而出、劃著弧線下來，再朝玩家衝過去（快速、微追）。 */
+class LeapFish(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 18f, 32f, 90, diveAt = 1.0f + delay, diveSpeed = 600f, homing = 0.4f) {
+    override val kind = EnemyKind.LEAP_FISH
+    private val baseX = x
+
+    override fun cruise(w: World, dt: Float) {
+        y += (180f + abs(cos(age * 3f)) * 160f) * dt
+        x = baseX + sin(age * 3f + delay * 6f) * 50f
+    }
+}
+
+/** 蛤蜊砲台：張開殼的時候吐出一圈珍珠泡泡（慢速）和瞄準的貝殼（快速）。 */
+class ClamTurret(x: Float) : GroundShooter(x, 90f, 46f, 240) {
+    override val kind = EnemyKind.CLAM
+    /** 殼張開（畫面用）。 */
+    val open: Boolean get() = (age % 2.6f) > 1.4f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.6f, offset = 0.6f)) w.ring(x, y, 8, 150f, age, BulletStyle.BUBBLE, Tint.CYAN)
+        if (every(t, dt, 2.6f, offset = 1.2f)) {
+            for (k in -1..1) w.shoot(x, y, w.aimAt(x, y) + k * 12f * DEG, 380f, BulletStyle.SHELL, Tint.PINK)
+        }
+    }
+}
+
+// ───────────── 第 6～8 關的菁英怪 ─────────────
+
+/** 海豹教官：在冰上左右滑行，吹哨叫滑行小企鵝，扇形冰晶會在半空中凍住一下。 */
+class EliteSeal(x: Float) : Elite(x, 470f, 66f, 2600, ItemType.SPREAD) {
+    override val kind = EnemyKind.ELITE_SEAL
+    private var vx = 220f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 320f, 2.5f, dt)
+            age < 12f -> {
+                x += vx * dt
+                if (x < 140f && vx < 0f || x > WORLD_WIDTH - 140f && vx > 0f) vx = -vx
+                if (every(age, dt, 1.2f, offset = 1.8f)) {
+                    for (k in -2..2) {
+                        val b = w.shoot(x, y + 30f, w.aimAt(x, y) + k * 14f * DEG * 1.2f, 280f, BulletStyle.ICE, Tint.CYAN)
+                        if (k % 2 == 0) {
+                            b.freezeAt = 0.4f
+                            b.freezeTime = 0.7f
+                        }
+                    }
+                }
+                if (crossed(age, dt, 4f) || crossed(age, dt, 8.5f)) for (i in 0 until 4) w.spawn(PenguinSlider(200f + i * 200f, i * 0.1f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 袋鼠拳擊手：跳來跳去，出拳是三連發快拳（快速）、落地震出一圈石子，還會叫葉片手裏劍來。 */
+class EliteKangaroo(x: Float) : Elite(x, 480f, 66f, 2600, ItemType.HOMING) {
+    override val kind = EnemyKind.ELITE_KANGAROO
+    private var hopFromX = x
+    private var hopToX = x
+    private var hopT = 1f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 320f, 2.5f, dt)
+            age < 12f -> {
+                if (every(age, dt, 1.7f, offset = 1.5f)) {
+                    hopFromX = x
+                    hopToX = 150f + w.random.nextFloat() * (WORLD_WIDTH - 300f)
+                    hopT = 0f
+                }
+                if (hopT < 1f) {
+                    hopT = (hopT + dt / 0.5f).coerceAtMost(1f)
+                    x = hopFromX + (hopToX - hopFromX) * hopT
+                    y = 320f - sin(hopT * HALF_PI * 2f) * 120f
+                    if (hopT >= 1f) w.ring(x, y, 12, 170f, age, BulletStyle.ORB, Tint.ORANGE)
+                }
+                val c = age % 1.7f
+                if (age > 2f && (crossed(c, dt, 0.9f) || crossed(c, dt, 1.05f) || crossed(c, dt, 1.2f))) w.aimed(x, y + 30f, 430f, BulletStyle.BIG_ORB, Tint.RED)
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(LeafStar(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 河狸工程師：一邊巡邏一邊丟木頭（拋物線）、撒木屑扇，還會放跳躍魚過來。 */
+class EliteBeaver(x: Float) : Elite(x, 500f, 68f, 2600, ItemType.FOCUS) {
+    override val kind = EnemyKind.ELITE_BEAVER
+    private val baseX = x
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 330f, 2.5f, dt)
+            age < 12f -> {
+                x = baseX + sin((age - 1.5f) * 0.8f) * 200f
+                if (every(age, dt, 1.1f, offset = 1.8f)) w.fan(x, y + 30f, w.aimAt(x, y), 4, 40f * DEG, 300f, BulletStyle.RICE, Tint.ORANGE)
+                if (every(age, dt, 2.6f, offset = 2.4f)) {
+                    for (k in -1..1) {
+                        val dx = (w.player.x - x) / 1.6f + k * 120f
+                        w.bullet(x, y, dx, -260f, BulletStyle.BIG_ORB, Tint.ORANGE).ay = 380f
+                    }
+                }
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(LeapFish(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}

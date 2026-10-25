@@ -222,6 +222,9 @@ class World(
                     it.spin = side * 540f
                 }
             }
+            if (b is OtterBoss) b.twin?.let { t ->
+                particles += Particle(t.x - 30f, t.y - 90f, 300f, -620f, 2.2f, 1f, 0, ParticleKind.PROP, LostProp.SHELL).also { it.spin = 540f }
+            }
             sfx(b.x + 120f, b.y - 120f, SfxText.CRITICAL)
         }
     }
@@ -242,6 +245,10 @@ class World(
             if (b is DogBoss) b.boneOut = false
             explode(b.x + b.handX, b.y + b.handY, big = true)
             particles += Particle(b.x + b.handX, b.y + b.handY, 380f, -700f, 2.4f, 1f, 0, ParticleKind.PROP, b.lostWeapon).also { it.spin = 620f }
+            if (b is OtterBoss) b.twin?.let { t ->
+                explode(t.x + t.handX, t.y + t.handY, big = true)
+                particles += Particle(t.x + t.handX, t.y + t.handY, -380f, -700f, 2.4f, 1f, 0, ParticleKind.PROP, b.lostWeapon).also { it.spin = -620f }
+            }
             sfx(b.x, b.y - 150f, SfxText.BREAK)
             cue(SoundCue.BREAK)
         } else {
@@ -484,7 +491,7 @@ class World(
             if (e.hitFlash > 0f) e.hitFlash -= dt
             if (e.vibrate > 0f) e.vibrate -= dt
             if (e.alive && !(e.isBoss && phase == Phase.BOSS_DEFEATED)) e.update(this, dt)
-            if (e.isBoss) {
+            if (e.solid) {
                 if (phase != Phase.BOSS_DEFEATED) bossBody(e)
             } else if (e.alive && e.contactDamage > 0f && player.alive && e.hurtsOnContact &&
                 dist2(e.x, e.y, player.x, player.y) < (e.radius * 0.8f + player.radius).let { it * it }
@@ -538,17 +545,20 @@ class World(
         val p = player
         for (b in bullets) {
             b.age += dt
-            if (b.turn != 0f) {
-                val c = cos(b.turn * dt)
-                val s = sin(b.turn * dt)
-                val vx = b.vx * c - b.vy * s
-                b.vy = b.vx * s + b.vy * c
-                b.vx = vx
+            // 急凍中的子彈停在空中
+            if (!b.frozen) {
+                if (b.turn != 0f) {
+                    val c = cos(b.turn * dt)
+                    val s = sin(b.turn * dt)
+                    val vx = b.vx * c - b.vy * s
+                    b.vy = b.vx * s + b.vy * c
+                    b.vx = vx
+                }
+                b.vx += b.ax * dt
+                b.vy += b.ay * dt
+                b.x += b.vx * dt
+                b.y += b.vy * dt
             }
-            b.vx += b.ax * dt
-            b.vy += b.ay * dt
-            b.x += b.vx * dt
-            b.y += b.vy * dt
             if (b.y > height + 60f || b.y < -300f || b.x < -60f || b.x > WORLD_WIDTH + 60f) {
                 b.alive = false
                 continue
@@ -570,13 +580,19 @@ class World(
         val p = player
         for (l in lasers) {
             l.age += dt
-            if (l.style == HazardStyle.DIPPER && l.extendTime > 0f && crossed(l.age, dt, l.warnTime + l.extendTime) && l.sweep == 0f) {
+            if ((l.style == HazardStyle.DIPPER || l.style == HazardStyle.HAMMER) && l.extendTime > 0f && crossed(l.age, dt, l.warnTime + l.extendTime) && l.sweep == 0f) {
                 // 蜂蜜棒敲到地面：震動＋濺出一圈蜂蜜
                 shake(0.35f)
                 cue(SoundCue.EXPLODE_SMALL)
                 val tx = l.tipX.coerceIn(30f, WORLD_WIDTH - 30f)
                 val ty = l.tipY.coerceIn(30f, height - 30f)
-                ring(tx, ty, 10, 170f, random.nextFloat(), BulletStyle.HONEY, Tint.HONEY)
+                if (l.style == HazardStyle.HAMMER) {
+                    // 重力石錘：敲出一圈石頭碎片
+                    ring(tx, ty, 9, 160f, random.nextFloat(), BulletStyle.ORB, Tint.PURPLE)
+                    particles += Particle(tx, ty, 0f, 0f, 0.4f, 220f, 0xFFFF2BD6L, ParticleKind.SHOCKWAVE)
+                } else {
+                    ring(tx, ty, 10, 170f, random.nextFloat(), BulletStyle.HONEY, Tint.HONEY)
+                }
                 burst(tx, ty, 0xFFFFD15CL, 10, 260f, ParticleKind.STAR)
             }
             val owner = l.owner
@@ -717,8 +733,16 @@ class World(
         }
     }
 
-    fun damageEnemy(e: Enemy, damage: Float, crit: Boolean = false) {
+    fun damageEnemy(e: Enemy, hit: Float, crit: Boolean = false) {
+        val target = e.damageTarget
+        if (target != null) {
+            // 共用血量：打在妹妹身上的傷害算在姊姊頭上（被打的那隻一樣閃白）
+            e.hitFlash = 0.08f
+            damageEnemy(target, hit, crit)
+            return
+        }
         if (phase == Phase.BOSS_DEFEATED && e.isBoss) return
+        val damage = hit * e.damageScale
         e.hp -= damage
         e.pendingDamage += damage
         if (crit) flushDamage(e, crit = true)
@@ -760,7 +784,7 @@ class World(
         hitStop = HIT_STOP * 2f
         score += b.score
         clearBullets(toScore = true)
-        enemies.filter { !it.isBoss }.forEach { it.alive = false }
+        enemies.filter { !it.isBoss && it !is OtterTwin }.forEach { it.alive = false }
         repeat(14) { items += Item(b.x + (random.nextFloat() - 0.5f) * 300f, b.y + random.nextFloat() * 100f, ItemType.COIN) }
         cue(SoundCue.BOSS_DOWN)
         shake(1.2f)
@@ -1029,6 +1053,10 @@ class World(
             BulletStyle.STAR -> 12f
             BulletStyle.SEED -> 10f
             BulletStyle.BUBBLE -> 15f
+            BulletStyle.ICE -> 12f
+            BulletStyle.LEAF -> 12f
+            BulletStyle.FISH -> 13f
+            BulletStyle.SHELL -> 14f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

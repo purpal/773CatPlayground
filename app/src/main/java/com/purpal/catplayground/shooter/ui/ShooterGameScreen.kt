@@ -334,6 +334,18 @@ private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
         EnemyKind.BUNNY, EnemyKind.CARROT_TURRET, EnemyKind.MOUSE_PLANE, EnemyKind.PUPPY, EnemyKind.DUCKLING, EnemyKind.FRISBEE,
         EnemyKind.BABY_CAPY, EnemyKind.BALLOON, EnemyKind.ELITE_HARE, EnemyKind.ELITE_MONKEY, EnemyKind.BOSS_RABBIT,
     )
+    6 -> listOf(
+        EnemyKind.PENGUIN_SLIDER, EnemyKind.SNOWMAN, EnemyKind.MOUSE_PLANE, EnemyKind.YUZU, EnemyKind.DUCKLING, EnemyKind.FRISBEE,
+        EnemyKind.BALL_TURRET, EnemyKind.BALLOON, EnemyKind.ELITE_SEAL, EnemyKind.ELITE_HARE, EnemyKind.BOSS_PENGUIN,
+    )
+    7 -> listOf(
+        EnemyKind.LEAF_STAR, EnemyKind.OWL, EnemyKind.BEE, EnemyKind.BEAR_CUB, EnemyKind.BUNNY, EnemyKind.MOUSE_PLANE,
+        EnemyKind.HONEY_POT, EnemyKind.BALLOON, EnemyKind.ELITE_KANGAROO, EnemyKind.ELITE_BEE, EnemyKind.BOSS_KOALA,
+    )
+    8 -> listOf(
+        EnemyKind.LEAP_FISH, EnemyKind.CLAM, EnemyKind.DUCKLING, EnemyKind.BUCKET, EnemyKind.PENGUIN_SLIDER, EnemyKind.FRISBEE,
+        EnemyKind.BABY_CAPY, EnemyKind.BALLOON, EnemyKind.ELITE_BEAVER, EnemyKind.ELITE_MONKEY, EnemyKind.BOSS_OTTER, EnemyKind.OTTER_TWIN,
+    )
     else -> listOf(
         EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
         EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_BEE, EnemyKind.BOSS_CAPY,
@@ -382,6 +394,9 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.HONEY_FOREST -> Music.STAGE_BEAR
     StageTheme.ONSEN -> Music.STAGE_CAPY
     StageTheme.CARROT_FIELD -> Music.STAGE_RABBIT
+    StageTheme.ICE_FIELD -> Music.STAGE_PENGUIN
+    StageTheme.EUCALYPTUS -> Music.STAGE_KOALA
+    StageTheme.STREAM -> Music.STAGE_OTTER
 }
 
 // ───────────── HUD ─────────────

@@ -5,7 +5,7 @@ import com.purpal.catplayground.audio.Synth.addNoise
 import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
-enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, BOSS }
+enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, BOSS }
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
 internal object MusicBank {
@@ -17,6 +17,9 @@ internal object MusicBank {
         Music.STAGE_BEAR -> bearStage()
         Music.STAGE_CAPY -> capyStage()
         Music.STAGE_RABBIT -> rabbitStage()
+        Music.STAGE_PENGUIN -> penguinStage()
+        Music.STAGE_KOALA -> koalaStage()
+        Music.STAGE_OTTER -> otterStage()
         Music.BOSS -> boss()
     }
 
@@ -199,6 +202,87 @@ internal object MusicBank {
             volume = 0.035,
         )
         bass(intArrayOf(36, 33, 38, 31, 36, 33, 38, 36), 0.28)
+        drums(8, kickEveryBeat = true, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 6 關：冰雪南極。叮叮噹噹像冰晶的三角波旋律（E 小調），輕快地滑來滑去。 */
+    private fun penguinStage(): ShortArray = Song(bpm = 140.0, bars = 8).run {
+        melody(
+            "88:1 86:1 83:2 79:2 83:2 " +
+                "81:2 79:1 76:1 79:4 " +
+                "84:1 83:1 81:2 76:2 81:2 " +
+                "79:2 78:2 76:4 " +
+                "88:1 86:1 83:2 91:2 88:2 " +
+                "86:2 84:1 83:1 81:4 " +
+                "79:1 81:1 83:1 84:1 86:2 83:2 " +
+                "88:6 r:2",
+            volume = 0.2,
+            wave = Wave.TRIANGLE,
+            octaveUp = 0.08,
+        )
+        chords(
+            listOf(
+                intArrayOf(64, 67, 71), intArrayOf(67, 71, 74), intArrayOf(69, 72, 76), intArrayOf(62, 66, 69),
+                intArrayOf(64, 67, 71), intArrayOf(60, 64, 67), intArrayOf(57, 60, 64), intArrayOf(59, 63, 66),
+            ),
+            volume = 0.03,
+        )
+        bass(intArrayOf(40, 43, 45, 38, 40, 36, 45, 47), 0.28)
+        drums(8, kickEveryBeat = false, hatSixteenths = true)
+        pcm()
+    }
+
+    /** 第 7 關：尤加利樹林。慵懶、慢半拍的旋律（F 大調），像在樹上打瞌睡。 */
+    private fun koalaStage(): ShortArray = Song(bpm = 112.0, bars = 8).run {
+        melody(
+            "77:3 76:1 74:2 72:2 " +
+                "69:2 72:2 74:4 " +
+                "77:2 79:2 81:2 79:1 77:1 " +
+                "76:6 r:2 " +
+                "81:3 79:1 77:2 74:2 " +
+                "72:2 74:2 77:4 " +
+                "79:2 77:1 76:1 74:2 76:2 " +
+                "77:6 r:2",
+            volume = 0.2,
+            wave = Wave.TRIANGLE,
+            octaveUp = 0.05,
+        )
+        chords(
+            listOf(
+                intArrayOf(65, 69, 72), intArrayOf(62, 65, 69), intArrayOf(58, 62, 65), intArrayOf(60, 64, 67),
+                intArrayOf(65, 69, 72), intArrayOf(62, 65, 69), intArrayOf(55, 58, 62), intArrayOf(60, 64, 67),
+            ),
+            volume = 0.035,
+        )
+        bass(intArrayOf(41, 38, 34, 36, 41, 38, 43, 36), 0.28)
+        drums(8, kickEveryBeat = false, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 8 關：清澈溪流。像水花一樣上下跳動的琶音旋律（A 大調）。 */
+    private fun otterStage(): ShortArray = Song(bpm = 150.0, bars = 8).run {
+        melody(
+            "81:1 85:1 88:1 85:1 83:2 81:2 " +
+                "80:1 81:1 83:2 76:4 " +
+                "78:1 81:1 85:1 81:1 83:2 85:2 " +
+                "88:4 r:2 85:2 " +
+                "86:1 85:1 83:1 81:1 83:2 85:2 " +
+                "81:2 78:2 76:4 " +
+                "78:1 80:1 81:1 83:1 85:2 83:2 " +
+                "81:6 r:2",
+            volume = 0.2,
+            wave = Wave.SQUARE,
+            octaveUp = 0.06,
+        )
+        chords(
+            listOf(
+                intArrayOf(57, 61, 64), intArrayOf(56, 59, 64), intArrayOf(54, 57, 61), intArrayOf(50, 54, 57),
+                intArrayOf(57, 61, 64), intArrayOf(54, 57, 61), intArrayOf(50, 54, 57), intArrayOf(52, 56, 59),
+            ),
+            volume = 0.035,
+        )
+        bass(intArrayOf(45, 40, 42, 38, 45, 42, 38, 40), 0.28)
         drums(8, kickEveryBeat = true, hatSixteenths = false)
         pcm()
     }

@@ -11,7 +11,7 @@ enum class BreakKind { DISARM, ARMOR }
  * Boss 依血量分成三個階段（決定表情與招式強度），另外在 [breakAt] 的血量比例「卸甲」或「裝甲」，
  * 換一整組攻擊模式。每個攻擊有固定長度，`step` 每一步被呼叫，t 是該攻擊開始後的秒數。
  */
-abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Float) :
+abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: Float) :
     Enemy(WORLD_WIDTH / 2f, -220f, hp, radius, score) {
 
     protected class Attack(val duration: Float, val step: (w: World, t: Float, dt: Float) -> Unit)
@@ -37,6 +37,12 @@ abstract class Boss(hp: Float, radius: Float, score: Int, private val homeY: Flo
 
     override val isBoss = true
     override val invulnerable: Boolean get() = entering || armorTime > 0f
+
+    /** 畫面用：本體傾斜的角度（度），例如企鵝肚子貼地滑行。 */
+    open val tilt: Float get() = 0f
+
+    /** 畫面用：潛到水裡看不見。 */
+    open val hidden: Boolean get() = false
     override val contactDamage = 32f
     val hpRatio: Float get() = (hp / maxHp).coerceIn(0f, 1f)
 
@@ -666,5 +672,540 @@ class RabbitBoss : Boss(hp = 36000f, radius = 180f, score = 60000, homeY = 430f)
         !broken -> listOf(moonRings, carrotRain, callBunnies, carrotFans)
         phase < 2 -> listOf(drillThrust, carrotMissiles, drillSweep, moonRings)
         else -> listOf(drillSweep, carrotMissiles, drillThrust, carrotRain, callBunnies)
+    }
+}
+
+/**
+ * 第 6 關：企鵝艦長 冰冰（企鵝）。拿著急凍光線槍：冰晶彈打出去會在半空中「急凍」停住一下再繼續飛，
+ * 還有預告後落下的冰柱雨、留安全區的急凍光線掃射。企鵝認真又愛面子，55% 就被打到「卸甲」：
+ * 槍飛走之後改成肚子貼地滑行衝過畫面（沿路留下冰晶）、丟會轉彎的小魚。
+ */
+class PenguinBoss : Boss(hp = 34000f, radius = 190f, score = 70000, homeY = 430f) {
+    override val kind = EnemyKind.BOSS_PENGUIN
+    override val name = "企鵝艦長 冰冰"
+    override val breakAt = 0.55f
+    override val breakKind = BreakKind.DISARM
+    override val weapon = HazardStyle.CRYO
+    override val lostWeapon = LostProp.CRYO
+    override val lostProps = intArrayOf(LostProp.BEANIE)
+    override val handX = 183f
+    override val handY = 120f
+    /** 肚子貼地滑行的目的地（NaN 表示沒在滑）。 */
+    private var slideTo = Float.NaN
+    private var slideDir = 0f
+    private var slideStep = false
+    /** 這一步移動用的速度上限（在 move 裡決定，滑行結束的那一步也照滑行的速度算）。 */
+    private var speed = 520f
+    override val maxMoveSpeed: Float get() = speed
+    override val tilt: Float get() = slideDir * 78f
+
+    override fun update(w: World, dt: Float) {
+        super.update(w, dt)
+        // 滑行被換階段打斷時也要站起來
+        if (!slideStep) {
+            slideTo = Float.NaN
+            slideDir = 0f
+        }
+        slideStep = false
+    }
+
+    override fun move(w: World, dt: Float) {
+        speed = if (slideTo.isNaN()) 520f else 900f
+        if (!slideTo.isNaN()) {
+            // 速度由 maxMoveSpeed 限制，直接把目的地交給它，就會等速滑過去
+            x = slideTo
+            y = homeY + 20f
+        } else {
+            x = WORLD_WIDTH / 2f + sin(moveTime * 0.5f) * 170f
+            y = approach(y, homeY, 3f, dt)
+        }
+    }
+
+    private fun freeze(b: EnemyBullet, at: Float, time: Float = 0.9f) {
+        b.freezeAt = at
+        b.freezeTime = time
+    }
+
+    /** 雪球扇：每隔一扇就有一扇在半空中急凍停住，快慢錯開。 */
+    private val snowballFans = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.7f)) {
+            val frozen = (t / 0.7f).toInt() % 2 == 0
+            for (k in -2..2) {
+                val b = w.shoot(x, y + 80f, w.aimAt(x, y) + k * 13f * DEG * 1.2f, 300f, BulletStyle.ORB, Tint.CYAN)
+                if (frozen) freeze(b, 0.45f)
+            }
+        }
+    }
+    /** 冰柱雨：冰柱先掛在畫面頂端閃一下（預告），再加速落下。 */
+    private val icicleRain = Attack(4.2f) { w, t, dt ->
+        if (every(t, dt, 0.2f)) {
+            val ix = 40f + w.random.nextFloat() * (WORLD_WIDTH - 80f)
+            val b = w.bullet(ix, 24f, 0f, 220f, BulletStyle.ICE, Tint.CYAN)
+            b.ay = 260f
+            freeze(b, 0f, 0.8f)
+        }
+    }
+    /** 急凍光線槍朝玩家射兩次（短促的光線）。 */
+    private val cryoShot = Attack(2.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.3f)) melee(w, HazardStyle.CRYO, aimFrom(w, handX, handY), 40f, warn = 0.7f, active = 0.5f)
+        if (every(t, dt, 1.3f, offset = 0.7f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.ICE, Tint.CYAN)
+    }
+    /** 急凍光線從玩家的另一側掃過來 60°，玩家那一側的外緣是安全區；掃完留下一圈急凍冰晶。 */
+    private val cryoSweep = Attack(4.4f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val playerLeft = w.player.x < x + handX
+            melee(
+                w, HazardStyle.CRYO, if (playerLeft) HALF_PI - 50f * DEG else HALF_PI + 50f * DEG, 44f,
+                warn = 0.9f, active = 1.8f, extend = 0.2f, sweep = if (playerLeft) 60f * DEG else -60f * DEG, length = 1700f,
+            )
+        }
+        if (crossed(t, dt, 3.2f)) {
+            for (k in 0 until 16) freeze(w.shoot(x, y + 40f, k * TWO_PI / 16f, 200f, BulletStyle.ICE, Tint.CYAN), 0.5f, 0.8f)
+        }
+    }
+    /** 叫企鵝小隊滑下來。 */
+    private val squad = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) for (i in 0 until 6) w.spawn(PenguinSlider(130f + i * 148f, (i % 3) * 0.12f))
+        if (every(t, dt, 1f, offset = 0.8f)) w.aimed(x, y + 80f, 220f, BulletStyle.BIG_ORB, Tint.CYAN)
+    }
+    /** 卸甲後：肚子貼地滑過整個畫面再滑回來，沿路留下一排冰晶（先凍住，再依序落下）。 */
+    private val bellySlide = Attack(3.8f) { w, t, dt ->
+        slideStep = t < 3f
+        if (crossed(t, dt, 0.01f)) {
+            slideTo = if (x < WORLD_WIDTH / 2f) WORLD_WIDTH - 200f else 200f
+            slideDir = if (slideTo > x) 1f else -1f
+        }
+        if (crossed(t, dt, 1.6f)) {
+            slideTo = if (slideDir > 0f) 200f else WORLD_WIDTH - 200f
+            slideDir = -slideDir
+        }
+        if (t > 0.1f && t < 3f && every(t, dt, 0.07f)) {
+            val b = w.bullet(x, y + 60f, 0f, 260f, BulletStyle.ICE, Tint.CYAN)
+            freeze(b, 0f, 1.1f - (t % 1.6f) * 0.3f)
+        }
+        if (t >= 3f) {
+            slideTo = Float.NaN
+            slideDir = 0f
+        }
+    }
+    /** 卸甲後：從兩邊翅膀丟出會轉彎的小魚。 */
+    private val fishCurve = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.35f)) {
+            val side = if ((t / 0.35f).toInt() % 2 == 0) 1f else -1f
+            val b = w.shoot(x + side * 150f, y + 60f, HALF_PI - side * 55f * DEG, 270f, BulletStyle.FISH, Tint.CYAN)
+            b.turn = side * 1.5f
+        }
+    }
+    /** 卸甲後：一圈圈冰晶，擴散到一半凍住，再一起散開。 */
+    private val frostRings = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.9f)) {
+            for (k in 0 until 18) freeze(w.shoot(x, y + 40f, t + k * TWO_PI / 18f, 210f, BulletStyle.ICE, Tint.CYAN), 0.6f, 0.7f)
+        }
+    }
+
+    override fun attacks(phase: Int) = when {
+        !broken && phase == 0 -> listOf(snowballFans, cryoShot, icicleRain, squad)
+        !broken -> listOf(cryoSweep, snowballFans, icicleRain, cryoShot)
+        phase < 2 -> listOf(bellySlide, fishCurve, frostRings, squad)
+        else -> listOf(bellySlide, fishCurve, icicleRain, frostRings, squad)
+    }
+}
+
+/**
+ * 第 7 關：無尾熊長老 尤加（無尾熊）。一天睡 20 小時——掛在樹枝上盪來盪去，打著瞌睡也照樣攻擊：
+ * 慢吞吞的 Zzz 泡泡、掉下來的尤加利果實、葉片螺旋。睡著時防禦變低（受到兩倍傷害），
+ * 但鼻涕泡泡會越吹越大，沒打破就炸成一圈子彈。打到 30% 才「被吵醒」而「裝甲」：
+ * 拿出尤加利葉刃發射器——葉刃迴力鏢、葉片風暴、預告後俯衝重壓。
+ */
+class KoalaBoss : Boss(hp = 44000f, radius = 200f, score = 80000, homeY = 420f) {
+    override val kind = EnemyKind.BOSS_KOALA
+    override val name = "無尾熊長老 尤加"
+    override val breakAt = 0.3f
+    override val breakKind = BreakKind.ARMOR
+    override val weapon = HazardStyle.LEAF
+    override val lostProps = intArrayOf(LostProp.NIGHTCAP)
+    override val handX = 162f
+    override val handY = 150f
+    /** 打瞌睡中：受到兩倍傷害。 */
+    var napping = false
+        private set
+    private var napStep = false
+    /** 俯衝重壓：目標位置（NaN 表示沒在俯衝）與預告剩餘秒數（畫面用）。 */
+    private var diveY = Float.NaN
+    var diveX = Float.NaN
+        private set
+    var diveWarn = 0f
+        private set
+    private var landed = false
+    private var diveStep = false
+    /** 這一步移動用的速度上限（在 move 裡決定）。 */
+    private var speed = 600f
+    override val maxMoveSpeed: Float get() = speed
+    override val damageScale: Float get() = if (napping) 2f else 1f
+
+    /** 打瞌睡（裝甲前）→ 被吵醒暴怒 → 裝甲被打哭。 */
+    override fun mood(): Int = when {
+        !broken -> 0
+        hpRatio > 0.12f -> 1
+        else -> 2
+    }
+
+    /** 盪鞦韆的樹枝掛在畫面上方的這個點（畫面用來畫樹枝）。 */
+    val pivotX = WORLD_WIDTH / 2f
+    val pivotY = -420f
+    val swinging: Boolean get() = !broken
+
+    override fun update(w: World, dt: Float) {
+        super.update(w, dt)
+        napping = napStep && !broken
+        napStep = false
+        // 俯衝被換階段打斷時直接飛回原位
+        if (!diveStep) diveY = Float.NaN
+        diveStep = false
+        if (diveWarn > 0f) diveWarn -= dt
+    }
+
+    override fun move(w: World, dt: Float) {
+        speed = if (diveY.isNaN()) 600f else 2000f
+        when {
+            !diveY.isNaN() -> {
+                x = diveX
+                y = diveY
+            }
+            !broken -> {
+                // 掛在樹枝上盪鞦韆
+                val length = homeY - pivotY
+                val a = sin(moveTime * 0.9f) * 0.3f
+                x = pivotX + sin(a) * length
+                y = pivotY + cos(a) * length
+            }
+            else -> {
+                x = WORLD_WIDTH / 2f + sin(moveTime * 0.7f) * 220f
+                y = homeY + sin(moveTime * 1.6f) * 20f
+            }
+        }
+    }
+
+    /** 盪鞦韆時灑出兩道葉片螺旋。 */
+    private val leafSpiral = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.11f)) {
+            val a = t * 2.2f
+            w.shoot(x, y + 60f, a, 200f, BulletStyle.LEAF, Tint.GREEN)
+            w.shoot(x, y + 60f, a + HALF_PI * 2f, 200f, BulletStyle.LEAF, Tint.GREEN)
+        }
+    }
+    /** 夢話 Zzz：一串慢吞吞的大泡泡。 */
+    private val zzzBubbles = Attack(3.8f) { w, t, dt ->
+        if (every(t, dt, 0.3f)) w.shoot(x, y + 80f, HALF_PI + sin(t * 1.7f) * 1f, 110f, BulletStyle.BUBBLE, Tint.CYAN)
+        if (every(t, dt, 1.2f, offset = 0.6f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 30f * DEG, 260f, BulletStyle.LEAF, Tint.GREEN)
+    }
+    /** 尤加利果實從樹上掉下來，越掉越快。 */
+    private val nutFall = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.26f)) {
+            val nx = 40f + w.random.nextFloat() * (WORLD_WIDTH - 80f)
+            w.bullet(nx, -20f, 0f, 70f, BulletStyle.BIG_ORB, Tint.GREEN).ay = 320f
+        }
+    }
+    /** 睡著了：防禦變低，鼻子吹出一個鼻涕泡泡（沒打破就炸開）。 */
+    private val nap = Attack(4.2f) { w, t, dt ->
+        napStep = t < 3.8f
+        if (crossed(t, dt, 0.4f)) w.spawn(SnotBubble(this))
+        if (every(t, dt, 0.8f, offset = 0.8f)) w.shoot(x, y + 80f, HALF_PI + w.jitter(0.8f), 100f, BulletStyle.BUBBLE, Tint.CYAN)
+    }
+    /** 裝甲後：葉刃迴力鏢，左右兩邊彎回來。 */
+    private val leafBoomerang = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.5f)) {
+            for (side in listOf(-1f, 1f)) {
+                val b = w.shoot(x + handX, y + handY, HALF_PI + side * 50f * DEG, 320f, BulletStyle.LEAF, Tint.GREEN)
+                b.turn = -side * 1.9f
+            }
+        }
+    }
+    /** 裝甲後：葉片風暴，旋轉的葉子快慢交錯捲出來。 */
+    private val leafStorm = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.07f)) {
+            val a = t * 3.1f + w.jitter(0.2f)
+            w.shoot(x, y + 40f, a, 180f + (t * 10f).toInt() % 3 * 60f, BulletStyle.LEAF, Tint.GREEN)
+        }
+    }
+    /**
+     * 裝甲後：先在玩家那一行畫出預告，再整隻俯衝壓下來，落地震出一圈葉片。
+     * 壓到玩家剛才位置的上方一點就停（身體中心不會越過玩家，被撞到的話是往下推開）。
+     */
+    private val diveSlam = Attack(4.2f) { w, t, dt ->
+        diveStep = true
+        if (crossed(t, dt, 0.01f)) {
+            diveX = w.player.x.coerceIn(220f, WORLD_WIDTH - 220f)
+            diveWarn = 1.1f
+            landed = false
+            w.cue(SoundCue.SWING)
+        }
+        if (crossed(t, dt, 1.1f)) diveY = (w.player.y - 40f).coerceIn(homeY + 150f, w.height * 0.62f)
+        if (!diveY.isNaN() && !landed && t > 1.1f && y > diveY - 5f) {
+            landed = true
+            w.shake(0.5f)
+            w.cue(SoundCue.EXPLODE_SMALL)
+            w.ring(x, y + 100f, 16, 200f, t, BulletStyle.LEAF, Tint.GREEN)
+        }
+        if (crossed(t, dt, 2.2f)) diveY = homeY
+        if (t > 2.2f && !diveY.isNaN() && y < homeY + 5f) {
+            diveY = Float.NaN
+            diveX = Float.NaN
+        }
+    }
+    /** 裝甲後：葉刃從玩家的另一側橫掃 70°，玩家那一側的外緣是安全區。 */
+    private val bladeSweep = Attack(3.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val playerLeft = w.player.x < x + handX
+            melee(
+                w, HazardStyle.LEAF, if (playerLeft) HALF_PI - 55f * DEG else HALF_PI + 55f * DEG, 46f,
+                warn = 0.9f, active = 1.4f, extend = 0.2f, sweep = if (playerLeft) 70f * DEG else -70f * DEG, length = 1150f,
+            )
+        }
+        if (every(t, dt, 1.1f, offset = 1f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.LEAF, Tint.GREEN)
+    }
+    /** 裝甲後：葉刃朝玩家突刺兩次。 */
+    private val bladeThrust = Attack(2.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.3f)) melee(w, HazardStyle.LEAF, aimFrom(w, handX, handY), 46f, warn = 0.7f)
+    }
+
+    override fun attacks(phase: Int) = when {
+        !broken && phase == 0 -> listOf(leafSpiral, zzzBubbles, nap, nutFall)
+        !broken -> listOf(nap, leafSpiral, nutFall, zzzBubbles)
+        phase < 2 -> listOf(leafBoomerang, diveSlam, bladeSweep, leafStorm)
+        else -> listOf(diveSlam, leafStorm, leafBoomerang, bladeSweep, bladeThrust)
+    }
+}
+
+/** 無尾熊打瞌睡時吹出的鼻涕泡泡：越吹越大，2.4 秒後炸成一圈子彈；先打破就沒事。 */
+class SnotBubble(private val koala: KoalaBoss) : Enemy(koala.x, koala.y + 90f, 60f, 46f, 500) {
+    override val kind = EnemyKind.SNOT_BUBBLE
+    override val contactDamage = 0f
+    /** 吹大的程度（畫面用）：0～1。 */
+    val grow: Float get() = (age / LIFE).coerceIn(0f, 1f)
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        x = koala.x
+        y = koala.y + 90f + grow * 30f
+        if (!koala.alive || koala.broken) {
+            alive = false
+            w.puff(x, y, Tint.CYAN)
+            return
+        }
+        if (age >= LIFE) {
+            alive = false
+            w.puff(x, y, Tint.CYAN)
+            w.ring(x, y, 18, 190f, age, BulletStyle.BUBBLE, Tint.CYAN)
+            w.ring(x, y, 9, 300f, age + 0.17f, BulletStyle.ORB, Tint.CYAN)
+            w.cue(SoundCue.EXPLODE_SMALL)
+        }
+    }
+
+    companion object {
+        const val LIFE = 2.4f
+    }
+}
+
+/**
+ * 第 8 關：水獺姊妹 啾啾＆嚕嚕。兩隻一起上、共用一條血量（這個物件是姊姊啾啾，妹妹嚕嚕是 [OtterTwin]）。
+ * 拿著重力石錘：石頭雜耍、貝殼震波、兩把石錘交叉敲下來。45% 被打到「卸甲」：
+ * 石錘飛走，改成手牽手旋轉灑出雙螺旋、丟貝殼迴力鏢、潛到水裡再從預告的水花處冒出來。
+ */
+class OtterBoss : Boss(hp = 40000f, radius = 140f, score = 90000, homeY = 400f) {
+    override val kind = EnemyKind.BOSS_OTTER
+    override val name = "水獺姊妹 啾啾＆嚕嚕"
+    override val breakAt = 0.45f
+    override val breakKind = BreakKind.DISARM
+    override val weapon = HazardStyle.HAMMER
+    override val lostWeapon = LostProp.HAMMER
+    override val lostProps = intArrayOf(LostProp.SHELL)
+    override val handX = 112f
+    override val handY = 104f
+    override val maxMoveSpeed = 900f
+    var twin: OtterTwin? = null
+        private set
+    /** 手牽手旋轉中。 */
+    var spinning = false
+        private set
+    private var spinStep = false
+    private var spinAngle = 0f
+    /** 潛到水裡（看不見也打不到），會從 surface 的位置冒出來。 */
+    var submerged = false
+        private set
+    private var diveStep = false
+    var surfaceX = 0f
+        private set
+    var surfaceY = 0f
+        private set
+    var twinSurfaceX = 0f
+        private set
+    var twinSurfaceY = 0f
+        private set
+    private var centerX = WORLD_WIDTH / 2f
+    private var sep = 230f
+
+    override val invulnerable: Boolean get() = super.invulnerable || submerged
+    override val solid: Boolean get() = !submerged
+    override val hidden: Boolean get() = submerged
+
+    init {
+        x = WORLD_WIDTH / 2f - sep
+    }
+
+    override fun update(w: World, dt: Float) {
+        if (twin == null) twin = OtterTwin(this).also { w.spawn(it) }
+        super.update(w, dt)
+        spinning = spinStep
+        spinStep = false
+        if (submerged && !diveStep) surface(w)
+        diveStep = false
+        twin?.let { tw ->
+            when {
+                submerged -> { tw.targetX = twinSurfaceX; tw.targetY = twinSurfaceY }
+                spinning -> { tw.targetX = 2f * centerX - x; tw.targetY = 2f * homeY - y }
+                else -> { tw.targetX = centerX + sep; tw.targetY = y }
+            }
+        }
+    }
+
+    override fun move(w: World, dt: Float) {
+        when {
+            submerged -> {
+                x = surfaceX
+                y = surfaceY
+            }
+            spinning -> {
+                spinAngle += 2.6f * dt
+                x = centerX + cos(spinAngle) * 150f
+                y = homeY + sin(spinAngle) * 60f
+            }
+            else -> {
+                centerX = WORLD_WIDTH / 2f + sin(moveTime * 0.5f) * 60f
+                sep = 230f + sin(moveTime * 0.9f) * 40f
+                x = centerX - sep
+                y = homeY + sin(moveTime * 2f) * 10f
+            }
+        }
+    }
+
+    /** 兩姊妹各做一次：(x, y, 手的 x 偏移, 1=姊姊／-1=妹妹)。 */
+    private inline fun both(action: (Float, Float, Float, Float) -> Unit) {
+        action(x, y, handX, 1f)
+        twin?.let { action(it.x, it.y, it.handX, -1f) }
+    }
+
+    /** 妹妹的石錘攻擊（判定跟著妹妹移動）。 */
+    private fun twinMelee(w: World, angle: Float, warn: Float, active: Float, extend: Float) {
+        val t = twin ?: return
+        w.lasers += Laser(
+            t.x + t.handX, t.y + t.handY, angle, length = (kotlin.math.sqrt(dist2(t.x + t.handX, t.y + t.handY, w.player.x, w.player.y)) + 140f).coerceIn(520f, 1500f),
+            width = 50f, warnTime = warn, activeTime = active, color = Tint.RED, damage = MELEE_DAMAGE,
+            owner = t, offsetX = t.handX, offsetY = t.handY, style = HazardStyle.HAMMER, extendTime = extend,
+        )
+    }
+
+    private fun surface(w: World) {
+        submerged = false
+        w.shake(0.4f)
+        w.cue(SoundCue.EXPLODE_SMALL)
+        w.ring(surfaceX, surfaceY, 16, 190f, 0f, BulletStyle.BUBBLE, Tint.CYAN)
+        w.ring(twinSurfaceX, twinSurfaceY, 16, 190f, 0.2f, BulletStyle.BUBBLE, Tint.CYAN)
+        w.burst(surfaceX, surfaceY, 0xFFBFF8FFL, 14, 360f)
+        w.burst(twinSurfaceX, twinSurfaceY, 0xFFBFF8FFL, 14, 360f)
+    }
+
+    /** 石頭雜耍：兩姊妹輪流把石頭往上拋，石頭劃著拋物線掉下來。 */
+    private val juggle = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.32f)) {
+            val k = (t / 0.32f).toInt()
+            val tw = twin
+            val fromTwin = k % 2 == 1 && tw != null
+            val sx = if (fromTwin) tw!!.x else x
+            val sy = if (fromTwin) tw!!.y else y
+            val dx = (w.player.x - sx) / 2.2f + w.jitter(160f)
+            w.bullet(sx, sy - 40f, dx, -380f, BulletStyle.BIG_ORB, Tint.PURPLE).ay = 420f
+        }
+    }
+    /** 用石錘敲貝殼：兩姊妹交替放出一圈貝殼震波。 */
+    private val shellRings = Attack(3.8f) { w, t, dt ->
+        if (every(t, dt, 1.1f)) w.ring(x, y + 30f, 14, 180f, t, BulletStyle.SHELL, Tint.PINK)
+        if (every(t, dt, 1.1f, offset = 0.55f)) twin?.let { w.ring(it.x, it.y + 30f, 14, 180f, t + 0.1f, BulletStyle.SHELL, Tint.PINK) }
+    }
+    /** 兩把重力石錘從左右交叉敲向玩家，敲到的地方炸開一圈碎石。 */
+    private val hammerCross = Attack(3.4f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.7f)) {
+            melee(w, HazardStyle.HAMMER, aimFrom(w, handX, handY), 50f, warn = 0.85f, active = 0.6f, extend = 0.1f)
+            twin?.let { tw -> twinMelee(w, angleTo(tw.x + tw.handX, tw.y + tw.handY, w.player.x, w.player.y), 0.85f, 0.6f, 0.1f) }
+        }
+    }
+    /** 叫跳躍魚來幫忙。 */
+    private val callFish = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) for (i in 0 until 6) w.spawn(LeapFish(130f + i * 148f, i * 0.1f))
+        if (every(t, dt, 1f, offset = 0.8f)) both { bx, by, _, _ -> w.aimed(bx, by + 60f, 200f, BulletStyle.BUBBLE, Tint.CYAN) }
+    }
+    /** 卸甲後：手牽手轉圈，兩人各灑出一道螺旋（雙螺旋）。 */
+    private val spinDance = Attack(4.6f) { w, t, dt ->
+        spinStep = t < 4.4f
+        if (every(t, dt, 0.1f)) {
+            val a = t * 2.4f
+            w.shoot(x, y + 30f, a, 200f, BulletStyle.SHELL, Tint.PINK)
+            twin?.let { w.shoot(it.x, it.y + 30f, a + HALF_PI * 2f, 200f, BulletStyle.SHELL, Tint.PINK) }
+        }
+    }
+    /** 卸甲後：兩人往外丟貝殼迴力鏢，劃一個大弧再彎回來。 */
+    private val shellBoomerang = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.6f)) {
+            both { bx, by, _, side ->
+                val b = w.shoot(bx, by + 50f, HALF_PI - side * 55f * DEG, 280f, BulletStyle.SHELL, Tint.PINK)
+                b.turn = side * 1.6f
+            }
+        }
+        if (every(t, dt, 1.2f, offset = 0.9f)) w.aimed(x, y + 60f, 260f, BulletStyle.BIG_ORB, Tint.PURPLE)
+    }
+    /** 卸甲後：一起潛到水裡（打不到），水面上先冒出漣漪預告，再從那裡跳出來濺起一圈水花。 */
+    private val dive = Attack(3f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) {
+            w.puff(x, y, Tint.CYAN)
+            twin?.let { w.puff(it.x, it.y, Tint.CYAN) }
+            val left = 200f + w.random.nextFloat() * 260f
+            val right = WORLD_WIDTH - 200f - w.random.nextFloat() * 260f
+            val swap = w.random.nextBoolean()
+            surfaceX = if (swap) right else left
+            twinSurfaceX = if (swap) left else right
+            surfaceY = homeY - 40f + w.random.nextFloat() * 160f
+            twinSurfaceY = homeY - 40f + w.random.nextFloat() * 160f
+            submerged = true
+        }
+        diveStep = t > 0.3f && t < 1.9f
+    }
+
+    override fun attacks(phase: Int) = when {
+        !broken && phase == 0 -> listOf(juggle, shellRings, hammerCross, callFish)
+        !broken -> listOf(hammerCross, juggle, callFish, shellRings)
+        phase < 2 -> listOf(spinDance, shellBoomerang, dive, shellRings)
+        else -> listOf(dive, spinDance, shellBoomerang, callFish, juggle)
+    }
+}
+
+/** 水獺妹妹嚕嚕：位置由姊姊決定，被打到的傷害算在姊姊的血量上；身體一樣是實心的。 */
+class OtterTwin(val boss: OtterBoss) : Enemy(WORLD_WIDTH - boss.x, boss.y, 1f, 140f, 0) {
+    override val kind = EnemyKind.OTTER_TWIN
+    override val damageTarget: Enemy get() = boss
+    override val invulnerable: Boolean get() = boss.invulnerable
+    override val solid: Boolean get() = !boss.submerged
+    override val contactDamage = 32f
+    /** 石錘拿在左手（圖是姊姊的左右相反）。 */
+    val handX = -112f
+    val handY = 104f
+    var targetX = x
+    var targetY = y
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        val limit = 1400f * dt
+        x += (targetX - x).coerceIn(-limit, limit)
+        y += (targetY - y).coerceIn(-limit, limit)
+        if (!boss.alive) alive = false
     }
 }

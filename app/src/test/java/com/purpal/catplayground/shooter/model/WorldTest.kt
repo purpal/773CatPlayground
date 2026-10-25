@@ -533,4 +533,61 @@ class WorldTest {
             }
         }
     }
+
+    /** 企鵝的急凍子彈：停在空中一下，再照原本的速度繼續飛。 */
+    @Test
+    fun frozenBulletsStopThenResume() {
+        val w = worldInStage()
+        val b = w.bullet(500f, 300f, 0f, 200f, BulletStyle.ICE, Tint.CYAN)
+        b.freezeAt = 0.2f
+        b.freezeTime = 0.5f
+        repeat((0.3f / STEP).toInt()) { w.update(STEP) }
+        val frozenY = b.y
+        assertTrue(b.frozen)
+        repeat((0.3f / STEP).toInt()) { w.update(STEP) }
+        assertEquals("stays put while frozen", frozenY, b.y, 0.01f)
+        repeat((0.3f / STEP).toInt()) { w.update(STEP) }
+        assertFalse(b.frozen)
+        assertTrue("moves again after thawing", b.y > frozenY + 20f)
+    }
+
+    /** 無尾熊打瞌睡時受到兩倍傷害，被吵醒（裝甲）後就不會再睡。 */
+    @Test
+    fun koalaTakesDoubleDamageWhileNapping() {
+        val w = bossFight(Stages.koala)
+        val koala = w.boss as KoalaBoss
+        w.firing = false
+        var t = 0f
+        while (!koala.napping && t < 30f) {
+            w.update(STEP)
+            t += STEP
+        }
+        assertTrue("the koala dozes off", koala.napping)
+        repeat((0.5f / STEP).toInt()) { w.update(STEP) }
+        val before = koala.hp
+        w.damageEnemy(koala, 100f)
+        assertEquals(200f, before - koala.hp, 0.01f)
+        assertTrue("blows a snot bubble", w.enemies.any { it is SnotBubble })
+        koala.hp = koala.maxHp * 0.28f
+        repeat(10) { w.update(STEP) }
+        assertTrue(koala.broken)
+        assertFalse(koala.napping)
+        assertEquals(HazardStyle.LEAF, koala.heldProp())
+    }
+
+    /** 水獺姊妹共用一條血量：打妹妹也會扣姊姊的血。 */
+    @Test
+    fun otterSistersShareOneHealthBar() {
+        val w = bossFight(Stages.otter)
+        val otter = w.boss as OtterBoss
+        val twin = w.enemies.filterIsInstance<OtterTwin>().single()
+        val before = otter.hp
+        w.damageEnemy(twin, 100f)
+        assertEquals(100f, before - otter.hp, 0.01f)
+        assertTrue("the twin stands apart from her sister", kotlin.math.abs(twin.x - otter.x) > 200f)
+        otter.hp = otter.maxHp * 0.4f
+        repeat(10) { w.update(STEP) }
+        assertTrue(otter.broken)
+        assertEquals(null, otter.heldProp())
+    }
 }

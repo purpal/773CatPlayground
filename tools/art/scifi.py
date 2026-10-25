@@ -240,6 +240,46 @@ def yuzu_cannon():
     return Sprite("prop_yuzu_head", 270, 140, "-6 -35 135 70", b, GLOW)
 
 
+def cryo_gun():
+    """企鵝艦長的「急凍光線槍」：鋼製槍身＋冰藍線圈，槍口是發光的冰晶（外圈警示紅）。朝 +x。"""
+    b = path("M0,-15 L74,-18 L74,18 L0,15 Z", "url(#steel)", NAVY, 3)
+    for x in (12, 30, 48):
+        b += f'<rect x="{x}" y="-19" width="9" height="38" rx="3" fill="#8FE3FF" stroke="{NAVY}" stroke-width="2"/>'
+    b += path("M74,-24 L90,-24 L90,24 L74,24 Z", "url(#steel)", NAVY, 3)
+    crystal = f'<circle cx="106" cy="0" r="20" fill="none" stroke="{RED}" stroke-width="4"/>'
+    crystal += path("M106,-18 L118,0 L106,18 L94,0 Z", "#BDF3FF", NAVY, 2)
+    crystal += path("M106,-10 L112,0 L106,10 L100,0 Z", WHITE, "none")
+    b += lit(crystal, 3)
+    return Sprite("prop_cryo_head", 270, 140, "-6 -35 135 70", b, GLOW)
+
+
+def leaf_launcher():
+    """無尾熊長老裝甲後拿出的「尤加利葉刃發射器」：鋼製軸環＋一片大尤加利葉形的刃，葉脈發出琥珀色的光。朝 +x。"""
+    b = path("M-4,-18 L16,-18 L16,18 L-4,18 Z", "url(#steel)", NAVY, 3)
+    b += path("M16,0 C40,-34 96,-30 128,0 C96,30 40,34 16,0 Z", "#7CCB8A", NAVY, 3)
+    b += path("M16,0 C40,-34 96,-30 128,0 C96,-18 40,-20 16,0 Z", "#A8E6B0", "none")
+    veins = f'<path d="M18,0 L124,0" stroke="{AMBER}" stroke-width="3.5" fill="none"/>'
+    for k in range(4):
+        x = 36 + k * 22
+        veins += f'<path d="M{x},0 L{x + 14},-14 M{x},0 L{x + 14},14" stroke="{AMBER}" stroke-width="2.5" fill="none"/>'
+    b += lit(veins, 2)
+    b += lit(f'<path d="M16,0 C40,-34 96,-30 128,0 C96,30 40,34 16,0 Z" fill="none" stroke="{CORAL}" stroke-width="2"/>', 2)
+    return Sprite("prop_leaf_head", 270, 140, "-8 -35 135 70", b, GLOW)
+
+
+def stone_hammer():
+    """水獺姊妹的「重力石錘」：溪邊的大圓石綁在鋼柄上，外圍繞著洋紅色的重力環。朝 +x（錘頭和柄垂直）。"""
+    b = path("M0,-7 L46,-7 L46,7 L0,7 Z", "url(#steel)", NAVY, 3)
+    b += path("M40,-12 L54,-12 L54,12 L40,12 Z", "#8D6E63", NAVY, 2.5)
+    b += f'<ellipse cx="74" cy="0" rx="26" ry="42" fill="#9AA3AE" stroke="{NAVY}" stroke-width="3"/>'
+    b += f'<ellipse cx="68" cy="-12" rx="12" ry="18" fill="#C3CAD3"/>'
+    b += path("M60,22 Q74,30 88,18", "none", "#6E7783", 3)
+    rings = f'<ellipse cx="74" cy="0" rx="40" ry="14" fill="none" stroke="{MAGENTA}" stroke-width="3" transform="rotate(-20 74 0)"/>'
+    rings += f'<ellipse cx="74" cy="0" rx="40" ry="14" fill="none" stroke="{MAGENTA}" stroke-width="3" transform="rotate(30 74 0)"/>'
+    b += lit(rings, 2)
+    return Sprite("prop_hammer_head", 240, 200, "-6 -50 120 100", b, GLOW)
+
+
 def lost_props():
     """卸甲時被打飛的整把武器。"""
     out = []
@@ -255,12 +295,20 @@ def lost_props():
     d = path("M-90,-7 L0,-7 L0,7 L-90,7 Z", "#C98B55", NAVY, 3)
     d += f'<g transform="translate(-6 0) scale(0.75)">{dipper_head().body}</g>'
     out.append(Sprite("lost_dipper", 400, 160, "-100 -40 200 80", d, GLOW))
+    # 急凍光線槍
+    c = f'<g transform="translate(-60 0)">{cryo_gun().body}</g>'
+    out.append(Sprite("lost_cryo", 300, 150, "-70 -35 140 70", c, GLOW))
+    # 重力石錘
+    h = path("M-90,-7 L-30,-7 L-30,7 L-90,7 Z", "url(#steel)", NAVY, 3)
+    h += f'<g transform="translate(-36 0)">{stone_hammer().body}</g>'
+    out.append(Sprite("lost_hammer", 300, 200, "-95 -50 190 100", h, GLOW))
     return out
 
 
 def all_sprites():
     out = [plasma_bolt(), casing(), cat_holo(), graviton(), graviton_paw(), fish_missile(), reticle(), hex_paw(),
-           hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon(), carrot_drill()]
+           hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon(), carrot_drill(),
+           cryo_gun(), leaf_launcher(), stone_hammer()]
     out += lost_props()
     out += [
         tech_text("sfx_hit", "HIT", WHITE, 34),

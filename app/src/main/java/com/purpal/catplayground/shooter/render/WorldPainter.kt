@@ -45,6 +45,12 @@ import com.purpal.catplayground.shooter.model.ThrownBone
 import com.purpal.catplayground.shooter.model.WORLD_WIDTH
 import com.purpal.catplayground.shooter.model.World
 import com.purpal.catplayground.shooter.model.YuzuDrone
+import com.purpal.catplayground.shooter.model.ClamTurret
+import com.purpal.catplayground.shooter.model.KoalaBoss
+import com.purpal.catplayground.shooter.model.LeafStar
+import com.purpal.catplayground.shooter.model.OtterBoss
+import com.purpal.catplayground.shooter.model.OtterTwin
+import com.purpal.catplayground.shooter.model.SnotBubble
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.floor
@@ -159,7 +165,12 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.BEEHIVE -> sprite(sprites.enemy(e.kind, 0), rotation = e.age * 200f)
         EnemyKind.MOUSE_PLANE -> sprite(sprites.enemy(e.kind, fast), flipX = (e as MousePlane).facing < 0f)
         EnemyKind.MINI_MOUSE -> sprite(sprites.enemy(e.kind, fast), 0.8f)
-        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY, EnemyKind.DUCKLING, EnemyKind.BUNNY -> sprite(sprites.enemy(e.kind, fast))
+        EnemyKind.MOUSE_RUNNER, EnemyKind.BEE, EnemyKind.PUPPY, EnemyKind.DUCKLING, EnemyKind.BUNNY,
+        EnemyKind.PENGUIN_SLIDER, EnemyKind.LEAP_FISH -> sprite(sprites.enemy(e.kind, fast))
+        EnemyKind.LEAF_STAR -> sprite(sprites.enemy(e.kind, 0), rotation = (e as LeafStar).spin * RAD)
+        EnemyKind.CLAM -> sprite(sprites.enemy(e.kind, if ((e as ClamTurret).open) 0 else 1))
+        EnemyKind.SNOT_BUBBLE -> drawSnotBubble(e as SnotBubble, w, flash)
+        EnemyKind.OTTER_TWIN -> drawOtterTwin(e as OtterTwin, w, sprites, flash, squash)
         EnemyKind.BALLOON -> {
             // 氣球本體在判定圓上，道具掛在線的下端。
             sprite(sprites.enemy(e.kind, 0), dy = 30f)
@@ -169,7 +180,8 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
                 drawSprite(art, e.x, e.y + 126f, 0.85f)
             }
         }
-        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_HARE -> {
+        EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_HARE,
+        EnemyKind.ELITE_SEAL, EnemyKind.ELITE_KANGAROO, EnemyKind.ELITE_BEAVER -> {
             val pulse = 3.4f + sin(w.time * 6f + e.id) * 0.3f
             drawSprite(sprites.glow(0xFFFF2BD6L), e.x, e.y, pulse, alpha = 0.45f, blendMode = BlendMode.Plus)
             sprite(sprites.enemy(e.kind, if (e.kind == EnemyKind.ELITE_BEE) fast else slow))
@@ -179,7 +191,8 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
             drawSprite(sprites.glow(0xFFFF3D5AL), e.x, e.y, 2.6f, alpha = 0.5f, blendMode = BlendMode.Plus)
             drawSprite(sprites.enemy(e.kind, 0), e.x, e.y, 0.9f, (e as ThrownBone).spin)
         }
-        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT -> drawBoss(e as Boss, w, sprites, flash, squash)
+        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT,
+        EnemyKind.BOSS_PENGUIN, EnemyKind.BOSS_KOALA, EnemyKind.BOSS_OTTER -> drawBoss(e as Boss, w, sprites, flash, squash)
         else -> sprite(sprites.enemy(e.kind, slow))
     }
 }
@@ -212,20 +225,141 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
         val k = 1f - boss.armorTime / Boss.ARMOR_TIME
         drawSprite(sprites.glow(0xFFFF7A45L), x, boss.y, 5f + k * 3f, alpha = 0.7f * (1f - k * 0.5f), blendMode = BlendMode.Plus)
     }
+    if (boss is KoalaBoss) drawKoalaExtras(boss, w, sprites)
+    if (boss.hidden) {
+        if (boss is OtterBoss) drawSurfaceWarning(boss, w)
+        return
+    }
     val held = boss.heldProp()
     val busy = held != null && w.lasers.any { it.owner === boss && it.style == held }
     val sprite = sprites.boss(boss.kind, mood, frame)
-    drawSprite(sprite, x, boss.y, rotationDegrees = wobble * 0.5f, stretch = squash)
+    val scale = bossScale(boss.kind)
+    val rotation = wobble * 0.5f + boss.tilt
+    drawSprite(sprite, x, boss.y, scale, rotationDegrees = rotation, stretch = squash)
     if (flash || defeated && (w.time * 10f).toInt() % 2 == 0) {
-        drawSprite(sprite, x, boss.y, alpha = 0.3f, colorFilter = WhiteFlash, rotationDegrees = wobble * 0.5f, stretch = squash)
+        drawSprite(sprite, x, boss.y, scale, alpha = 0.3f, colorFilter = WhiteFlash, rotationDegrees = rotation, stretch = squash)
     }
-    if (held != null && !busy && !defeated) {
+    if (held != null && !busy && !defeated && boss.tilt == 0f) {
         val sway = sin(w.time * 2.4f) * 8f
         drawProp(held, x + boss.handX, boss.y + boss.handY, (-68f + sway) / RAD, idleLength(held), propWidth(held), w.time, sprites, active = false)
     }
+    if (boss is KoalaBoss && boss.napping) {
+        // 睡著時防禦變低：頭上飄著 Zzz 和「×2」
+        drawZzz(x + 120f, boss.y - 200f, w.time)
+        val bob = sin(w.time * 4f) * 6f
+        drawSprite(sprites.times(), x - 160f, boss.y - 170f + bob, 1.1f, colorFilter = CritRed)
+        drawSprite(sprites.digit(2), x - 128f, boss.y - 172f + bob, 1.4f, colorFilter = CritRed)
+    }
+}
+
+/** 水獺姊妹比較小隻：圖縮小一點畫。 */
+private fun bossScale(kind: EnemyKind) = if (kind == EnemyKind.BOSS_OTTER || kind == EnemyKind.OTTER_TWIN) 0.72f else 1f
+
+/** 水獺妹妹嚕嚕：和姊姊同樣的心情與道具，石錘拿在左手。 */
+private fun DrawScope.drawOtterTwin(t: OtterTwin, w: World, sprites: SpriteCache, flash: Boolean, squash: Float) {
+    val boss = t.boss
+    if (boss.hidden) return
+    val defeated = w.phase == Phase.BOSS_DEFEATED
+    val mood = if (defeated) 2 else boss.mood()
+    val frame = ((w.time * (if (mood == 2) 6f else 3f)).toInt() + 1) and 1
+    val wobble = if (defeated) sin(w.time * 50f + 1f) * 6f else 0f
+    val sprite = sprites.boss(EnemyKind.OTTER_TWIN, mood, frame)
+    val scale = bossScale(EnemyKind.OTTER_TWIN)
+    drawSprite(sprite, t.x + wobble, t.y, scale, rotationDegrees = wobble * 0.5f, stretch = squash)
+    if (flash || defeated && (w.time * 10f).toInt() % 2 == 0) {
+        drawSprite(sprite, t.x + wobble, t.y, scale, alpha = 0.3f, colorFilter = WhiteFlash, stretch = squash)
+    }
+    val held = boss.heldProp()
+    val busy = held != null && w.lasers.any { it.owner === t && it.style == held }
+    if (held != null && !busy && !defeated) {
+        val sway = sin(w.time * 2.4f + 1f) * 8f
+        drawProp(held, t.x + t.handX, t.y + t.handY, (-112f - sway) / RAD, idleLength(held), propWidth(held), w.time, sprites, active = false)
+    }
+}
+
+/** 水獺潛到水裡：要冒出來的地方先出現擴散的漣漪和紅色預警圈。 */
+private fun DrawScope.drawSurfaceWarning(b: OtterBoss, w: World) {
+    for ((sx, sy) in listOf(b.surfaceX to b.surfaceY, b.twinSurfaceX to b.twinSurfaceY)) {
+        for (k in 0 until 3) {
+            val f = (w.time * 1.4f + k / 3f) % 1f
+            val r = 40f + f * 110f
+            drawOval(Color.White.copy(alpha = 0.7f * (1f - f)), Offset(sx - r, sy - r * 0.4f), Size(r * 2f, r * 0.8f), style = Stroke(4f))
+        }
+        val blink = if ((w.time * 8f).toInt() % 2 == 0) 0.85f else 0.4f
+        drawCircle(Color(0xFFFF3D5A).copy(alpha = blink), 110f, Offset(sx, sy), style = Stroke(6f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(22f, 14f), w.time * 60f)))
+    }
+}
+
+private val vinePath = Path()
+
+/** 無尾熊：盪鞦韆的樹枝、俯衝重壓的預告。 */
+private fun DrawScope.drawKoalaExtras(b: KoalaBoss, w: World, sprites: SpriteCache) {
+    if (b.swinging) {
+        // 從畫面上方垂下來的尤加利樹枝，無尾熊抓著末端
+        val hx = b.x
+        val hy = b.y - 150f
+        vinePath.reset()
+        vinePath.moveTo(b.pivotX, b.pivotY)
+        vinePath.quadraticTo((b.pivotX + hx) / 2f + 30f, (b.pivotY + hy) / 2f, hx, hy)
+        drawPath(vinePath, Color(0xFF5D4037), style = Stroke(22f, cap = StrokeCap.Round))
+        drawPath(vinePath, Color(0xFF8D6E63), style = Stroke(12f, cap = StrokeCap.Round))
+        for (k in 1..4) {
+            val f = k / 5f
+            val lx = b.pivotX + (hx - b.pivotX) * f + 30f * 4f * f * (1f - f)
+            val ly = b.pivotY + (hy - b.pivotY) * f
+            if (ly < 0f) continue
+            val side = if (k % 2 == 0) 1f else -1f
+            oval(lx + side * 26f, ly, 26f, 11f, Color(0xFF7CCB8A))
+            oval(lx + side * 26f, ly, 18f, 4f, Color(0xFF4E9E63))
+        }
+    }
+    if (b.diveWarn > 0f && !b.diveX.isNaN()) {
+        val blink = if ((w.time * 10f).toInt() % 2 == 0) 0.32f else 0.16f
+        val half = b.radius * 0.95f
+        drawRect(Color(0xFFFF3D5A).copy(alpha = blink), Offset(b.diveX - half, b.y), Size(half * 2f, w.height - b.y))
+        val dash = PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -w.time * 200f)
+        for (side in listOf(-1f, 1f)) {
+            drawLine(Color(0xFFFF3D5A), Offset(b.diveX + side * half, b.y), Offset(b.diveX + side * half, w.height), 6f, pathEffect = dash)
+        }
+        drawSprite(sprites.glow(0xFFFF3D5AL), b.diveX, w.player.y, 3f, alpha = blink * 2f, blendMode = BlendMode.Plus)
+    }
+}
+
+/** 打瞌睡的 Zzz（三個越來越大的 Z 往上飄）。 */
+private fun DrawScope.drawZzz(x: Float, y: Float, time: Float) {
+    for (k in 0 until 3) {
+        val f = (time * 0.6f + k / 3f) % 1f
+        val s = 12f + k * 6f + f * 8f
+        val zx = x + k * 26f + sin(time * 2f + k) * 6f
+        val zy = y - f * 60f - k * 20f
+        val c = Color.White.copy(alpha = 1f - f)
+        val ink = Navy.copy(alpha = (1f - f) * 0.8f)
+        for ((col, wdt) in listOf(ink to 9f, c to 5f)) {
+            drawLine(col, Offset(zx - s, zy - s), Offset(zx + s, zy - s), wdt, StrokeCap.Round)
+            drawLine(col, Offset(zx + s, zy - s), Offset(zx - s, zy + s), wdt, StrokeCap.Round)
+            drawLine(col, Offset(zx - s, zy + s), Offset(zx + s, zy + s), wdt, StrokeCap.Round)
+        }
+    }
+}
+
+/** 無尾熊的鼻涕泡泡：越吹越大、快破時抖動。 */
+private fun DrawScope.drawSnotBubble(e: SnotBubble, w: World, flash: Boolean) {
+    val g = e.grow
+    val shake = if (g > 0.75f) sin(w.time * 70f) * 4f * g else 0f
+    val r = 18f + g * 46f
+    val c = Offset(e.x + shake, e.y)
+    drawCircle(Color(0xFFBDF3FF).copy(alpha = 0.35f), r, c)
+    drawCircle(Color.White.copy(alpha = 0.9f), r, c, style = Stroke(4f))
+    drawCircle(Color(0xFF7FD6FF).copy(alpha = 0.8f), r - 4f, c, style = Stroke(2f))
+    drawOval(Color.White.copy(alpha = 0.85f), Offset(c.x - r * 0.55f, c.y - r * 0.6f), Size(r * 0.5f, r * 0.3f))
+    if (g > 0.75f) drawCircle(Color(0xFFFF3D5A).copy(alpha = (g - 0.75f) * 3f), r + 8f, c, style = Stroke(4f))
+    if (flash) drawCircle(Color.White.copy(alpha = 0.5f), r, c)
 }
 
 private fun idleLength(style: HazardStyle) = when (style) {
+    HazardStyle.CRYO -> 135f
+    HazardStyle.LEAF -> 200f
+    HazardStyle.HAMMER -> 170f
     HazardStyle.FORK -> 230f
     HazardStyle.BONE -> 190f
     HazardStyle.DIPPER -> 210f
@@ -235,6 +369,7 @@ private fun idleLength(style: HazardStyle) = when (style) {
 }
 
 private fun propWidth(style: HazardStyle) = when (style) {
+    HazardStyle.LEAF, HazardStyle.HAMMER -> 16f
     HazardStyle.FORK -> 16f
     HazardStyle.BONE -> 28f
     HazardStyle.DIPPER -> 18f
@@ -289,6 +424,9 @@ private fun themeEdge(theme: StageTheme): Color = when (theme) {
     StageTheme.HONEY_FOREST -> Color(0xFF1B3A22)
     StageTheme.ONSEN -> Color(0xFF3B6E66)
     StageTheme.CARROT_FIELD -> Color(0xFF5E8C3A)
+    StageTheme.ICE_FIELD -> Color(0xFF7FA8C9)
+    StageTheme.EUCALYPTUS -> Color(0xFF3F6B4A)
+    StageTheme.STREAM -> Color(0xFF3C7F5A)
 }
 
 private const val TILE = 300f
@@ -300,6 +438,9 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
         StageTheme.HONEY_FOREST -> drawRect(Color(0xFF2E5E3A), size = Size(WORLD_WIDTH, height))
         StageTheme.ONSEN -> drawRect(Color(0xFF7CCFC4), size = Size(WORLD_WIDTH, height))
         StageTheme.CARROT_FIELD -> drawRect(Color(0xFFA9D67A), size = Size(WORLD_WIDTH, height))
+        StageTheme.ICE_FIELD -> drawRect(Color(0xFF9FD3EE), size = Size(WORLD_WIDTH, height))
+        StageTheme.EUCALYPTUS -> drawRect(Color(0xFF86B98A), size = Size(WORLD_WIDTH, height))
+        StageTheme.STREAM -> drawRect(Color(0xFF6CC6E6), size = Size(WORLD_WIDTH, height))
     }
     val first = floor(scroll / TILE).toInt() - 1
     val last = floor((scroll + height) / TILE).toInt() + 1
@@ -312,6 +453,9 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.HONEY_FOREST -> forestRow(y, random)
             StageTheme.ONSEN -> onsenRow(y, random, row, time)
             StageTheme.CARROT_FIELD -> carrotRow(y, random, row)
+            StageTheme.ICE_FIELD -> iceRow(y, random, row)
+            StageTheme.EUCALYPTUS -> eucalyptusRow(y, random)
+            StageTheme.STREAM -> streamRow(y, random, row, time)
         }
     }
     val drift = Random(theme.ordinal)
@@ -326,6 +470,12 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.ONSEN -> oval(x, height - y, 26f, 14f, Color.White.copy(alpha = 0.35f))
             // 飄落的小白花瓣
             StageTheme.CARROT_FIELD -> oval(x, y, 9f, 6f, Color.White.copy(alpha = 0.8f))
+            // 飄雪
+            StageTheme.ICE_FIELD -> circle(x, y, 5f + (it % 3) * 2f, Color.White.copy(alpha = 0.85f))
+            // 飄落的尤加利葉
+            StageTheme.EUCALYPTUS -> oval(x, y, 14f, 6f, Color(0xFFB5D6BC).copy(alpha = 0.85f))
+            // 水面的反光
+            StageTheme.STREAM -> oval(x, y, 18f, 4f, Color.White.copy(alpha = 0.6f))
         }
     }
 }
@@ -497,17 +647,130 @@ private fun DrawScope.carrotRow(y: Float, random: Random, row: Int) {
     }
 }
 
+/** 冰雪南極：一塊塊浮冰（下方是冰海）、冰上的裂痕、雪堆和冰洞。 */
+private fun DrawScope.iceRow(y: Float, random: Random, row: Int) {
+    repeat(3) {
+        val w = 220f + random.nextFloat() * 200f
+        val h = 110f + random.nextFloat() * 70f
+        val x = random.nextFloat() * (WORLD_WIDTH - w * 0.5f) - w * 0.25f
+        val fy = y + random.nextFloat() * (TILE - h * 0.5f)
+        drawRoundRect(Color(0xFF7FB6D6), Offset(x + 8f, fy + 14f), Size(w, h), CornerRadius(46f))
+        drawRoundRect(Color(0xFFF2FAFF), Offset(x, fy), Size(w, h), CornerRadius(46f))
+        drawRoundRect(Color(0xFFDCEEF9), Offset(x + 16f, fy + h * 0.55f), Size(w - 32f, h * 0.3f), CornerRadius(30f))
+        if (random.nextInt(3) == 0) {
+            // 裂痕
+            val cx = x + w * (0.3f + random.nextFloat() * 0.4f)
+            val cy = fy + h * 0.35f
+            line(cx, cy, cx + 22f, cy + 16f, Color(0xFFA9CDE3), 3f)
+            line(cx + 22f, cy + 16f, cx + 12f, cy + 34f, Color(0xFFA9CDE3), 3f)
+        }
+    }
+    when (random.nextInt(3)) {
+        0 -> {
+            // 冰釣的洞（旁邊一條小魚）
+            val hx = 120f + random.nextFloat() * (WORLD_WIDTH - 240f)
+            val hy = y + random.nextFloat() * TILE
+            oval(hx, hy, 34f, 18f, Color(0xFF3B78A8))
+            oval(hx, hy - 3f, 26f, 11f, Color(0xFF5296C8))
+            oval(hx + 50f, hy + 6f, 12f, 6f, Color(0xFF7EC8FF))
+        }
+        1 -> {
+            val sx = 100f + random.nextFloat() * (WORLD_WIDTH - 200f)
+            val sy = y + random.nextFloat() * TILE
+            oval(sx, sy, 50f, 22f, Color.White)
+            oval(sx - 14f, sy - 6f, 26f, 12f, Color(0xFFFDFEFF))
+        }
+        else -> if (row % 2 == 0) {
+            // 雪地上的小腳印
+            val px = 150f + random.nextFloat() * (WORLD_WIDTH - 300f)
+            val py = y + random.nextFloat() * TILE
+            for (k in 0 until 4) oval(px + (k % 2) * 18f, py + k * 30f, 6f, 9f, Color(0xFFB8D8EC))
+        }
+    }
+}
+
+/** 尤加利樹林：從上往下看的樹冠（灰綠色的葉叢）、交錯的樹枝和尤加利果實。 */
+private fun DrawScope.eucalyptusRow(y: Float, random: Random) {
+    repeat(2) {
+        // 橫越畫面的樹枝
+        val by = y + random.nextFloat() * TILE
+        val tilt = (random.nextFloat() - 0.5f) * 120f
+        drawLine(Color(0xFF6D4C41), Offset(-20f, by), Offset(WORLD_WIDTH + 20f, by + tilt), 20f, StrokeCap.Round)
+        drawLine(Color(0xFF9C7A6B), Offset(-20f, by - 4f), Offset(WORLD_WIDTH + 20f, by + tilt - 4f), 7f, StrokeCap.Round)
+    }
+    repeat(4) {
+        val x = random.nextFloat() * WORLD_WIDTH
+        val fy = y + random.nextFloat() * TILE
+        val r = 50f + random.nextFloat() * 40f
+        circle(x + 10f, fy + 12f, r, Color(0xFF5E8F6A))
+        circle(x, fy, r, Color(0xFF8DBF98))
+        // 細長的尤加利葉
+        for (k in 0 until 5) {
+            val a = k * 1.2566f + random.nextFloat()
+            withTransform({ rotate(a * RAD, Offset(x + cos(a) * r * 0.55f, fy + sin(a) * r * 0.55f)) }) {
+                oval(x + cos(a) * r * 0.55f, fy + sin(a) * r * 0.55f, r * 0.42f, r * 0.13f, Color(0xFFB5D6BC))
+            }
+        }
+        if (random.nextInt(3) == 0) for (k in 0 until 3) circle(x + k * 12f - 12f, fy + r * 0.2f + (k % 2) * 8f, 6f, Color(0xFF7A8F6E))
+    }
+}
+
+/** 清澈溪流：兩岸的草地和小石頭、流動的水紋、踏腳石和荷葉。 */
+private fun DrawScope.streamRow(y: Float, random: Random, row: Int, time: Float) {
+    if (row % 2 == 0) drawRect(Color(0xFF74CCEA), Offset(0f, y), Size(WORLD_WIDTH, TILE / 2f))
+    for (side in 0..1) {
+        val bx = if (side == 0) 0f else WORLD_WIDTH - 120f
+        drawRect(Color(0xFF8CCB6E), Offset(bx, y), Size(120f, TILE))
+        val edge = if (side == 0) 120f else WORLD_WIDTH - 120f
+        drawRect(Color(0xFFD9C9A3), Offset(edge - 10f, y), Size(20f, TILE))
+        repeat(3) {
+            val sx = edge + (if (side == 0) -1f else 1f) * (8f + random.nextFloat() * 20f)
+            val sy = y + random.nextFloat() * TILE
+            oval(sx, sy, 16f + random.nextFloat() * 8f, 11f, Color(0xFFB8B0A6))
+        }
+        repeat(2) {
+            val gx = bx + 20f + random.nextFloat() * 70f
+            val gy = y + random.nextFloat() * TILE
+            for (k in -1..1) drawLine(Color(0xFF5FA84A), Offset(gx, gy), Offset(gx + k * 10f, gy - 22f), 5f, StrokeCap.Round)
+        }
+    }
+    // 往下流的水紋
+    repeat(5) {
+        val wx = 160f + random.nextFloat() * (WORLD_WIDTH - 320f)
+        val wy = y + ((random.nextFloat() * TILE + time * 90f) % TILE)
+        drawLine(Color.White.copy(alpha = 0.45f), Offset(wx, wy), Offset(wx + 10f, wy + 40f), 4f, StrokeCap.Round)
+    }
+    when (random.nextInt(3)) {
+        0 -> {
+            val sx = 200f + random.nextFloat() * (WORLD_WIDTH - 400f)
+            val sy = y + random.nextFloat() * TILE
+            oval(sx + 4f, sy + 6f, 36f, 24f, Color(0xFF4A9FC0))
+            oval(sx, sy, 36f, 24f, Color(0xFFA7A39C))
+            oval(sx - 8f, sy - 6f, 18f, 9f, Color(0xFFC9C5BE))
+        }
+        1 -> {
+            val lx = 200f + random.nextFloat() * (WORLD_WIDTH - 400f)
+            val ly = y + random.nextFloat() * TILE
+            circle(lx, ly, 26f, Color(0xFF5FB35A))
+            drawArc(Color(0xFF6CC6E6), -20f, 40f, true, Offset(lx - 26f, ly - 26f), Size(52f, 52f))
+            if (random.nextBoolean()) circle(lx - 6f, ly - 4f, 7f, Color(0xFFFFB3C7))
+        }
+        else -> Unit
+    }
+}
+
 // ───────────── 子彈、武器與特效 ─────────────
 
 private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     val sprite = sprites.bullet(b.style, b.radius)
     val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.06f)
     val rotation = when {
-        b.style == BulletStyle.RICE -> atan2(b.vy, b.vx) * RAD
+        b.style == BulletStyle.RICE || b.style == BulletStyle.ICE || b.style == BulletStyle.LEAF || b.style == BulletStyle.FISH -> atan2(b.vy, b.vx) * RAD
         b.spin -> b.age * 300f
         else -> 0f
     }
     drawSprite(sprite, b.x, b.y, scale, rotation)
+    if (b.frozen) drawSprite(sprites.frost(), b.x, b.y, b.radius / 20f * (1f + sin(b.age * 30f) * 0.05f), b.age * 40f)
 }
 
 /** 玩家子彈：冷色硬光＋深藍描邊（明亮背景上也清楚）＋拖尾。 */
@@ -694,7 +957,9 @@ private fun energy(style: HazardStyle): Color = when (style) {
     HazardStyle.BONE, HazardStyle.CLAW, HazardStyle.BEAM -> Color(0xFFFF3D5A)
     HazardStyle.DIPPER -> Amber
     HazardStyle.WATER -> Color(0xFFFF7A45)
-    HazardStyle.CARROT -> Amber
+    HazardStyle.CARROT, HazardStyle.LEAF -> Amber
+    HazardStyle.CRYO -> Color(0xFFFF6FAE)
+    HazardStyle.HAMMER -> Color(0xFFFF2BD6)
 }
 
 /** 雷射與 Boss 的道具攻擊。預告時畫紅色虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
@@ -775,6 +1040,36 @@ private fun DrawScope.drawProp(
         HazardStyle.CARROT -> {
             shaft(0f, 110f)
             sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 60f, tipY - dy * 60f, 1f, angle * RAD) }
+        }
+        HazardStyle.LEAF -> {
+            shaft(0f, 110f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 66f, tipY - dy * 66f, 1f, angle * RAD) }
+        }
+        HazardStyle.HAMMER -> {
+            shaft(0f, 60f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 46f, tipY - dy * 46f, 1f, angle * RAD) }
+        }
+        HazardStyle.CRYO -> {
+            // 急凍光線槍在手上，伸出去的是冰藍色核心的急凍光線
+            if (active && length > 130f) {
+                val m = Offset(x0 + dx * 126f, y0 + dy * 126f)
+                val t = Offset(tipX, tipY)
+                drawLine(glow.copy(alpha = 0.35f), m, t, hitWidth * 2.4f, StrokeCap.Round)
+                drawLine(glow, m, t, hitWidth, StrokeCap.Round)
+                drawLine(Color(0xFFBDF3FF), m, t, hitWidth * 0.6f, StrokeCap.Round)
+                drawLine(Color.White, m, t, hitWidth * 0.2f, StrokeCap.Round)
+                // 光線上閃爍的六角冰晶
+                val reach = length - 126f
+                var k = 0
+                while (k < 8) {
+                    val f = ((time * 1.8f + k * 0.125f) % 1f)
+                    val px = m.x + dx * reach * f
+                    val py = m.y + dy * reach * f
+                    drawPath(hexPath(px, py, hitWidth * 0.45f, time * 4f + k), Color.White.copy(alpha = 0.85f), style = Stroke(3f))
+                    k++
+                }
+            }
+            sprites.propHead(style)?.let { drawSprite(it, x0 + dx * 62f, y0 + dy * 62f, 1f, angle * RAD) }
         }
         HazardStyle.DIPPER -> {
             shaft(0f, 100f)
