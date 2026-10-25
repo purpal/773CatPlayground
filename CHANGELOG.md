@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/purpal/773CatPlayground/compare/v0.14.0...v0.14.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* bosses no longer teleport after a sweep or when armoring up ([5b0b1ed](https://github.com/purpal/773CatPlayground/commit/5b0b1ed95357d43197e1fca55ea4eb390ed8a5a4))
+
 ## [0.14.0](https://github.com/purpal/773CatPlayground/compare/v0.13.3...v0.14.0) (2026-10-25)
 
 
