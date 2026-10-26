@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/purpal/773CatPlayground/compare/v0.18.0...v0.19.0) (2026-10-26)
+
+
+### Features
+
+* 小橘肉球護甲、力場盾耐久、猴王學專武，平衡調整 ([83fdc4c](https://github.com/purpal/773CatPlayground/commit/83fdc4ccde3227e09e07e684f7acaa4b01a25d10))
+
 ## [0.18.0](https://github.com/purpal/773CatPlayground/compare/v0.17.1...v0.18.0) (2026-10-26)
 
 
