@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/purpal/773CatPlayground/compare/v0.17.1...v0.18.0) (2026-10-26)
+
+
+### Features
+
+* 世界巡迴模式——環遊世界挑戰 13 國對手 ([3ae7871](https://github.com/purpal/773CatPlayground/commit/3ae7871e90df79c6382241317e294f60eb1e6c8f))
+
 ## [0.17.1](https://github.com/purpal/773CatPlayground/compare/v0.17.0...v0.17.1) (2026-10-26)
 
 
