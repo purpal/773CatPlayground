@@ -303,6 +303,10 @@ class World(
         if (p.transformed > 0f) p.transformed -= dt
         if (p.dashTime > 0f) p.dashTime -= dt
         if (p.dashCooldown > 0f) p.dashCooldown -= dt
+        if (p.tempArmorTime > 0f) {
+            p.tempArmorTime -= dt
+            if (p.tempArmorTime <= 0f) p.tempArmor = 0f
+        }
         beam.active = false
         pawBolt.active = false
         val dragDx = dragX
@@ -323,11 +327,18 @@ class World(
         var dx = mx * p.speed * dt + dragDx * gain
         var dy = my * p.speed * dt + dragDy * gain
         val step = hypot(dx, dy)
-        // 黑貓的影閃：手指快速一甩就瞬間閃過去，短暫無敵並留下殘影。
-        if (p.cat == CatType.BLACK && p.dashCooldown <= 0f && step / dt > p.cat.baseSpeed * DASH_TRIGGER) {
-            p.dashTime = DASH_TIME
+        // 快速一甩：黑貓「影閃」瞬間閃過去，短暫無敵並留下殘影；
+        // 橘貓「肉球護甲」在同樣的時間內套上一層臨時護甲。
+        if (p.dashCooldown <= 0f && step / dt > p.cat.baseSpeed * DASH_TRIGGER) {
             p.dashCooldown = DASH_COOLDOWN
-            p.invulnerable = maxOf(p.invulnerable, DASH_TIME)
+            if (p.cat == CatType.BLACK) {
+                p.dashTime = DASH_TIME
+                p.invulnerable = maxOf(p.invulnerable, DASH_TIME)
+            } else {
+                p.tempArmor = difficulty.tempArmor
+                p.tempArmorMax = p.tempArmor
+                p.tempArmorTime = DASH_TIME
+            }
             cue(SoundCue.SWING)
         }
         val dashBoost = if (p.dashTime > 0f) DASH_SPEED_BOOST else 1f
@@ -391,7 +402,19 @@ class World(
     fun damagePlayer(amount: Float) {
         val p = player
         if (!p.alive || p.invulnerable > 0f || godMode || amount <= 0f) return
-        p.armor -= amount
+        var hit = amount
+        if (p.tempArmor > 0f) {
+            // 先扣臨時護甲；完全擋下時不閃爍、不給受傷後的無敵時間
+            val absorbed = minOf(p.tempArmor, hit)
+            p.tempArmor -= absorbed
+            hit -= absorbed
+            sparks(p.x, p.y - 20f, 6, 0xFFFFC94AL, speed = 320f)
+            if (hit <= 0f) {
+                cue(SoundCue.ENEMY_HIT)
+                return
+            }
+        }
+        p.armor -= hit
         p.invulnerable = 1.2f
         shake(0.25f)
         flash(0.25f)
@@ -484,7 +507,7 @@ class World(
             if (s.style == ShotStyle.SONIC && s.age >= s.burstAt) {
                 s.alive = false
                 val level = s.wallLevel
-                walls += SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG)
+                walls += SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG, maxHp = WALL_HP + level * WALL_HP_PER_LEVEL)
                 cue(SoundCue.SONIC)
             }
             if (s.y < -80f || s.y > height + 80f || s.x < -80f || s.x > WORLD_WIDTH + 80f) s.alive = false
@@ -593,10 +616,13 @@ class World(
                 b.alive = false
                 continue
             }
-            if (b.erasable && walls.any { it.alive && it.blocks(b.x, b.y, b.radius) }) {
+            val wall = if (b.erasable) walls.firstOrNull { it.alive && it.blocks(b.x, b.y, b.radius) } else null
+            if (wall != null) {
                 b.alive = false
                 particles += Particle(b.x, b.y, 0f, 0f, 0.35f, 1f, 0, ParticleKind.HEXHIT)
                 sparks(b.x, b.y, 3, 0xFFFF3D5AL, speed = 260f)
+                wall.hp -= b.damage
+                if (wall.hp <= 0f) shatterWall(wall)
                 continue
             }
             if (p.alive && dist2(b.x, b.y, p.x, p.y) < (b.radius * 0.75f + p.radius).let { it * it }) {
@@ -637,6 +663,28 @@ class World(
                 damagePlayer(l.damage)
             }
         }
+    }
+
+    /** 力場盾擋太多子彈：整片碎成六角碎片往外飛散。 */
+    private fun shatterWall(wall: SonicWall) {
+        wall.alive = false
+        val n = 16
+        for (i in 0 until n) {
+            val a = -HALF_PI - wall.halfAngle + wall.halfAngle * 2f * (i + 0.5f) / n
+            val px = wall.x + cos(a) * wall.radius
+            val py = wall.centerY + sin(a) * wall.radius
+            val speed = 180f + random.nextFloat() * 220f
+            if (particles.size < MAX_PARTICLES) {
+                particles += Particle(px, py, cos(a) * speed, sin(a) * speed - 120f, 0.7f + random.nextFloat() * 0.3f, 10f + random.nextFloat() * 8f, 0xFF00E5FFL, ParticleKind.SHARD).also {
+                    it.rotation = random.nextFloat() * 360f
+                    it.spin = (random.nextFloat() * 2f - 1f) * 540f
+                }
+            }
+        }
+        val top = wall.centerY - wall.radius
+        particles += Particle(wall.x, top, 0f, 0f, 0.35f, wall.radius * 1.2f, 0xFF00E5FFL, ParticleKind.SHOCKWAVE)
+        sparks(wall.x, top, 10, 0xFFBFF8FFL, speed = 420f)
+        cue(SoundCue.BREAK)
     }
 
     private fun updateWalls(dt: Float) {
@@ -858,7 +906,7 @@ class World(
             p.y += p.vy * dt
             p.rotation += p.spin * dt
             when (p.kind) {
-                ParticleKind.VOXEL, ParticleKind.CASING -> {
+                ParticleKind.VOXEL, ParticleKind.CASING, ParticleKind.SHARD -> {
                     p.vx *= 0.95f
                     p.vy = p.vy * 0.95f + 900f * dt
                 }
@@ -1071,6 +1119,9 @@ class World(
 
 
         /** 黑貓影閃：手指移動速度超過基本速度的這個倍數就觸發。 */
+        /** 力場盾的耐久（不隨難度變化，後面的關卡子彈多，盾就撐得比較短）。 */
+        const val WALL_HP = 40f
+        const val WALL_HP_PER_LEVEL = 25f
         const val DASH_TRIGGER = 2.6f
         const val DASH_TIME = 0.3f
         const val DASH_COOLDOWN = 0.9f

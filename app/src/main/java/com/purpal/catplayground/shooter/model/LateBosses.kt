@@ -456,6 +456,7 @@ class MonkeyBoss : Boss(hp = 36000f, radius = 190f, score = 130000, homeY = 420f
         mimicStep = t < 3.6f
         if (crossed(t, dt, 0.01f)) {
             mimicking = w.player.mainWeapon
+            mimicCat = w.player.cat
             w.cue(SoundCue.ITEM)
         }
         when (mimicking) {
@@ -467,13 +468,42 @@ class MonkeyBoss : Boss(hp = 36000f, radius = 190f, score = 130000, homeY = 420f
                 )
                 w.cue(SoundCue.LASER)
             }
-            MainWeapon.SPECIAL -> if (crossed(t, dt, 0.4f) || crossed(t, dt, 2f)) {
-                w.aimed(x, y + 80f, 150f, BulletStyle.BIG_ORB, Tint.CHEESE, radius = 34f)
-                w.ring(x, y + 80f, 12, 200f, t, BulletStyle.BANANA, Tint.CHEESE)
-            }
+            MainWeapon.SPECIAL -> if (mimicCat == CatType.ORANGE) bananaCannon(w, t, dt) else bananaPaw(w, t, dt)
             null -> Unit
         }
     }
+
+    /** 學小橘的重力肉球砲：瞄準開招時的位置，連續轟出一整排巨大香蕉，兩側再夾小香蕉。 */
+    private fun bananaCannon(w: World, t: Float, dt: Float) {
+        if (crossed(t, dt, 0.01f)) cannonAngle = w.aimAt(x, y + 80f)
+        if (t > 0.5f && t < 3.3f && every(t, dt, 0.3f)) {
+            w.shoot(x, y + 90f, cannonAngle, 520f, BulletStyle.BANANA, Tint.CHEESE, radius = 30f)
+            if (every(t, dt, 0.6f)) for (side in listOf(-1f, 1f)) {
+                w.shoot(x + side * 40f, y + 80f, cannonAngle + side * 14f * DEG, 560f, BulletStyle.BANANA, Tint.CHEESE)
+            }
+            w.cue(SoundCue.SHOT_HEAVY)
+        }
+    }
+
+    /** 學小黑的高周波震動掌：一圈排成貓掌形狀的香蕉，從身上往外擴散（趾頭朝下）。 */
+    private fun bananaPaw(w: World, t: Float, dt: Float) {
+        if (crossed(t, dt, 0.5f) || crossed(t, dt, 1.5f) || crossed(t, dt, 2.5f)) {
+            val shift = pawPulse++ % 2 * (PAW_STRIDE / 2)
+            var i = shift
+            while (i < PawPath.count) {
+                val px = PawPath.xs[i]
+                val py = -PawPath.ys[i]
+                val r = PawPath.radius[i]
+                w.bullet(x + px * 90f, y + 60f + py * 90f, PawPath.nx[i] * r * 230f, -PawPath.ny[i] * r * 230f, BulletStyle.BANANA, Tint.CHEESE)
+                i += PAW_STRIDE
+            }
+            w.cue(SoundCue.SONIC)
+        }
+    }
+
+    private var mimicCat = CatType.ORANGE
+    private var cannonAngle = HALF_PI
+    private var pawPulse = 0
     /** 抓著藤蔓盪過整個畫面，沿路往下丟香蕉。 */
     private val vineSwing = Attack(4.6f) { w, t, dt ->
         swingStep = t < 4.4f
@@ -531,6 +561,8 @@ class MonkeyBoss : Boss(hp = 36000f, radius = 190f, score = 130000, homeY = 420f
 
     companion object {
         const val SWING_LENGTH = 460f
+        /** 香蕉貓掌每隔幾個輪廓點放一根（120 點 → 24 根）。 */
+        const val PAW_STRIDE = 5
     }
 }
 

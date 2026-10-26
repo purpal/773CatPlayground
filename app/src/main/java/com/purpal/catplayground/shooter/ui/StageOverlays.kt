@@ -335,8 +335,11 @@ private fun ClearPanel(world: World, bestScore: Int, hasNextStage: Boolean, onNe
         } else {
             FitText("下一關製作中，敬請期待！", color = Color.White, fontSize = 15.sp)
         }
-        Spacer(Modifier.height(10.dp))
-        BigButton("🗺️ 世界地圖", Color(0xFF3949AB), Color.White, onExit)
+        // 「下一站」本來就會回到世界地圖抽下一站，所以只有巡迴結束時才需要另一顆按鈕
+        if (!hasNextStage) {
+            Spacer(Modifier.height(10.dp))
+            BigButton("🗺️ 世界地圖", Color(0xFF3949AB), Color.White, onExit)
+        }
     }
 }
 

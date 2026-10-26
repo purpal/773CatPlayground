@@ -28,15 +28,35 @@ class WorldTest {
         return t
     }
 
+    /** 隨機池的 9 關都可能是第一站：用第一站的強度、初始武器也要打得完。 */
     @Test
-    fun everyStageCanBeClearedWithBaseWeapons() {
-        for (entry in Stages.all.filter { it.stage != null }) {
+    fun everyPoolStageCanBeClearedWithBaseWeaponsAsTheFirstBout() {
+        for (number in Tour.POOL) {
             for (cat in CatType.entries) {
-                val w = World(entry.stage!!, cat, height = 2000f)
+                val w = World(Stages.get(number)!!, cat, height = 2000f, difficulty = Difficulty.forBout(0), bout = 1)
                 w.godMode = true
                 val time = autoplay(w, 600f)
-                assertEquals("stage ${entry.number} with $cat", Phase.CLEAR, w.phase)
-                assertTrue("stage ${entry.number} with $cat took $time s", time < 400f)
+                assertEquals("stage $number with $cat", Phase.CLEAR, w.phase)
+                assertTrue("stage $number with $cat took $time s", time < 400f)
+            }
+        }
+    }
+
+    /**
+     * 三大天王與萌王一定排在 9 站之後，不會用初始武器去打。
+     * 以「一路上只撿到一點點道具」的裝備（主武器 Lv2、副武器 Lv1）在它們的站數強度下也要打得完。
+     */
+    @Test
+    fun kingsAndChampionCanBeClearedWithAModestLoadout() {
+        val bouts = Tour.KINGS.mapIndexed { i, n -> n to Tour.RANDOM_BOUTS + i } + (Tour.CHAMPION to Tour.SIZE - 1)
+        for ((number, bout) in bouts) {
+            for (cat in CatType.entries) {
+                val loadout = Loadout(MainWeapon.SPREAD, 2, SubWeapon.HOMING, 1, Player.START_BOMBS, 1f)
+                val w = World(Stages.get(number)!!, cat, height = 2000f, loadout = loadout, difficulty = Difficulty.forBout(bout), bout = bout + 1)
+                w.godMode = true
+                val time = autoplay(w, 700f)
+                assertEquals("stage $number with $cat", Phase.CLEAR, w.phase)
+                assertTrue("stage $number (bout $bout) with $cat took $time s", time < 450f)
             }
         }
     }
@@ -190,14 +210,14 @@ class WorldTest {
 
     @Test
     fun sonicWallBlocksBulletsButNotLasers() {
-        val wall = SonicWall(500f, 800f, radius = 160f, halfAngle = 50f * DEG)
+        val wall = SonicWall(500f, 800f, radius = 160f, halfAngle = 50f * DEG, maxHp = 100f)
         assertTrue(wall.blocks(500f, 800f, 10f))
         assertFalse(wall.blocks(500f, 500f, 10f))
 
         val w = worldInStage()
         w.player.x = 500f
         w.player.y = 1400f
-        w.walls += SonicWall(500f, 1000f, 160f, 50f * DEG)
+        w.walls += SonicWall(500f, 1000f, 160f, 50f * DEG, maxHp = 100f)
         val bullet = w.bullet(500f, 900f, 0f, 300f, BulletStyle.ORB, Tint.RED)
         val laser = Laser(500f, 0f, HALF_PI, 3000f, 30f, 0f, 2f, Tint.RED, 20f)
         w.lasers += laser
@@ -506,10 +526,69 @@ class WorldTest {
             w.update(STEP)
             if (cat == CatType.BLACK) {
                 assertTrue("black cat dashes", w.player.dashTime > 0f && w.player.invulnerable > 0f)
+                assertEquals(0f, w.player.tempArmor, 0f)
             } else {
                 assertEquals(0f, w.player.dashTime, 0f)
+                assertEquals(Difficulty.NEUTRAL.tempArmor, w.player.tempArmor, 0f)
             }
         }
+    }
+
+    /** 小橘的肉球護甲：時間內的傷害先扣臨時護甲；沒扣完的時間到就消失，扣超過的才扣本體。 */
+    @Test
+    fun orangeFlickGivesTemporaryArmorThatAbsorbsDamageThenFades() {
+        fun flicked(): World {
+            val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+            repeat((World.INTRO_TIME / STEP).toInt() + 5) { w.update(STEP) }
+            w.player.invulnerable = 0f
+            w.drag(300f, 0f)
+            w.update(STEP)
+            return w
+        }
+        val small = flicked()
+        val temp = small.player.tempArmor
+        assertTrue(temp > 0f)
+        small.damagePlayer(temp - 6f)
+        assertEquals(CatType.ORANGE.maxArmor, small.player.armor, 0f)
+        assertEquals(0f, small.player.invulnerable, 0f)
+        assertEquals(6f, small.player.tempArmor, 0.01f)
+        runFor(small, World.DASH_TIME + 0.05f)
+        assertEquals(0f, small.player.tempArmor, 0f)
+        assertEquals(CatType.ORANGE.maxArmor, small.player.armor, 0f)
+
+        val big = flicked()
+        big.damagePlayer(big.player.tempArmor + 10f)
+        assertEquals(CatType.ORANGE.maxArmor - 10f, big.player.armor, 0.01f)
+        assertTrue(big.player.invulnerable > 0f)
+
+        assertTrue(Difficulty.forBout(Tour.SIZE - 1).tempArmor > Difficulty.forBout(0).tempArmor)
+    }
+
+    /** 力場盾有耐久：擋下的子彈傷害超過耐久就碎掉。 */
+    @Test
+    fun forceFieldShattersAfterBlockingTooMuch() {
+        val w = worldInStage()
+        w.godMode = true
+        w.player.subWeapon = SubWeapon.SONIC
+        w.player.subLevel = 1
+        w.firing = true
+        var t = 0f
+        while (w.walls.isEmpty() && t < 3f) { w.update(STEP); w.cues.clear(); t += STEP }
+        w.firing = false
+        val wall = w.walls.single()
+        w.enemies.clear()
+        w.bullets.clear()
+        val maxHp = World.WALL_HP + World.WALL_HP_PER_LEVEL
+        assertEquals(maxHp, wall.maxHp, 0f)
+        val top = wall.centerY - wall.radius
+        val needed = kotlin.math.ceil(maxHp / World.defaultDamage(BulletStyle.ORB)).toInt()
+        repeat(needed - 1) { w.bullet(wall.x, top - 60f, 0f, 400f, BulletStyle.ORB, Tint.RED) }
+        runFor(w, 0.4f)
+        assertTrue("still standing after ${needed - 1} bullets", wall.alive)
+        w.bullet(wall.x, top - 60f, 0f, 400f, BulletStyle.ORB, Tint.RED)
+        runFor(w, 0.4f)
+        assertFalse("shattered", wall.alive)
+        assertTrue(w.particles.any { it.kind == ParticleKind.SHARD })
     }
 
     @Test
@@ -873,6 +952,38 @@ class WorldTest {
         }
         assertTrue("copies the focus beam", sawBeam)
         assertTrue("stands still while copying", still)
+    }
+
+    /** 學專武：小橘 → 一整排巨大香蕉砲；小黑 → 排成貓掌形狀往外擴散的香蕉。 */
+    @Test
+    fun monkeyCopiesEachCatsSpecialWeaponDifferently() {
+        for (cat in CatType.entries) {
+            val w = World(Stages.monkey, cat, 2000f)
+            w.godMode = true
+            autoplayUntil(w) { it.phase == Phase.BOSS }
+            val monkey = w.boss as MonkeyBoss
+            w.firing = false
+            w.player.mainWeapon = MainWeapon.SPECIAL
+            var t = 0f
+            var bigBananas = 0
+            var biggestBurst = 0
+            while (t < 40f && monkey.mimicking == null) { w.update(STEP); w.cues.clear(); t += STEP }
+            assertEquals(MainWeapon.SPECIAL, monkey.mimicking)
+            while (monkey.mimicking == MainWeapon.SPECIAL) {
+                val before = w.bullets.toHashSet()
+                w.update(STEP)
+                w.cues.clear()
+                val fresh = w.bullets.filter { it !in before && it.style == BulletStyle.BANANA }
+                biggestBurst = maxOf(biggestBurst, fresh.size)
+                bigBananas += fresh.count { it.radius >= 30f * World.BULLET_SCALE - 0.01f }
+            }
+            if (cat == CatType.ORANGE) {
+                assertTrue("orange: giant banana cannon ($bigBananas)", bigBananas >= 6)
+            } else {
+                assertEquals("black: no giant bananas", 0, bigBananas)
+                assertTrue("black: paw-shaped burst ($biggestBurst)", biggestBurst >= 20)
+            }
+        }
     }
 
     /** 松露獵人：45% 法棍被打飛（卸甲）；嗅松露時地上冒出記號，時間到才炸開。 */

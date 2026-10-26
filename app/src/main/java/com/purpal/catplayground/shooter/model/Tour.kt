@@ -41,12 +41,17 @@ class Difficulty private constructor(val level: Int, private val neutral: Boolea
     val density: Float get() = if (neutral) 1f else 0.7f + level * 0.028f
     /** 小怪與菁英怪的血量倍率。 */
     val enemyHp: Float get() = if (neutral) 1f else 0.8f + level * 0.05f
+    /** 小橘「肉球護甲」一次給的臨時護甲（一般子彈 12～22 傷害）。 */
+    val tempArmor: Float get() = TEMP_ARMOR + level * TEMP_ARMOR_PER_BOUT
 
     companion object {
         /** 不調整（單元測試、除錯用），所有東西都照設定值。 */
         val NEUTRAL = Difficulty(0, neutral = true)
 
         fun forBout(index: Int) = Difficulty(index.coerceIn(0, Tour.SIZE - 1), neutral = false)
+
+        const val TEMP_ARMOR = 16f
+        const val TEMP_ARMOR_PER_BOUT = 1f
 
         /** 每一站 Boss 的基本血量（再乘上 Boss 各自的 [Boss.hpFactor]）。 */
         private val BOSS_HP = floatArrayOf(

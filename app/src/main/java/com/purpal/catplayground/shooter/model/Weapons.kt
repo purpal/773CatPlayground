@@ -15,7 +15,7 @@ object Weapons {
     private val pawDamage = floatArrayOf(26f, 32f, 38f, 44f, 52f)
     /** 高周波震動掌：輪廓大小、持續震動每次的傷害、震動帶的半寬。 */
     private val vibroSize = floatArrayOf(192f, 214f, 236f, 260f, 284f)
-    private val vibroDamage = floatArrayOf(30f, 38f, 46f, 55f, 66f)
+    private val vibroDamage = floatArrayOf(27f, 34f, 41f, 50f, 59f)
     private val vibroBand = floatArrayOf(26f, 29f, 32f, 35f, 38f)
 
     private fun level(p: Player) = p.mainLevel.coerceIn(1, Player.MAX_MAIN_LEVEL) - 1
@@ -126,6 +126,8 @@ object Weapons {
         return hit
     }
 
+    /** 飛魚追蹤彈每顆的傷害。 */
+    const val HOMING_DAMAGE = 16f
     const val VIBRO_TICK = 0.2f
     const val VIBRO_PULSE = 0.5f
 
@@ -147,7 +149,7 @@ object Weapons {
                 for (i in 0 until count) {
                     val side = if (i % 2 == 0) -1f else 1f
                     val a = -HALF_PI + side * (50f + (i / 2) * 18f) * DEG
-                    w.playerShots += PlayerShot(p.x + side * 30f, p.y, cos(a) * 420f, sin(a) * 420f, 10f, 18f, ShotStyle.MISSILE)
+                    w.playerShots += PlayerShot(p.x + side * 30f, p.y, cos(a) * 420f, sin(a) * 420f, HOMING_DAMAGE, 18f, ShotStyle.MISSILE)
                 }
                 p.subTimer = 0.6f
                 w.cue(SoundCue.MISSILE)

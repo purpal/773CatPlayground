@@ -150,6 +150,18 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
     }
     val frame = (w.time * 12f).toInt() and 3
     drawSprite(sprites.cat(p.cat, pose, frame, beast), p.x, p.y, if (beast) 1.2f else 1f, bank * 5f, alpha = if (blink) 0.35f else 1f)
+    if (p.tempArmor > 0f && p.tempArmorMax > 0f) {
+        // 肉球護甲：琥珀色六角護罩，剩下的臨時護甲越少越淡
+        val k = (p.tempArmor / p.tempArmorMax).coerceIn(0f, 1f)
+        val r = 74f + (1f - k) * 6f
+        drawSprite(sprites.glow(0xFFFFB300L), p.x, p.y, 1.9f, alpha = 0.45f * k, blendMode = BlendMode.Plus)
+        drawCircle(Amber.copy(alpha = 0.18f * k), r, Offset(p.x, p.y))
+        for (i in 0 until 6) {
+            val a = i * 1.0471976f + w.time * 2f
+            drawPath(hexPath(p.x + cos(a) * r * 0.62f, p.y + sin(a) * r * 0.62f, 20f, 0.5235988f), Amber.copy(alpha = 0.8f * k), style = Stroke(3f))
+        }
+        drawCircle(Color.White.copy(alpha = 0.8f * k), r, Offset(p.x, p.y), style = Stroke(3.5f))
+    }
     val shooting = w.firing && (w.phase == Phase.STAGE || w.phase == Phase.BOSS || w.phase == Phase.WARNING)
     if (shooting && p.mainWeapon != MainWeapon.FOCUS) {
         val flicker = 0.4f + ((w.time * 30f).toInt() % 3) * 0.1f
@@ -1867,7 +1879,10 @@ private fun DrawScope.drawBeamLaser(l: Laser, sprites: SpriteCache) {
 
 /** 力場盾：沿著弧線排列的六角格＋白色邊緣。 */
 private fun DrawScope.drawSonicWall(w: SonicWall) {
-    val fade = minOf(1f, (w.life - w.age) * 3f) * minOf(1f, w.age * 8f)
+    // 耐久剩不多時一閃一閃，提醒快碎了
+    val worn = w.hpRatio
+    val flicker = if (worn < 0.35f && (w.age * 18f).toInt() % 2 == 0) 0.45f else 1f
+    val fade = minOf(1f, (w.life - w.age) * 3f) * minOf(1f, w.age * 8f) * flicker * (0.55f + 0.45f * worn)
     val degrees = w.halfAngle * RAD
     val topLeft = Offset(w.x - w.radius, w.centerY - w.radius)
     val size = Size(w.radius * 2f, w.radius * 2f)
@@ -1883,6 +1898,23 @@ private fun DrawScope.drawSonicWall(w: SonicWall) {
         }
     }
     drawArc(Color.White.copy(alpha = 0.9f * fade), -90f - degrees, degrees * 2f, false, topLeft, size, style = Stroke(4f))
+    if (worn < 0.7f) {
+        // 裂痕：耐久越低裂得越多
+        val cracks = ((1f - worn) * 6f).toInt()
+        for (k in 0 until cracks) {
+            val a = -1.5707964f - w.halfAngle + w.halfAngle * 2f * ((k * 0.618f + 0.2f) % 1f)
+            var cx = w.x + cos(a) * (w.radius - w.thickness)
+            var cy = w.centerY + sin(a) * (w.radius - w.thickness)
+            for (s in 0 until 3) {
+                val b = a + (if ((k + s) % 2 == 0) 0.06f else -0.06f)
+                val nx = cx + cos(b) * w.thickness * 0.7f
+                val ny = cy + sin(b) * w.thickness * 0.7f
+                drawLine(Color.White.copy(alpha = 0.85f * fade), Offset(cx, cy), Offset(nx, ny), 2.5f, StrokeCap.Round)
+                cx = nx
+                cy = ny
+            }
+        }
+    }
 }
 
 private val CritRed = ColorFilter.lighting(Color(0xFFFF3D5A), Color(0xFF3A0010))
@@ -1935,6 +1967,13 @@ private fun DrawScope.drawParticle(p: Particle, w: World, sprites: SpriteCache) 
             val crit = p.color != 0L
             val pop = if (t < 0.1f) 0.5f + t / 0.1f * (if (crit) 0.9f else 0.6f) else (if (crit) 1.4f else 1.1f) - minOf(0.3f, (t - 0.1f))
             drawNumber(p.tag, p.x, p.y, p.size * pop, sprites, alpha = minOf(1f, (1f - t) * 3f), colorFilter = if (crit) CritRed else null)
+        }
+        ParticleKind.SHARD -> {
+            val c = Cyan.copy(alpha = 1f - t * t)
+            val r = p.size * (1f - t * 0.4f)
+            val rot = p.rotation / RAD
+            drawPath(hexPath(p.x, p.y, r, rot), c.copy(alpha = 0.3f * (1f - t)))
+            drawPath(hexPath(p.x, p.y, r, rot), c, style = Stroke(2.5f))
         }
         ParticleKind.GHOST -> drawSprite(
             sprites.cat(w.player.cat, p.tag, 0, false), p.x, p.y, 1f, alpha = 0.55f * (1f - t), blendMode = BlendMode.Plus, colorFilter = GhostTint,

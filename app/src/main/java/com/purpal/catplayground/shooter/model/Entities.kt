@@ -24,6 +24,13 @@ class Player(val cat: CatType) {
     /** 黑貓的影閃：剩餘秒數與冷卻。 */
     var dashTime = 0f
     var dashCooldown = 0f
+    /**
+     * 小橘的「肉球護甲」：同樣快速一甩，改成套上一層臨時護甲，持續時間和小黑的影閃一樣。
+     * 這段時間內的傷害先扣臨時護甲，扣完才扣本體護甲；時間到就消失。
+     */
+    var tempArmor = 0f
+    var tempArmorMax = 0f
+    var tempArmorTime = 0f
 
     val armorRatio: Float get() = (armor / cat.maxArmor).coerceIn(0f, 1f)
 
@@ -168,9 +175,12 @@ class Laser(
 }
 
 /** 聲波彈展開後的弧形牆，弧的開口朝下、凸面朝向敵人。 */
-class SonicWall(val x: Float, val y: Float, val radius: Float, val halfAngle: Float) {
+class SonicWall(val x: Float, val y: Float, val radius: Float, val halfAngle: Float, val maxHp: Float) {
     var age = 0f
     var alive = true
+    /** 力場盾的耐久：擋下的子彈傷害扣在這裡，扣完就碎掉。 */
+    var hp = maxHp
+    val hpRatio: Float get() = (hp / maxHp).coerceIn(0f, 1f)
     val life = 2.4f
     val thickness = 26f
     val centerY: Float get() = y + radius
@@ -296,6 +306,8 @@ enum class ParticleKind {
     DAMAGE,
     /** 黑貓影閃的殘影，tag 為跑步姿勢（0 直、1 左、2 右）。 */
     GHOST,
+    /** 力場盾碎掉時飛散的六角碎片，會受重力往下掉。 */
+    SHARD,
 }
 
 class Particle(
