@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/purpal/773CatPlayground/compare/v0.20.0...v0.20.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* 力場盾展開距離加長 50%，施放間隔固定 ([a05c3e9](https://github.com/purpal/773CatPlayground/commit/a05c3e908700883f789855c8cfdff2e0298fbeed))
+
 ## [0.20.0](https://github.com/purpal/773CatPlayground/compare/v0.19.0...v0.20.0) (2026-10-26)
 
 
