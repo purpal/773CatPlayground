@@ -34,8 +34,20 @@ enum class EnemyKind {
     PANDA_CUB, STEAMER,
     /** 熊貓師父愛吃的竹筍（沒打掉會被吃掉回血）。 */
     BAMBOO_SHOOT,
+    TREE_FROG, PITCHER,
+    OPOSSUM, TRASH_CAN,
+    /** 怪盜揹的贓物布袋、變出來的分身。 */
+    LOOT_BAG, RACCOON_DECOY,
+    SWING_MONKEY, TOTEM,
+    /** 猴王拔毛變出來的小分身。 */
+    MONKEY_CLONE,
+    CHICK, COW,
+    /** 萌王的泥巴坑（踩進去會變慢）。 */
+    MUD_PUDDLE,
     ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE, ELITE_SEAL, ELITE_KANGAROO, ELITE_BEAVER, ELITE_RED_PANDA,
+    ELITE_TOUCAN, ELITE_SKUNK, ELITE_GORILLA, ELITE_WOLF,
     BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT, BOSS_PENGUIN, BOSS_KOALA, BOSS_OTTER, BOSS_PANDA,
+    BOSS_SLOTH, BOSS_RACCOON, BOSS_MONKEY, BOSS_PIG,
     /** 水獺姊妹的妹妹嚕嚕（和姊姊共用血量）。 */
     OTTER_TWIN,
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
@@ -72,6 +84,9 @@ abstract class Enemy(
     open val damageTarget: Enemy? get() = null
     /** 受到的傷害倍率（例如打瞌睡時防禦變低）。 */
     open val damageScale: Float get() = 1f
+
+    /** 貓咪在 (px, py) 時的移動速度倍率（例如泥巴坑），1 為不影響。 */
+    open fun playerSpeedFactor(px: Float, py: Float): Float = 1f
 
     /** 還沒顯示成傷害數字的累積傷害（一小段時間合併成一個數字）。 */
     var pendingDamage = 0f
@@ -692,7 +707,120 @@ class SteamerTurret(x: Float) : GroundShooter(x, 90f, 48f, 240) {
     }
 }
 
-// ───────────── 第 6～9 關的菁英怪 ─────────────
+// ───────────── 第 10 關：雨林樹冠 ─────────────
+
+/** 樹蛙：一蹦一蹦地跳下來，再撲向玩家（中速、會追）。 */
+class TreeFrog(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 16f, 30f, 80, diveAt = 1.3f + delay, diveSpeed = 520f, homing = 0.9f) {
+    override val kind = EnemyKind.TREE_FROG
+    private val baseX = x
+    /** 跳起來的樣子（畫面用）。 */
+    val leaping: Boolean get() = (age * 2.5f) % 1f < 0.5f
+
+    override fun cruise(w: World, dt: Float) {
+        y += (90f + abs(sin(age * HALF_PI * 5f)) * 260f) * dt
+        x = baseX + sin(age * 2f + delay * 5f) * 40f
+    }
+}
+
+/** 豬籠草砲台：蓋子打開時吐出三團黏液（慢速），再補兩發瞄準的種子（快速）。 */
+class PitcherTurret(x: Float) : GroundShooter(x, 80f, 46f, 240) {
+    override val kind = EnemyKind.PITCHER
+    /** 蓋子打開（畫面用）。 */
+    val open: Boolean get() = (age % 2.4f) > 1.3f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.4f, offset = 0.8f)) w.fan(x, y, w.aimAt(x, y), 3, 40f * DEG, 170f, BulletStyle.BUBBLE, Tint.GREEN)
+        val c = t % 2.4f
+        if (t > 1f && (crossed(c, dt, 1.4f) || crossed(c, dt, 1.6f))) w.aimed(x, y, 420f, BulletStyle.SEED, Tint.SEED)
+    }
+}
+
+// ───────────── 第 11 關：月夜小鎮 ─────────────
+
+/** 負鼠：跑到一半突然裝死（停下來、四腳朝天），接著跳起來撲向玩家（快速、微追）。 */
+class Opossum(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 18f, 32f, 90, diveAt = 2f + delay, diveSpeed = 600f, homing = 0.4f) {
+    override val kind = EnemyKind.OPOSSUM
+    private val baseX = x
+    /** 裝死中（畫面用）。 */
+    val playingDead: Boolean get() = !diving && age > 0.7f + delay && age < 1.6f + delay
+
+    override fun cruise(w: World, dt: Float) {
+        if (playingDead) return
+        y += 240f * dt
+        x = baseX + sin(age * 3f + delay * 4f) * 30f
+    }
+}
+
+/** 垃圾桶砲台：蓋子掀起來時小浣熊探出頭，撒一圈種子（慢速）並丟兩個桶蓋（快速、會轉彎）。 */
+class TrashCanTurret(x: Float) : GroundShooter(x, 85f, 46f, 240) {
+    override val kind = EnemyKind.TRASH_CAN
+    /** 蓋子掀起來（畫面用）。 */
+    val open: Boolean get() = (age % 2.6f) > 1.4f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.6f, offset = 0.7f)) w.ring(x, y, 8, 150f, age, BulletStyle.SEED, Tint.SEED)
+        if (every(t, dt, 2.6f, offset = 1.5f)) {
+            for (side in listOf(-1f, 1f)) w.shoot(x, y, w.aimAt(x, y) + side * 20f * DEG, 360f, BulletStyle.LID, Tint.PURPLE).turn = -side * 0.8f
+        }
+    }
+}
+
+// ───────────── 第 12 關：叢林遺跡 ─────────────
+
+/** 盪藤小猴：抓著藤蔓左右盪下來，再撲向玩家（中速、會追）。 */
+class SwingMonkey(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 20f, 32f, 90, diveAt = 1.3f + delay, diveSpeed = 540f, homing = 0.8f) {
+    override val kind = EnemyKind.SWING_MONKEY
+    private val baseX = x
+
+    override fun cruise(w: World, dt: Float) {
+        y += 190f * dt
+        x = baseX + sin(age * 3f + delay * 5f) * 70f
+    }
+}
+
+/** 遺跡石像砲台：眼睛亮起來時射出旋轉的十字彈（慢速）和瞄準的香蕉（快速）。 */
+class TotemTurret(x: Float) : GroundShooter(x, 95f, 48f, 260) {
+    override val kind = EnemyKind.TOTEM
+    /** 眼睛亮著（畫面用）。 */
+    val glowing: Boolean get() = (age % 2.2f) > 1.2f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.2f, offset = 1.2f)) for (k in 0 until 4) w.shoot(x, y, age + k * HALF_PI, 160f, BulletStyle.ORB, Tint.ORANGE)
+        if (every(t, dt, 2.2f, offset = 1.7f)) w.aimed(x, y, 400f, BulletStyle.BANANA, Tint.CHEESE)
+    }
+}
+
+// ───────────── 第 13 關：泥巴農場 ─────────────
+
+/** 小雞：拍著翅膀快速衝下來（快速、微追）。 */
+class Chick(x: Float, private val delay: Float) :
+    Diver(x, -50f - delay * 160f, 12f, 28f, 70, diveAt = 1f + delay, diveSpeed = 640f, homing = 0.5f) {
+    override val kind = EnemyKind.CHICK
+    private val baseX = x
+
+    override fun cruise(w: World, dt: Float) {
+        y += 230f * dt
+        x = baseX + sin(age * 6f + delay * 5f) * 20f
+    }
+}
+
+/** 乳牛砲台：從柵欄後探頭，「哞」一聲噴出一圈牛奶彈（慢速）和兩發瞄準彈（快速）。 */
+class CowTurret(x: Float) : GroundShooter(x, 95f, 50f, 260) {
+    override val kind = EnemyKind.COW
+    /** 張嘴（畫面用）。 */
+    val mooing: Boolean get() = (age % 2.6f) > 1.6f
+
+    override fun fire(w: World, t: Float, dt: Float) {
+        if (every(t, dt, 2.6f, offset = 1.6f)) w.ring(x, y, 10, 150f, age, BulletStyle.BUBBLE, Tint.CYAN)
+        val c = t % 2.6f
+        if (t > 1f && (crossed(c, dt, 2f) || crossed(c, dt, 2.2f))) w.aimed(x, y, 410f, BulletStyle.ORB, Tint.PINK)
+    }
+}
+
+// ───────────── 第 6～13 關的菁英怪 ─────────────
 
 /** 海豹教官：在冰上左右滑行，吹哨叫滑行小企鵝，扇形冰晶會在半空中凍住一下。 */
 class EliteSeal(x: Float) : Elite(x, 470f, 66f, 2600, ItemType.SPREAD) {
@@ -810,5 +938,107 @@ class EliteRedPanda(x: Float) : Elite(x, 480f, 64f, 2600, ItemType.SONIC) {
             else -> y += 240f * dt
         }
         leaveIfOffscreen(w)
+    }
+}
+
+/** 巨嘴鳥飛行員：在空中畫 8 字飛行，扇形種子連射、丟下會掉落的水果，還會叫樹蛙來。 */
+class EliteToucan(x: Float) : Elite(x, 470f, 64f, 2600, ItemType.SPREAD) {
+    override val kind = EnemyKind.ELITE_TOUCAN
+    private val baseX = x
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 320f, 2.5f, dt)
+            age < 12f -> {
+                val t = age - 1.5f
+                x = baseX + sin(t * 0.9f) * 220f
+                y = 320f + sin(t * 1.8f) * 60f
+                if (every(age, dt, 1.2f, offset = 1.8f)) w.fan(x, y + 30f, w.aimAt(x, y), 5, 50f * DEG, 320f, BulletStyle.SEED, Tint.SEED)
+                if (every(age, dt, 2.4f, offset = 2.6f)) {
+                    for (k in -1..1) w.bullet(x + k * 40f, y, k * 90f, -200f, BulletStyle.BIG_ORB, Tint.ORANGE).ay = 360f
+                }
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(TreeFrog(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 臭鼬：左右巡邏，放出一圈慢慢飄的臭氣（大顆、慢速）和扇形快彈，還會叫負鼠來。 */
+class EliteSkunk(x: Float) : Elite(x, 480f, 64f, 2600, ItemType.HOMING) {
+    override val kind = EnemyKind.ELITE_SKUNK
+    private val baseX = x
+    /** 尾巴翹起來噴氣（畫面用）。 */
+    val spraying: Boolean get() = age > 1.5f && (age % 2.6f) < 0.6f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 330f, 2.5f, dt)
+            age < 12f -> {
+                x = baseX + sin((age - 1.5f) * 0.7f) * 200f
+                if (every(age, dt, 2.6f, offset = 2.6f)) w.ring(x, y, 10, 110f, age, BulletStyle.BIG_ORB, Tint.GREEN)
+                if (every(age, dt, 1.3f, offset = 1.9f)) w.fan(x, y + 30f, w.aimAt(x, y), 4, 36f * DEG, 340f, BulletStyle.RICE, Tint.PURPLE)
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(Opossum(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 大猩猩守衛：舉著圓盾左右走，捶胸震出一圈石子，還會叫盪藤小猴來。 */
+class EliteGorilla(x: Float) : Elite(x, 520f, 68f, 2800, ItemType.FOCUS) {
+    override val kind = EnemyKind.ELITE_GORILLA
+    private val baseX = x
+    /** 捶胸中（畫面用）。 */
+    val pounding: Boolean get() = age > 1.5f && (age % 2.4f) < 0.5f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 330f, 2.5f, dt)
+            age < 12f -> {
+                x = baseX + sin((age - 1.5f) * 0.6f) * 180f
+                if (every(age, dt, 2.4f, offset = 2.4f)) {
+                    w.ring(x, y + 20f, 16, 180f, age, BulletStyle.ORB, Tint.ORANGE)
+                    w.shake(0.2f)
+                }
+                if (every(age, dt, 1.2f, offset = 1.8f)) w.fan(x, y + 30f, w.aimAt(x, y), 3, 30f * DEG, 360f, BulletStyle.BIG_ORB, Tint.RED)
+                if (crossed(age, dt, 5f)) for (i in 0 until 5) w.spawn(SwingMonkey(200f + i * 150f, i * 0.12f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+}
+
+/** 大野狼：鼓起臉頰用力吹氣，把正下方的貓咪往後推，吹出扇形的風彈，還會叫小雞來。 */
+class EliteWolf(x: Float) : Elite(x, 500f, 66f, 2800, ItemType.SPECIAL) {
+    override val kind = EnemyKind.ELITE_WOLF
+    private val baseX = x
+    /** 吹氣中（畫面用）。 */
+    val blowing: Boolean get() = age > 2f && age < 12f && (age % 3f) < 1.4f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        when {
+            age < 1.5f -> y = approach(y, 320f, 2.5f, dt)
+            age < 12f -> {
+                if (!blowing) x = baseX + sin((age - 1.5f) * 0.8f) * 200f
+                if (blowing && abs(w.player.x - x) < BLOW_HALF_WIDTH && w.player.y > y) w.nudgePlayer(0f, BLOW_PUSH * dt)
+                if (blowing && every(age, dt, 0.3f)) w.fan(x, y + 40f, HALF_PI, 3, 40f * DEG, 300f, BulletStyle.RICE, Tint.CYAN)
+                if (crossed(age, dt, 5f)) for (i in 0 until 6) w.spawn(Chick(150f + i * 140f, i * 0.1f))
+            }
+            else -> y += 240f * dt
+        }
+        leaveIfOffscreen(w)
+    }
+
+    companion object {
+        const val BLOW_HALF_WIDTH = 200f
+        const val BLOW_PUSH = 260f
     }
 }

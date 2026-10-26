@@ -109,6 +109,20 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
     /** 每秒最多移動的距離；換招式或換移動方式時用滑的過去，不會瞬間移動。 */
     open val maxMoveSpeed: Float get() = 520f
 
+    /** 在 (x, y) 的敵彈時間流速倍率（例如樹懶的慢動作力場），1 為正常。 */
+    open fun bulletTimeScale(bx: Float, by: Float): Float = 1f
+
+    /**
+     * 第二次變身（最終 Boss 卸甲後再覺醒）：和裝甲一樣播 [ARMOR_TIME] 秒的動畫（打不到、不攻擊），
+     * 攻擊從頭開始。
+     */
+    protected fun transform(w: World) {
+        armorTime = ARMOR_TIME
+        attackIndex = 0
+        attackTime = 0f
+        w.onBossTransform(this)
+    }
+
     override fun update(w: World, dt: Float) {
         age += dt
         if (entering) {

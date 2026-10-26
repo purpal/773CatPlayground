@@ -350,6 +350,25 @@ private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
         EnemyKind.PANDA_CUB, EnemyKind.STEAMER, EnemyKind.LEAF_STAR, EnemyKind.BEAR_CUB, EnemyKind.BUNNY, EnemyKind.MOUSE_PLANE,
         EnemyKind.OWL, EnemyKind.BALLOON, EnemyKind.ELITE_RED_PANDA, EnemyKind.ELITE_KANGAROO, EnemyKind.BOSS_PANDA, EnemyKind.BAMBOO_SHOOT,
     )
+    10 -> listOf(
+        EnemyKind.TREE_FROG, EnemyKind.PITCHER, EnemyKind.LEAF_STAR, EnemyKind.OWL, EnemyKind.BEE, EnemyKind.BALLOON,
+        EnemyKind.ELITE_TOUCAN, EnemyKind.ELITE_MONKEY, EnemyKind.BOSS_SLOTH,
+    )
+    11 -> listOf(
+        EnemyKind.OPOSSUM, EnemyKind.TRASH_CAN, EnemyKind.BUNNY, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_PLANE, EnemyKind.BALLOON,
+        EnemyKind.ELITE_SKUNK, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_RACCOON, EnemyKind.LOOT_BAG,
+    )
+    12 -> listOf(
+        EnemyKind.SWING_MONKEY, EnemyKind.TOTEM, EnemyKind.TREE_FROG, EnemyKind.BEAR_CUB, EnemyKind.FRISBEE, EnemyKind.BALLOON,
+        EnemyKind.ELITE_GORILLA, EnemyKind.ELITE_TOUCAN, EnemyKind.BOSS_MONKEY,
+    )
+    13 -> listOf(
+        EnemyKind.CHICK, EnemyKind.COW, EnemyKind.DUCKLING, EnemyKind.CARROT_TURRET, EnemyKind.FRISBEE, EnemyKind.BALLOON,
+        EnemyKind.ELITE_WOLF, EnemyKind.ELITE_HARE, EnemyKind.BOSS_PIG,
+        // 萌王覺醒時會亮出前 12 關 Boss 的頭像
+        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT, EnemyKind.BOSS_PENGUIN,
+        EnemyKind.BOSS_KOALA, EnemyKind.BOSS_OTTER, EnemyKind.BOSS_PANDA, EnemyKind.BOSS_SLOTH, EnemyKind.BOSS_RACCOON, EnemyKind.BOSS_MONKEY,
+    )
     else -> listOf(
         EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
         EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_BEE, EnemyKind.BOSS_CAPY,
@@ -402,6 +421,10 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
     StageTheme.EUCALYPTUS -> Music.STAGE_KOALA
     StageTheme.STREAM -> Music.STAGE_OTTER
     StageTheme.BAMBOO -> Music.STAGE_PANDA
+    StageTheme.RAINFOREST -> Music.STAGE_SLOTH
+    StageTheme.NIGHT_TOWN -> Music.STAGE_RACCOON
+    StageTheme.RUINS -> Music.STAGE_MONKEY
+    StageTheme.MUD_FARM -> Music.STAGE_PIG
 }
 
 // ───────────── HUD ─────────────

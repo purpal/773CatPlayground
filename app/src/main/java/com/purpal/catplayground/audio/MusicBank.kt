@@ -5,7 +5,9 @@ import com.purpal.catplayground.audio.Synth.addNoise
 import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
-enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, STAGE_PANDA, BOSS }
+enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, STAGE_PANDA,
+    STAGE_SLOTH, STAGE_RACCOON, STAGE_MONKEY, STAGE_PIG, BOSS,
+}
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
 internal object MusicBank {
@@ -21,6 +23,10 @@ internal object MusicBank {
         Music.STAGE_KOALA -> koalaStage()
         Music.STAGE_OTTER -> otterStage()
         Music.STAGE_PANDA -> pandaStage()
+        Music.STAGE_SLOTH -> slothStage()
+        Music.STAGE_RACCOON -> raccoonStage()
+        Music.STAGE_MONKEY -> monkeyStage()
+        Music.STAGE_PIG -> pigStage()
         Music.BOSS -> boss()
     }
 
@@ -315,6 +321,114 @@ internal object MusicBank {
         )
         bass(intArrayOf(45, 43, 45, 40, 41, 43, 40, 45), 0.26)
         drums(8, kickEveryBeat = false, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 10 關：雨林樹冠。慢吞吞、懶洋洋的長音旋律（F 大調）。 */
+    private fun slothStage(): ShortArray = Song(bpm = 96.0, bars = 8).run {
+        melody(
+            "77:4 76:2 74:2 " +
+                "72:6 r:2 " +
+                "74:2 76:2 77:2 79:2 " +
+                "81:6 r:2 " +
+                "79:4 77:2 76:2 " +
+                "74:4 72:4 " +
+                "70:2 72:2 74:2 76:2 " +
+                "77:6 r:2",
+            volume = 0.2,
+            wave = Wave.TRIANGLE,
+            octaveUp = 0.05,
+        )
+        chords(
+            listOf(
+                intArrayOf(65, 69, 72), intArrayOf(62, 65, 69), intArrayOf(58, 62, 65), intArrayOf(60, 64, 67),
+                intArrayOf(65, 69, 72), intArrayOf(62, 65, 69), intArrayOf(58, 62, 65), intArrayOf(60, 64, 67),
+            ),
+            volume = 0.03,
+        )
+        bass(intArrayOf(41, 38, 34, 36, 41, 38, 34, 36), 0.26)
+        drums(8, kickEveryBeat = false, hatSixteenths = false)
+        pcm()
+    }
+
+    /** 第 11 關：月夜小鎮。躡手躡腳的斷奏（D 小調），像怪盜在屋頂上偷偷移動。 */
+    private fun raccoonStage(): ShortArray = Song(bpm = 128.0, bars = 8).run {
+        melody(
+            "74:1 r:1 77:1 r:1 81:1 r:1 80:1 81:1 " +
+                "77:1 r:1 74:1 r:1 73:2 r:2 " +
+                "74:1 r:1 77:1 r:1 82:1 r:1 81:1 79:1 " +
+                "77:2 76:2 74:2 r:2 " +
+                "70:1 r:1 74:1 r:1 77:1 r:1 76:1 77:1 " +
+                "79:1 r:1 77:1 r:1 76:2 r:2 " +
+                "74:1 76:1 77:1 79:1 81:1 r:1 80:1 r:1 " +
+                "81:2 r:2 74:2 r:2",
+            volume = 0.2,
+            wave = Wave.SQUARE,
+            octaveUp = 0.04,
+        )
+        chords(
+            listOf(
+                intArrayOf(62, 65, 69), intArrayOf(62, 65, 69), intArrayOf(58, 62, 65), intArrayOf(57, 61, 64),
+                intArrayOf(55, 58, 62), intArrayOf(55, 58, 62), intArrayOf(58, 62, 65), intArrayOf(57, 61, 64),
+            ),
+            volume = 0.03,
+        )
+        bass(intArrayOf(38, 38, 34, 33, 43, 43, 34, 33), 0.28)
+        drums(8, kickEveryBeat = false, hatSixteenths = true)
+        pcm()
+    }
+
+    /** 第 12 關：叢林遺跡。蹦蹦跳跳的叢林鼓點（G 大調）。 */
+    private fun monkeyStage(): ShortArray = Song(bpm = 150.0, bars = 8).run {
+        melody(
+            "79:1 83:1 86:1 83:1 84:2 83:2 " +
+                "81:1 79:1 76:2 79:4 " +
+                "79:1 83:1 86:1 88:1 86:2 83:2 " +
+                "81:2 83:2 79:4 " +
+                "84:1 84:1 83:1 81:1 83:2 79:2 " +
+                "76:1 79:1 81:2 79:4 " +
+                "79:1 81:1 83:1 86:1 88:2 86:2 " +
+                "91:6 r:2",
+            volume = 0.2,
+            wave = Wave.SQUARE,
+            octaveUp = 0.06,
+        )
+        chords(
+            listOf(
+                intArrayOf(55, 59, 62), intArrayOf(52, 55, 59), intArrayOf(48, 52, 55), intArrayOf(50, 54, 57),
+                intArrayOf(48, 52, 55), intArrayOf(52, 55, 59), intArrayOf(50, 54, 57), intArrayOf(55, 59, 62),
+            ),
+            volume = 0.035,
+        )
+        bass(intArrayOf(43, 40, 36, 38, 36, 40, 38, 43), 0.28)
+        drums(8, kickEveryBeat = true, hatSixteenths = true)
+        pcm()
+    }
+
+    /** 第 13 關（最終關）：泥巴農場。萌王決賽的雄壯進行曲（C 大調）。 */
+    private fun pigStage(): ShortArray = Song(bpm = 140.0, bars = 8).run {
+        melody(
+            "72:2 76:1 79:1 84:3 79:1 " +
+                "81:2 79:2 77:2 76:2 " +
+                "74:2 77:1 81:1 86:3 84:1 " +
+                "83:2 81:2 79:4 " +
+                "72:2 76:1 79:1 84:3 86:1 " +
+                "88:2 86:2 84:2 81:2 " +
+                "79:1 81:1 83:1 84:1 86:2 83:2 " +
+                "84:6 r:2",
+            volume = 0.2,
+            wave = Wave.SAW,
+            octaveUp = 0.06,
+        )
+        chords(
+            listOf(
+                intArrayOf(60, 64, 67), intArrayOf(57, 60, 64), intArrayOf(50, 53, 57), intArrayOf(55, 59, 62),
+                intArrayOf(60, 64, 67), intArrayOf(53, 57, 60), intArrayOf(55, 59, 62), intArrayOf(60, 64, 67),
+            ),
+            volume = 0.04,
+        )
+        bass(intArrayOf(36, 45, 38, 43, 36, 41, 43, 36), 0.28)
+        drums(8, kickEveryBeat = true, hatSixteenths = false)
         pcm()
     }
 

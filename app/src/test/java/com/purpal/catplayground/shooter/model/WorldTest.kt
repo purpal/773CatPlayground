@@ -698,4 +698,182 @@ class WorldTest {
         assertTrue("warns before rolling", sawWarning)
         assertTrue("rolls for a while ($rolled s)", rolled > 2f)
     }
+
+    private fun runFor(w: World, seconds: Float, each: () -> Unit = {}) {
+        var t = 0f
+        while (t < seconds) {
+            w.update(STEP)
+            w.cues.clear()
+            each()
+            t += STEP
+        }
+    }
+
+    /** 樹懶郵差：慢動作力場讓圈內的子彈變慢，裝甲後反過來變快。 */
+    @Test
+    fun slothFieldSlowsBulletsThenSpeedsThemUpAfterArmoring() {
+        val w = bossFight(Stages.sloth)
+        val sloth = w.boss as SlothBoss
+        w.firing = false
+        assertEquals(SlothBoss.SLOW_FIELD, sloth.bulletTimeScale(sloth.x, sloth.y + 100f), 0.001f)
+        assertEquals(1f, sloth.bulletTimeScale(sloth.x, sloth.y + SlothBoss.FIELD_RADIUS + 50f), 0.001f)
+        w.bullets.clear()
+        val inside = w.bullet(sloth.x, sloth.y + 60f, 0f, 200f, BulletStyle.ORB, Tint.RED)
+        val outside = w.bullet(60f, sloth.y + 400f, 0f, 200f, BulletStyle.ORB, Tint.RED)
+        val y0 = inside.y
+        val y1 = outside.y
+        repeat((0.3f / STEP).toInt()) { w.update(STEP) }
+        assertTrue("slowed inside the field", inside.y - y0 < (outside.y - y1) * 0.5f)
+        sloth.hp = sloth.maxHp * 0.33f
+        runFor(w, Boss.ARMOR_TIME + 0.2f)
+        assertTrue(sloth.broken)
+        assertEquals(SlothBoss.FAST_FIELD, sloth.bulletTimeScale(sloth.x, sloth.y + 100f), 0.001f)
+        assertEquals(HazardStyle.ROCKET, sloth.heldProp())
+    }
+
+    /** 月夜怪盜：抓鉤會偷走畫面上的道具，打破布袋就全部吐出來，怪盜也會慌張（1.5 倍傷害）。 */
+    @Test
+    fun raccoonStealsItemsAndTheBagGivesThemBack() {
+        val w = bossFight(Stages.raccoon)
+        val raccoon = w.boss as RaccoonBoss
+        w.firing = false
+        var t = 0f
+        while (raccoon.loot.isEmpty() && t < 30f) {
+            if (w.items.none { it.type == ItemType.REPAIR }) w.items += Item(raccoon.x, raccoon.y + 380f, ItemType.REPAIR)
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        assertTrue("stole something", raccoon.loot.isNotEmpty())
+        w.items.clear()
+        val stolen = raccoon.loot.toList()
+        val bag = raccoon.bag!!
+        w.damageEnemy(bag, LootBag.HP + 1f)
+        w.update(STEP)
+        assertTrue(raccoon.loot.isEmpty())
+        assertTrue("panics after losing the bag", raccoon.panic > 0f)
+        for (type in stolen) assertTrue("gave back $type", w.items.any { it.type == type })
+        assertTrue("and some coins", w.items.count { it.type == ItemType.COIN } >= 8)
+        val hp = raccoon.hp
+        w.damageEnemy(raccoon, 100f)
+        assertEquals(150f, hp - raccoon.hp, 0.01f)
+        runFor(w, RaccoonBoss.BAG_RESPAWN + 1f)
+        assertTrue("brings a new bag", raccoon.bag?.alive == true)
+    }
+
+    /** 怪盜卸甲後會變出兩隻分身（沒有影子、不是 Boss），一段時間後消失。 */
+    @Test
+    fun raccoonMakesDecoysAfterDisarming() {
+        val w = bossFight(Stages.raccoon)
+        val raccoon = w.boss as RaccoonBoss
+        w.firing = false
+        raccoon.hp = raccoon.maxHp * 0.48f
+        w.update(STEP)
+        assertTrue(raccoon.broken)
+        assertEquals(null, raccoon.heldProp())
+        var t = 0f
+        while (w.enemies.none { it is RaccoonDecoy } && t < 20f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        assertEquals(2, w.enemies.count { it is RaccoonDecoy })
+        assertTrue(w.enemies.filterIsInstance<RaccoonDecoy>().none { it.isBoss })
+        runFor(w, RaccoonDecoy.LIFE + 0.5f)
+        assertTrue(w.enemies.none { it is RaccoonDecoy && it.age > RaccoonDecoy.LIFE })
+    }
+
+    /** 遺跡猴王：學玩家的主武器（集中 → 光束），學的時候站著不動。 */
+    @Test
+    fun monkeyMimicsThePlayersWeaponAndStandsStill() {
+        val w = bossFight(Stages.monkey)
+        val monkey = w.boss as MonkeyBoss
+        w.firing = false
+        w.player.mainWeapon = MainWeapon.FOCUS
+        var t = 0f
+        var sawBeam = false
+        var lastX = Float.NaN
+        var still = true
+        while (t < 40f && !sawBeam) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+            if (monkey.mimicking == MainWeapon.FOCUS) {
+                if (!lastX.isNaN() && kotlin.math.abs(monkey.x - lastX) > 0.01f) still = false
+                lastX = monkey.x
+                if (w.lasers.any { it.owner === monkey && it.style == HazardStyle.BEAM }) sawBeam = true
+            } else {
+                lastX = Float.NaN
+            }
+        }
+        assertTrue("copies the focus beam", sawBeam)
+        assertTrue("stands still while copying", still)
+    }
+
+    /** 最終關的萌王：撲滿機甲爆開（卸甲、灑金幣），之後再覺醒一次（第二次變身），輪流學前面幾關的 Boss。 */
+    @Test
+    fun championPigBreaksItsMechThenAwakens() {
+        val w = bossFight(Stages.pig)
+        val pig = w.boss as PigBoss
+        w.firing = false
+        assertEquals(HazardStyle.COINGUN, pig.heldProp())
+        assertEquals(0, pig.mood())
+        pig.hp = pig.maxHp * 0.5f
+        w.update(STEP)
+        assertTrue(pig.broken)
+        assertEquals(null, pig.heldProp())
+        assertTrue("coins spill out of the piggy bank", w.items.count { it.type == ItemType.COIN } >= 20)
+        assertFalse(pig.awakened)
+        pig.hp = pig.maxHp * 0.28f
+        // 卸甲後有短暫的停格，多跑幾步
+        repeat(20) { w.update(STEP) }
+        assertTrue(pig.awakened)
+        assertTrue("invulnerable while transforming", pig.invulnerable)
+        var t = 0f
+        while (pig.cameo == 0 && t < 5f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        assertEquals(1, pig.cameo)
+    }
+
+    /** 泥巴坑：落地後踩進去會變慢，離開就恢復。 */
+    @Test
+    fun mudPuddleSlowsThePlayer() {
+        val w = worldInStage()
+        w.enemies.clear()
+        w.godMode = true
+        val mud = MudPuddle(w.player.x, w.player.y)
+        w.spawn(mud)
+        w.update(STEP)
+        assertEquals("not landed yet", 1f, w.player.slow, 0.001f)
+        runFor(w, MudPuddle.WARN + 0.1f)
+        assertEquals(MudPuddle.MUD_SLOW, w.player.slow, 0.001f)
+        w.player.x = mud.x + mud.radius + 100f
+        w.update(STEP)
+        assertEquals(1f, w.player.slow, 0.001f)
+    }
+
+    /** 大野狼吹氣會把正下方的貓咪往後推。 */
+    @Test
+    fun wolfBlowsThePlayerBack() {
+        val w = worldInStage()
+        w.enemies.clear()
+        w.godMode = true
+        val wolf = EliteWolf(w.player.x)
+        w.spawn(wolf)
+        var pushed = false
+        runFor(w, 5f) {
+            wolf.x = w.player.x
+            if (wolf.blowing) {
+                val y = w.player.y
+                w.player.y = w.playerMaxY - 200f
+                w.update(STEP)
+                if (w.player.y > w.playerMaxY - 200f + 1f) pushed = true
+                w.player.y = y
+            }
+        }
+        assertTrue(pushed)
+    }
 }

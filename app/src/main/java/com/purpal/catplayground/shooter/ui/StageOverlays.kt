@@ -56,6 +56,7 @@ import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.Speaker
 import com.purpal.catplayground.shooter.model.StageDef
+import com.purpal.catplayground.shooter.model.Stages
 import com.purpal.catplayground.shooter.model.World
 import com.purpal.catplayground.shooter.model.CatType
 import com.purpal.catplayground.ui.ArtImage
@@ -321,12 +322,35 @@ private fun ClearPanel(world: World, bestScore: Int, hasNextStage: Boolean, onNe
         if (hasNextStage) {
             BigButton("下一關 ▶", Gold, PlayColors.Night, onNextStage)
             FitText("武器等級與機體狀態會帶到下一關", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        } else if (world.stage.number == Stages.all.size) {
+            Ending(world)
         } else {
             FitText("下一關製作中，敬請期待！", color = Color.White, fontSize = 15.sp)
         }
         Spacer(Modifier.height(10.dp))
         BigButton("📋 關卡選單", Color(0xFF3949AB), Color.White, onExit)
     }
+}
+
+/** 打倒最終關的萌王：小貓戴上皇冠成為新萌王，下面排著一路打倒的 13 隻 Boss（哭哭臉）。 */
+@Composable
+private fun Ending(world: World) {
+    FitText("🏆 新萌王誕生！", style = titleStyle(30.sp))
+    Spacer(Modifier.height(6.dp))
+    Box(contentAlignment = Alignment.TopCenter) {
+        ArtImage(catArt(world.player.cat), Modifier.padding(top = 30.dp).size(96.dp))
+        Text("👑", fontSize = 38.sp)
+    }
+    FitText("${world.player.cat.shortName}打倒了所有挑戰者，", color = Color.White, fontSize = 15.sp)
+    FitText("成為新一屆的喵星萌王！", color = Color.White, fontSize = 15.sp)
+    Spacer(Modifier.height(8.dp))
+    val bosses = Stages.all.mapNotNull { it.stage?.bossArt }
+    for (row in bosses.chunked(7)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            for (art in row) ArtImage("${art}_m2_0", Modifier.size(32.dp))
+        }
+    }
+    FitText("謝謝你玩到最後！", color = Gold, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
 }
 
 @Composable

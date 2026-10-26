@@ -258,6 +258,25 @@ class World(
         }
     }
 
+    /** 最終 Boss 的第二次變身（覺醒）：金光、消彈、震動。 */
+    fun onBossTransform(b: Boss) {
+        clearBullets(toScore = true)
+        hitStop = HIT_STOP * 3f
+        shake(0.7f)
+        flash(0.8f)
+        particles += Particle(b.x, b.y, 0f, 0f, 0.6f, b.radius * 3f, 0xFFFFD15CL, ParticleKind.SHOCKWAVE)
+        sparks(b.x, b.y, 30, 0xFFFFD15CL, speed = 800f)
+        burst(b.x, b.y - 80f, 0xFFFFE07AL, 12, 360f, ParticleKind.STAR)
+        sfx(b.x, b.y - 150f, SfxText.ARMOR)
+        cue(SoundCue.ARMOR_UP)
+    }
+
+    /** 把貓咪推開（例如大野狼吹氣），一樣不會超出可移動範圍。 */
+    fun nudgePlayer(dx: Float, dy: Float) {
+        player.x = (player.x + dx).coerceIn(40f, WORLD_WIDTH - 40f)
+        player.y = (player.y + dy).coerceIn(playerMinY, playerMaxY)
+    }
+
     private fun bossDefeatedSequence() {
         val b = boss ?: return
         if (phaseTime < 2.4f && every(phaseTime, STEP, 0.18f)) {
@@ -285,6 +304,10 @@ class World(
         val dragDy = dragY
         dragX = 0f
         dragY = 0f
+        // 踩在泥巴坑之類的地方會變慢
+        var slow = 1f
+        for (e in enemies) if (e.alive) slow = minOf(slow, e.playerSpeedFactor(p.x, p.y))
+        p.slow = slow
         if (!p.alive || phase == Phase.INTRO) return
         val len = hypot(moveX, moveY)
         val mx = if (len > 1f) moveX / len else moveX
@@ -543,21 +566,23 @@ class World(
 
     private fun updateBullets(dt: Float) {
         val p = player
+        val field = boss?.takeIf { it.alive && phase == Phase.BOSS }
         for (b in bullets) {
             b.age += dt
-            // 急凍中的子彈停在空中
+            // 急凍中的子彈停在空中；慢動作力場裡的子彈照力場的流速移動
             if (!b.frozen) {
+                val mdt = if (field != null) dt * field.bulletTimeScale(b.x, b.y) else dt
                 if (b.turn != 0f) {
-                    val c = cos(b.turn * dt)
-                    val s = sin(b.turn * dt)
+                    val c = cos(b.turn * mdt)
+                    val s = sin(b.turn * mdt)
                     val vx = b.vx * c - b.vy * s
                     b.vy = b.vx * s + b.vy * c
                     b.vx = vx
                 }
-                b.vx += b.ax * dt
-                b.vy += b.ay * dt
-                b.x += b.vx * dt
-                b.y += b.vy * dt
+                b.vx += b.ax * mdt
+                b.vy += b.ay * mdt
+                b.x += b.vx * mdt
+                b.y += b.vy * mdt
             }
             if (b.y > height + 60f || b.y < -300f || b.x < -60f || b.x > WORLD_WIDTH + 60f) {
                 b.alive = false
@@ -1058,6 +1083,13 @@ class World(
             BulletStyle.FISH -> 13f
             BulletStyle.SHELL -> 14f
             BulletStyle.BAMBOO -> 11f
+            BulletStyle.LETTER -> 12f
+            BulletStyle.PARCEL -> 15f
+            BulletStyle.CARD -> 12f
+            BulletStyle.LID -> 15f
+            BulletStyle.BANANA -> 13f
+            BulletStyle.COIN -> 11f
+            BulletStyle.HEART -> 13f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

@@ -1,6 +1,6 @@
 package com.purpal.catplayground.shooter.model
 
-enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN, CARROT_FIELD, ICE_FIELD, EUCALYPTUS, STREAM, BAMBOO }
+enum class StageTheme { CHEESE_BARN, PARK, HONEY_FOREST, ONSEN, CARROT_FIELD, ICE_FIELD, EUCALYPTUS, STREAM, BAMBOO, RAINFOREST, NIGHT_TOWN, RUINS, MUD_FARM }
 
 /** 對話的說話者：貓咪本人或該關 Boss。 */
 enum class Speaker { CAT, BOSS }
@@ -406,6 +406,162 @@ object Stages {
         },
     )
 
+    val sloth = StageDef(
+        number = 10,
+        animal = "樹懶",
+        title = "雨林樹冠",
+        theme = StageTheme.RAINFOREST,
+        bossName = "樹懶郵差 閃電",
+        bossArt = "boss_sloth",
+        createBoss = ::SlothBoss,
+        outro = listOf(
+            boss("嗚…信、信件送不到了…（慢慢地）你…好…快…喵…"),
+            cat("你剛剛明明也超快的喵！快點去送信啦～下一站！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(TreeFrog(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(PitcherTurret(220f + i * 280f)) }
+            line(9f, 10, 0.14f) { w, i -> w.spawn(LeafStar(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(TreeFrog(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(OwlTurret(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(PitcherTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteToucan(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(LeafStar(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(TreeFrog(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(PitcherTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(Bee(150f + i * 100f, i * 0.1f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteToucan(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(OwlTurret(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(TreeFrog(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteMonkey(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
+    val raccoon = StageDef(
+        number = 11,
+        animal = "浣熊",
+        title = "月夜小鎮",
+        theme = StageTheme.NIGHT_TOWN,
+        bossName = "月夜怪盜 基德",
+        bossArt = "boss_raccoon",
+        createBoss = ::RaccoonBoss,
+        outro = listOf(
+            boss("嗚嗚…怪盜的帽子飛走了…偷來的東西都還你啦…"),
+            cat("偷東西是不對的喵！不過那頂帽子還滿帥的…下一站！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(Opossum(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(TrashCanTurret(220f + i * 280f)) }
+            line(9f, 10, 0.14f) { w, i -> w.spawn(Bunny(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(Opossum(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(BallTurret(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(TrashCanTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteSkunk(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(Bunny(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(Opossum(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(TrashCanTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(MousePlane(fromLeft = i % 2 == 1, startY = 200f + (i / 2) * 40f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteSkunk(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(BallTurret(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(Opossum(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteMouse(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
+    val monkey = StageDef(
+        number = 12,
+        animal = "猴子",
+        title = "叢林遺跡",
+        theme = StageTheme.RUINS,
+        bossName = "遺跡猴王 吱吱",
+        bossArt = "boss_monkey",
+        createBoss = ::MonkeyBoss,
+        outro = listOf(
+            boss("吱…學不來…你的肉球太可愛了，學不來啦…香蕉分你一根…"),
+            cat("學我是沒用的喵！下一關就是決賽了，萌王等著吧！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(SwingMonkey(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(TotemTurret(220f + i * 280f)) }
+            line(9f, 10, 0.14f) { w, i -> w.spawn(TreeFrog(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(SwingMonkey(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(BearCub(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(TotemTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteGorilla(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(TreeFrog(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(SwingMonkey(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(TotemTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i % 4) * 50f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteGorilla(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(BearCub(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(SwingMonkey(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteToucan(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
+    val pig = StageDef(
+        number = 13,
+        animal = "豬豬",
+        title = "泥巴農場",
+        theme = StageTheme.MUD_FARM,
+        bossName = "現任萌王 佩奇",
+        bossArt = "boss_pig",
+        createBoss = ::PigBoss,
+        outro = listOf(
+            boss("嗚哇…萌王的位子…讓給你坐…（把皇冠戴到你頭上）"),
+            cat("我、我是新的萌王了喵？！謝謝大家陪我一路打過來！"),
+        ),
+        script = script {
+            line(1.5f, 10, 0.14f) { w, i -> w.spawn(Chick(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
+            at(5f) { it.spawn(Balloon(500f, ItemType.SPREAD)) }
+            line(6f, 3, 1.1f) { w, i -> w.spawn(CowTurret(220f + i * 280f)) }
+            line(9f, 10, 0.14f) { w, i -> w.spawn(Duckling(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(12f) { it.spawn(Balloon(300f, ItemType.HOMING)) }
+            line(13f, 12, 0.12f) { w, i -> w.spawn(Chick(860f - (i % 6) * 140f, (i / 6) * 0.3f)) }
+            line(17f, 3, 1f) { w, i -> w.spawn(CarrotTurret(200f + i * 300f)) }
+            at(21f) { it.spawn(Balloon(650f, ItemType.SPECIAL)) }
+            line(22f, 4, 0.8f) { w, i -> w.spawn(CowTurret(150f + i * 230f)) }
+            at(26f) { it.spawn(EliteWolf(500f)) }
+            line(30f, 10, 0.15f) { w, i -> w.spawn(Duckling(150f + (i % 5) * 175f, (i / 5) * 0.3f)) }
+            at(33f) { it.spawn(Balloon(500f, ItemType.REPAIR)) }
+            line(35f, 14, 0.1f) { w, i -> w.spawn(Chick(100f + (i % 7) * 133f, (i / 7) * 0.3f)) }
+            at(39f) { it.spawn(Balloon(350f, ItemType.SONIC)) }
+            line(40f, 4, 0.7f) { w, i -> w.spawn(CowTurret(120f + i * 250f)) }
+            line(44f, 8, 0.25f) { w, i -> w.spawn(Frisbee(fromLeft = i % 2 == 1, startY = 200f + (i % 4) * 50f)) }
+            at(49f) { it.spawn(Balloon(600f, ItemType.FOCUS)) }
+            at(51f) { it.spawn(EliteWolf(300f)) }
+            line(55f, 3, 1f) { w, i -> w.spawn(CarrotTurret(250f + i * 250f)) }
+            line(58f, 16, 0.1f) { w, i -> w.spawn(Chick(80f + (i % 8) * 120f, (i / 8) * 0.3f)) }
+            at(62f) { it.spawn(EliteHare(700f)) }
+            at(67f) { it.spawn(Balloon(400f, ItemType.BOMB)); it.spawn(Balloon(600f, ItemType.REPAIR)) }
+            at(72f) { }
+        },
+    )
+
     val all = listOf(
         StageEntry(1, "老鼠", "起司倉庫", "🐭", mouse),
         StageEntry(2, "狗狗", "汪汪公園", "🐶", dog),
@@ -416,10 +572,10 @@ object Stages {
         StageEntry(7, "無尾熊", "尤加利樹林", "🐨", koala),
         StageEntry(8, "水獺", "清澈溪流", "🦦", otter),
         StageEntry(9, "熊貓", "翠綠竹林", "🐼", panda),
-        StageEntry(10, "樹懶", "雨林樹冠", "🦥", null),
-        StageEntry(11, "浣熊", "月夜小鎮", "🦝", null),
-        StageEntry(12, "猴子", "叢林遺跡", "🐵", null),
-        StageEntry(13, "豬豬", "泥巴農場", "🐷", null),
+        StageEntry(10, "樹懶", "雨林樹冠", "🦥", sloth),
+        StageEntry(11, "浣熊", "月夜小鎮", "🦝", raccoon),
+        StageEntry(12, "猴子", "叢林遺跡", "🐵", monkey),
+        StageEntry(13, "豬豬", "泥巴農場", "🐷", pig),
     )
 
     fun get(number: Int): StageDef? = all.getOrNull(number - 1)?.stage
