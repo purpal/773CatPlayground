@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/purpal/773CatPlayground/compare/v0.19.0...v0.20.0) (2026-10-26)
+
+
+### Features
+
+* 巡迴畫面改成一頁、熊熊鑽頭改成橫掃下半部、力場盾一次一道 ([5e30e5a](https://github.com/purpal/773CatPlayground/commit/5e30e5ab035c5de228dab76ae28326187fd26c0b))
+
 ## [0.19.0](https://github.com/purpal/773CatPlayground/compare/v0.18.0...v0.19.0) (2026-10-26)
 
 
