@@ -1105,7 +1105,7 @@ private fun DrawScope.nightTownRow(y: Float, random: Random, row: Int) {
     // 兩側的屋頂
     for (side in 0..1) {
         val x0 = if (side == 0) 20f else 640f
-        val roof = listOf(Color(0xFF6A4C93), Color(0xFF8C3A5A), Color(0xFF3F6E8C))[(row + side) % 3]
+        val roof = listOf(Color(0xFF6A4C93), Color(0xFF8C3A5A), Color(0xFF3F6E8C))[Math.floorMod(row + side, 3)]
         drawRect(Color(0xFF1E2448), Offset(x0 + 8f, y + 28f), Size(330f, 230f))
         drawRect(roof, Offset(x0, y + 20f), Size(330f, 230f))
         var ty = y + 40f
