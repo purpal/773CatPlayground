@@ -555,54 +555,39 @@ class MonkeyClone(val boss: MonkeyBoss, x: Float, y: Float) : Enemy(x, y, 400f, 
 }
 
 /**
- * 第 13 關（最終關）：現任萌王 佩奇（豬豬）。喵星萌王爭霸戰的衛冕者，一開始坐在粉紅撲滿機甲裡：
- * 金幣散彈、從投幣口射出的金幣飛彈、機甲踩踏、泥巴炸彈（落地留下泥巴坑，貓咪踩進去會變慢）、金幣光束橫掃。
- * 55% 機甲爆開「卸甲」（金幣灑滿畫面），佩奇本人出來：在泥巴裡打滾、泥巴噴泉、賣萌愛心光波。
- * 30% 皇冠發光「萌王覺醒」（第二次變身）：輪流使出前面 12 關 Boss 的招牌招式。
+ * 法國：松露獵人 佩奇（豬豬）。戴貝雷帽、穿條紋衫、圍紅領巾，拿著電漿法棍：法棍突刺、留安全區的橫掃、
+ * 可頌迴力鏢、一圈圈轉出來的馬卡龍。招牌「泥巴坑」：泥巴炸彈先閃預告圈，落地變成泥巴坑，貓咪踩進去速度減半。
+ * 還會用鼻子嗅出地底的松露——地上先冒出閃閃發亮的記號，接著松露彈出來炸開一圈。
+ * 45% 被打到「卸甲」：法棍飛走，改成在泥巴裡打滾、泥巴噴泉、一口氣嗅出一大片松露。
  */
-class PigBoss : Boss(hp = 34000f, radius = 210f, score = 200000, homeY = 430f) {
+class PigBoss : Boss(hp = 34000f, radius = 200f, score = 100000, homeY = 430f) {
     override val kind = EnemyKind.BOSS_PIG
-    override val name = "現任萌王 佩奇"
-    override val breakAt = 0.55f
+    override val name = "松露獵人 佩奇"
+    override val breakAt = 0.45f
     override val breakKind = BreakKind.DISARM
-    override val weapon = HazardStyle.COINGUN
-    override val lostWeapon = LostProp.COINGUN
-    override val lostProps = intArrayOf(LostProp.SASH)
-    override val handX = 195f
-    override val handY = 120f
+    override val weapon = HazardStyle.BAGUETTE
+    override val lostWeapon = LostProp.BAGUETTE
+    override val lostProps = intArrayOf(LostProp.BERET)
+    override val handX = 165f
+    override val handY = 150f
 
-    /** 萌王覺醒（第二次變身）了：皇冠發光，輪流使出前面幾關 Boss 的招式。 */
-    var awakened = false
-        private set
-    /** 覺醒後正在使出第幾關 Boss 的招式（畫面在頭上畫出那隻 Boss 的頭像）；0 表示沒有。 */
-    var cameo = 0
-        private set
-    private var wasBroken = false
     /** 在泥巴裡打滾中。 */
     var rolling = false
         private set
     private var rollStep = false
+    /** 用鼻子嗅松露中（畫面用：鼻子發亮）。 */
+    var sniffing = false
+        private set
+    private var sniffStep = false
     private var speed = 520f
     override val maxMoveSpeed: Float get() = speed
 
-    /** 坐在機甲裡（m0）→ 本人出來生氣 → 被打哭。 */
-    override fun mood(): Int = if (!broken) 0 else maxOf(1, phase)
-
     override fun update(w: World, dt: Float) {
         super.update(w, dt)
-        if (broken && !wasBroken) {
-            wasBroken = true
-            // 撲滿機甲爆開：金幣灑滿畫面
-            repeat(24) { w.items += Item(x + w.jitter(280f), y + w.jitter(120f), ItemType.COIN) }
-            w.burst(x, y, 0xFFFFD15CL, 20, 520f, ParticleKind.STAR)
-        }
-        if (broken && !awakened && hpRatio <= AWAKEN_AT) {
-            awakened = true
-            transform(w)
-        }
-        if (!awakened) cameo = 0
         rolling = rollStep
         rollStep = false
+        sniffing = sniffStep
+        sniffStep = false
     }
 
     override fun move(w: World, dt: Float) {
@@ -612,38 +597,52 @@ class PigBoss : Boss(hp = 34000f, radius = 210f, score = 200000, homeY = 430f) {
                 x = WORLD_WIDTH / 2f + sin(moveTime * 2.2f) * 320f
                 y = approach(y, homeY - 20f, 3f, dt)
             }
-            // 撲滿機甲很重，慢慢走
-            !broken -> {
-                x = WORLD_WIDTH / 2f + sin(moveTime * 0.4f) * 150f
-                y = approach(y, homeY, 3f, dt)
-            }
+            // 嗅松露的時候低頭站著不動
+            sniffing -> Unit
             else -> {
-                x = WORLD_WIDTH / 2f + sin(moveTime * 0.8f) * 230f
+                x = WORLD_WIDTH / 2f + sin(moveTime * (if (broken) 0.8f else 0.55f)) * (if (broken) 230f else 190f)
                 y = approach(y, homeY, 3f, dt)
             }
         }
     }
 
-    // ── 撲滿機甲 ──
+    /** 嗅出 count 顆松露：其中一顆在玩家腳下，其餘散在下半部。 */
+    private fun plantTruffles(w: World, count: Int) {
+        w.spawn(Truffle(w.player.x + w.jitter(60f), w.player.y + w.jitter(40f)))
+        repeat(count - 1) {
+            val top = y + 300f
+            val bottom = maxOf(top + 60f, w.height * 0.78f)
+            w.spawn(Truffle(100f + w.random.nextFloat() * (WORLD_WIDTH - 200f), top + w.random.nextFloat() * (bottom - top)))
+        }
+        w.cue(SoundCue.SWING)
+    }
 
-    /** 金幣散彈：金幣砲扇形連射。 */
-    private val coinShotgun = Attack(3f) { w, t, dt ->
-        if (every(t, dt, 0.75f, offset = 0.3f)) w.fan(x + handX, y + handY, aimFrom(w, handX, handY), 7, 56f * DEG, 320f, BulletStyle.COIN, Tint.CHEESE)
+    /** 法棍朝玩家突刺兩次，順便轉出一圈馬卡龍。 */
+    private val baguetteThrust = Attack(2.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.3f)) melee(w, HazardStyle.BAGUETTE, aimFrom(w, handX, handY), 42f, warn = 0.7f)
+        if (every(t, dt, 1.3f, offset = 0.8f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.MACARON, Tint.PINK)
     }
-    /** 金幣飛彈：從頭頂的投幣口往上噴出，再彎下來落向玩家這邊。 */
-    private val coinMissiles = Attack(3.6f) { w, t, dt ->
-        if (every(t, dt, 0.4f)) {
-            val side = if ((t / 0.4f).toInt() % 2 == 0) 1f else -1f
-            w.shoot(x, y - 60f, -HALF_PI + side * 35f * DEG, 320f, BulletStyle.COIN, Tint.CHEESE).turn = side * 2.2f
+    /** 法棍從玩家的另一側掃過來 70°，玩家那一側的外緣是安全區。 */
+    private val baguetteSweep = Attack(3.8f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            val playerLeft = w.player.x < x + handX
+            melee(
+                w, HazardStyle.BAGUETTE, if (playerLeft) HALF_PI - 55f * DEG else HALF_PI + 55f * DEG, 44f,
+                warn = 0.9f, active = 1.4f, extend = 0.2f, sweep = if (playerLeft) 70f * DEG else -70f * DEG, length = 1150f,
+            )
+        }
+        if (every(t, dt, 1.1f, offset = 1f)) w.ring(x, y + 40f, 12, 170f, t, BulletStyle.MACARON, Tint.PINK)
+    }
+    /** 可頌迴力鏢：左右兩邊彎回來。 */
+    private val croissants = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.6f)) {
+            for (side in listOf(-1f, 1f)) w.shoot(x + side * 130f, y + 100f, HALF_PI + side * 50f * DEG, 320f, BulletStyle.CROISSANT, Tint.CHEESE).turn = -side * 1.9f
         }
     }
-    /** 機甲踩踏：重重踩兩下，震出一圈子彈。 */
-    private val stomp = Attack(3.2f) { w, t, dt ->
-        if (crossed(t, dt, 0.6f) || crossed(t, dt, 1.8f)) {
-            w.shake(0.4f)
-            w.cue(SoundCue.EXPLODE_SMALL)
-            w.ring(x, y + 160f, 18, 170f, t, BulletStyle.ORB, Tint.ORANGE)
-        }
+    /** 馬卡龍旋轉圈：一圈圈錯開角度轉出來，再補瞄準的三連發。 */
+    private val macaronRings = Attack(3.6f) { w, t, dt ->
+        if (every(t, dt, 0.9f)) w.ring(x, y + 40f, 14, 170f, t * 1.3f, BulletStyle.MACARON, Tint.PINK)
+        if (every(t, dt, 0.9f, offset = 0.45f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 26f * DEG, 300f, BulletStyle.MACARON, Tint.PINK)
     }
     /** 泥巴炸彈：三個落點先閃預告圈（其中一個在玩家腳下），落地變成泥巴坑。 */
     private val mudBombs = Attack(4f) { w, t, dt ->
@@ -654,34 +653,22 @@ class PigBoss : Boss(hp = 34000f, radius = 210f, score = 200000, homeY = 430f) {
             }
             w.cue(SoundCue.SWING)
         }
-        if (every(t, dt, 1.2f, offset = 1.4f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 30f * DEG, 260f, BulletStyle.COIN, Tint.CHEESE)
+        if (every(t, dt, 1.2f, offset = 1.4f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 30f * DEG, 260f, BulletStyle.CROISSANT, Tint.CHEESE)
     }
-    /** 金幣光束：從玩家的另一側掃過來 60°，玩家那一側的外緣是安全區。 */
-    private val coinSweep = Attack(3.8f) { w, t, dt ->
-        if (crossed(t, dt, 0.01f)) {
-            val playerLeft = w.player.x < x + handX
-            melee(
-                w, HazardStyle.COINGUN, if (playerLeft) HALF_PI - 50f * DEG else HALF_PI + 50f * DEG, 46f,
-                warn = 0.9f, active = 1.6f, extend = 0.2f, sweep = if (playerLeft) 60f * DEG else -60f * DEG, length = 1500f,
-            )
-        }
+    /** 嗅松露：低頭用鼻子嗅，地上冒出閃閃發亮的記號，松露彈出來炸開。 */
+    private val truffleHunt = Attack(4.2f) { w, t, dt ->
+        sniffStep = t < 1.4f
+        if (crossed(t, dt, 0.5f)) plantTruffles(w, if (broken) 6 else 4)
+        if (t > 1.6f && every(t, dt, 0.8f, offset = 1.6f)) w.fan(x, y + 80f, w.aimAt(x, y), 4, 36f * DEG, 280f, BulletStyle.MACARON, Tint.PINK)
     }
-
-    // ── 佩奇本人 ──
-
-    /** 在泥巴裡左右打滾，一路往下甩泥巴。 */
+    /** 卸甲後：在泥巴裡左右打滾，一路往下甩泥巴。 */
     private val mudRoll = Attack(4.2f) { w, t, dt ->
         rollStep = t < 4f
         if (t > 0.4f && every(t, dt, 0.1f)) w.shoot(x, y + 120f, HALF_PI + w.jitter(0.35f), 260f, BulletStyle.ORB, Tint.ORANGE)
     }
-    /** 泥巴噴泉：泥巴球往上噴，劃著拋物線落下來。 */
+    /** 卸甲後：泥巴噴泉，泥巴球往上噴，劃著拋物線落下來。 */
     private val mudFountain = Attack(3.8f) { w, t, dt ->
         if (every(t, dt, 0.3f)) w.bullet(x, y - 40f, (w.player.x - x) / 2.2f + w.jitter(200f), -400f, BulletStyle.BIG_ORB, Tint.ORANGE).ay = 420f
-    }
-    /** 賣萌愛心光波：扇形愛心＋一圈愛心。 */
-    private val loveBeam = Attack(3.6f) { w, t, dt ->
-        if (every(t, dt, 0.5f)) w.fan(x, y + 80f, w.aimAt(x, y), 3, 30f * DEG, 230f, BulletStyle.HEART, Tint.PINK)
-        if (every(t, dt, 1.2f, offset = 0.6f)) w.ring(x, y + 40f, 12, 160f, t, BulletStyle.HEART, Tint.PINK)
     }
     /** 叫小雞衝過來。 */
     private val chicks = Attack(3f) { w, t, dt ->
@@ -689,69 +676,36 @@ class PigBoss : Boss(hp = 34000f, radius = 210f, score = 200000, homeY = 430f) {
         if (every(t, dt, 1f, offset = 0.8f)) w.aimed(x, y + 80f, 220f, BulletStyle.BIG_ORB, Tint.PINK)
     }
 
-    // ── 萌王覺醒：前面 12 關 Boss 的招牌招式 ──
-
-    private fun cameoAttack(stage: Int, step: (World, Float, Float) -> Unit) = Attack(3.4f) { w, t, dt ->
-        cameo = stage
-        step(w, t, dt)
-    }
-
-    private val cameos = listOf(
-        cameoAttack(1) { w, t, dt -> if (every(t, dt, 0.7f)) w.ring(x, y + 40f, 16, 190f, t, BulletStyle.CHEESE, Tint.CHEESE) },
-        cameoAttack(2) { w, t, dt ->
-            if (every(t, dt, 0.6f)) for (side in listOf(-1f, 1f)) w.shoot(x, y + 60f, HALF_PI + side * 50f * DEG, 320f, BulletStyle.BONE, Tint.BONE).turn = -side * 1.8f
-        },
-        cameoAttack(3) { w, t, dt -> if (every(t, dt, 0.16f)) w.bullet(40f + w.random.nextFloat() * (WORLD_WIDTH - 80f), -20f, 0f, 80f, BulletStyle.HONEY, Tint.HONEY).ay = 300f },
-        cameoAttack(4) { w, t, dt -> if (every(t, dt, 0.25f)) w.shoot(x, y + 80f, HALF_PI + sin(t * 1.7f), 120f, BulletStyle.BUBBLE, Tint.CYAN) },
-        cameoAttack(5) { w, t, dt -> if (every(t, dt, 0.8f)) w.ring(x, y + 40f, 14, 180f, t * 2f, BulletStyle.STAR, Tint.STAR) },
-        cameoAttack(6) { w, t, dt ->
-            if (every(t, dt, 0.2f)) {
-                val b = w.bullet(40f + w.random.nextFloat() * (WORLD_WIDTH - 80f), 24f, 0f, 220f, BulletStyle.ICE, Tint.CYAN)
-                b.ay = 260f
-                b.freezeAt = 0f
-                b.freezeTime = 0.8f
-            }
-        },
-        cameoAttack(7) { w, t, dt ->
-            if (every(t, dt, 0.11f)) {
-                val a = t * 2.2f
-                w.shoot(x, y + 60f, a, 200f, BulletStyle.LEAF, Tint.GREEN)
-                w.shoot(x, y + 60f, a + PI.toFloat(), 200f, BulletStyle.LEAF, Tint.GREEN)
-            }
-        },
-        cameoAttack(8) { w, t, dt -> if (every(t, dt, 0.55f)) w.ring(x + if ((t / 0.55f).toInt() % 2 == 0) -120f else 120f, y + 30f, 14, 180f, t, BulletStyle.SHELL, Tint.PINK) },
-        cameoAttack(9) { w, t, dt ->
-            if (crossed(t, dt, 0.01f)) {
-                var gx = 60f + w.random.nextFloat() * 230f
-                while (gx < WORLD_WIDTH - 40f) {
-                    w.lasers += Laser(
-                        gx, w.height + 20f, -HALF_PI, w.height + 20f - (homeY + 280f), 64f, warnTime = 0.9f, activeTime = 2.2f,
-                        color = Tint.RED, damage = MELEE_DAMAGE, style = HazardStyle.BAMBOO, extendTime = 0.35f,
-                    )
-                    gx += 230f
-                }
-            }
-            if (t > 1.2f && every(t, dt, 0.6f, offset = 1.2f)) w.aimed(x, y + 80f, 300f, BulletStyle.BAMBOO, Tint.HONEY)
-        },
-        cameoAttack(10) { w, t, dt -> if (every(t, dt, 0.5f)) for (k in -1..1) w.shoot(x, y + 80f, w.aimAt(x, y) + k * 16f * DEG, 220f, BulletStyle.LETTER, Tint.PINK).turn = 0.35f },
-        cameoAttack(11) { w, t, dt -> if (every(t, dt, 0.6f)) w.fan(x, y + 60f, w.aimAt(x, y), 5, 50f * DEG, 320f, BulletStyle.CARD, Tint.PINK) },
-        cameoAttack(12) { w, t, dt ->
-            if (every(t, dt, 0.6f)) for (side in listOf(-1f, 1f)) w.shoot(x + side * 150f, y + 120f, HALF_PI + side * 50f * DEG, 320f, BulletStyle.BANANA, Tint.CHEESE).turn = -side * 1.9f
-        },
-    )
-
     override fun attacks(phase: Int) = when {
-        !broken -> listOf(coinShotgun, coinMissiles, stomp, mudBombs, coinSweep)
-        !awakened -> listOf(mudRoll, loveBeam, mudBombs, mudFountain, chicks, stomp)
-        else -> cameos
-    }
-
-    companion object {
-        const val AWAKEN_AT = 0.3f
+        !broken && phase == 0 -> listOf(baguetteThrust, croissants, mudBombs, macaronRings, chicks)
+        !broken -> listOf(baguetteSweep, truffleHunt, croissants, mudBombs, macaronRings)
+        phase < 2 -> listOf(mudRoll, truffleHunt, mudFountain, mudBombs, chicks)
+        else -> listOf(mudRoll, truffleHunt, macaronRings, mudFountain, mudBombs)
     }
 }
 
-/** 萌王的泥巴坑：先閃預告圈，落地濺出一圈泥巴，之後貓咪踩進去會變慢；過一陣子乾掉。 */
+/** 地底的松露：先冒出閃閃發亮的記號（預告），[WARN] 秒後彈出來炸開一圈子彈。打不到。 */
+class Truffle(x: Float, y: Float) : Enemy(x, y, 1f, 60f, 0) {
+    override val kind = EnemyKind.TRUFFLE
+    override val invulnerable = true
+    override val contactDamage = 0f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        if (crossed(age, dt, WARN)) {
+            w.ring(x, y, 10, 190f, age, BulletStyle.ORB, Tint.PURPLE)
+            w.burst(x, y, 0xFF5D4037L, 10, 260f)
+            w.cue(SoundCue.EXPLODE_SMALL)
+        }
+        if (age > WARN + 0.4f) alive = false
+    }
+
+    companion object {
+        const val WARN = 1.4f
+    }
+}
+
+/** 松露獵人的泥巴坑：先閃預告圈，落地濺出一圈泥巴，之後貓咪踩進去會變慢；過一陣子乾掉。 */
 class MudPuddle(x: Float, y: Float) : Enemy(x, y, 1f, 95f, 0) {
     override val kind = EnemyKind.MUD_PUDDLE
     override val invulnerable = true

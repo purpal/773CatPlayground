@@ -74,7 +74,7 @@ class PlayerShot(
 
 enum class BulletStyle {
     ORB, BIG_ORB, RICE, CHEESE, BONE, NOTE, HONEY, STAR, SEED, BUBBLE, ICE, LEAF, FISH, SHELL, BAMBOO,
-    LETTER, PARCEL, CARD, LID, BANANA, COIN, HEART,
+    LETTER, PARCEL, CARD, LID, BANANA, MACARON, CROISSANT,
 }
 
 class EnemyBullet(
@@ -96,7 +96,8 @@ class EnemyBullet(
     /** 可被聲波牆擋下。 */
     var erasable = true
     val spin = style == BulletStyle.BONE || style == BulletStyle.STAR || style == BulletStyle.CHEESE || style == BulletStyle.SHELL ||
-        style == BulletStyle.CARD || style == BulletStyle.LID || style == BulletStyle.COIN || style == BulletStyle.BANANA
+        style == BulletStyle.CARD || style == BulletStyle.LID || style == BulletStyle.MACARON || style == BulletStyle.BANANA ||
+        style == BulletStyle.CROISSANT
     /** 急凍：從 [freezeAt] 秒起在空中停住 [freezeTime] 秒，再照原本的速度繼續飛（負數表示不會凍住）。 */
     var freezeAt = -1f
     var freezeTime = 0f
@@ -105,11 +106,11 @@ class EnemyBullet(
 
 /**
  * 貫穿攻擊的外觀：BEAM 是光束，其他是 Boss 用肢體或科技道具的攻擊
- * （電漿叉突刺、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱、
+ * （瑞士刀、硬光骨頭橫掃、熱熔蜂蜜鑽重擊、電漿尾鞭、爪擊、橘子砲的高壓溫泉水柱、
  * 胡蘿蔔鑽頭、急凍光線、尤加利葉刃、重力石錘、電漿竹節棍、快遞火箭筒的噴射火焰、電漿抓鉤、伸縮電漿棍、
- * 撲滿機甲的金幣光束），BAMBOO 是從地上長出來的竹子（竹林陣）。
+ * 電漿法棍），BAMBOO 是從地上長出來的竹子（竹林陣）。
  */
-enum class HazardStyle { BEAM, FORK, BONE, DIPPER, TAIL, CLAW, WATER, CARROT, CRYO, LEAF, HAMMER, STAFF, BAMBOO, ROCKET, GRAPPLE, RUYI, COINGUN }
+enum class HazardStyle { BEAM, SWISSKNIFE, BONE, DIPPER, TAIL, CLAW, WATER, CARROT, CRYO, LEAF, HAMMER, STAFF, BAMBOO, ROCKET, GRAPPLE, RUYI, BAGUETTE }
 
 /**
  * 雷射／近身攻擊：先閃爍預告，再發射；無法被聲波牆擋下，但大絕可以消掉。
@@ -239,7 +240,7 @@ object LostProp {
     const val CROWN = 1
     const val HAT = 2
     const val POT = 3
-    const val FORK = 4
+    const val SWISSKNIFE = 4
     const val BONE = 5
     const val DIPPER = 6
     const val YUZU = 7
@@ -254,9 +255,9 @@ object LostProp {
     const val POSTCAP = 16
     const val TOPHAT = 17
     const val HELMET = 18
-    const val SASH = 19
+    const val BERET = 19
     const val GRAPPLE = 20
-    const val COINGUN = 21
+    const val BAGUETTE = 21
 }
 
 /** 畫面上的 HUD 字樣（科技風）。 */

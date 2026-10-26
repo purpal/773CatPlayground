@@ -69,6 +69,8 @@ import com.purpal.catplayground.shooter.model.STEP
 import com.purpal.catplayground.shooter.model.SoundCue
 import com.purpal.catplayground.shooter.model.StageTheme
 import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.model.Difficulty
+import com.purpal.catplayground.shooter.model.Tour
 import com.purpal.catplayground.shooter.model.SubWeapon
 import com.purpal.catplayground.shooter.model.WORLD_WIDTH
 import com.purpal.catplayground.shooter.model.World
@@ -138,11 +140,15 @@ fun ShooterGameScreen(
     ultimateOnLeft: Boolean,
     bestScore: Int,
     loadout: Loadout? = null,
+    /** 世界巡迴的第幾站（從 0 算），決定強度；null 表示照關卡的設定值打。 */
+    bout: Int? = null,
     onCleared: (stage: Int, score: Int, loadout: Loadout) -> Unit,
     onNextStage: () -> Unit,
     onExit: () -> Unit,
 ) {
     val stage = remember(stageNumber) { Stages.get(stageNumber)!! }
+    val difficulty = remember(bout) { bout?.let { Difficulty.forBout(it) } ?: Difficulty.NEUTRAL }
+    val boutLabel = if (bout != null) boutTitle(bout) else "STAGE ${stage.number}"
     val sound = LocalSound.current
     var attempt by remember { mutableIntStateOf(0) }
     var paused by remember { mutableStateOf(false) }
@@ -165,7 +171,7 @@ fun ShooterGameScreen(
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val density = LocalDensity.current
         if (hudPx == 0) {
-            ShooterHud(hud, stage.number, stage.title, Modifier.onSizeChanged { if (it.height > 0) hudPx = it.height }, onPause = {})
+            ShooterHud(hud, boutLabel, stage.title, Modifier.onSizeChanged { if (it.height > 0) hudPx = it.height }, onPause = {})
             return@BoxWithConstraints
         }
         // 上方是 HUD，下方才是遊戲畫面，避免 HUD 擋住 Boss。
@@ -176,8 +182,11 @@ fun ShooterGameScreen(
         val context = LocalContext.current
         val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit, context.assets) }
         val world = remember(attempt, stageNumber, worldHeight) {
-            // 上一關帶過來的狀態只用一次：重新開始本關時回到初始裝備。
-            World(stage, cat, worldHeight, seed = stageNumber * 31 + attempt, loadout = if (attempt == 0) loadout else null)
+            // 巡迴中重新開始這一站時，一樣從打完上一站時的機體狀態開始。
+            World(
+                stage, cat, worldHeight, seed = stageNumber * 31 + attempt, loadout = if (attempt == 0 || bout != null) loadout else null,
+                difficulty = difficulty, bout = if (bout != null) bout + 1 else stage.number,
+            )
                 .also {
                     it.godMode = autotest
                     // 自動測試直接拿專武，好在截圖裡看到專武特效
@@ -282,7 +291,7 @@ fun ShooterGameScreen(
                 },
         )
 
-        ShooterHud(hud, stage.number, stage.title, onPause = { paused = true })
+        ShooterHud(hud, boutLabel, stage.title, onPause = { paused = true })
         BossBar(hud, Modifier.padding(top = hudHeight))
         UltimateButton(
             cat = cat,
@@ -298,7 +307,7 @@ fun ShooterGameScreen(
             world = world,
             phase = hud.phase,
             bestScore = bestScore,
-            hasNextStage = Stages.get(stageNumber + 1) != null,
+            hasNextStage = if (bout != null) bout + 1 < Tour.SIZE else Stages.get(stageNumber + 1) != null,
             onNextStage = onNextStage,
             onRestart = {
                 attempt++
@@ -321,7 +330,10 @@ fun ShooterGameScreen(
 }
 
 private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
-    1 -> listOf(EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_MOUSE)
+    1 -> listOf(
+        EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE, EnemyKind.MOUSE_PLANE, EnemyKind.CHEESE_DRONE, EnemyKind.BALLOON, EnemyKind.ELITE_MOUSE,
+        EnemyKind.BOSS_MOUSE, EnemyKind.MOUSETRAP, EnemyKind.ROLLING_CHEESE,
+    )
     2 -> listOf(
         EnemyKind.PUPPY, EnemyKind.FRISBEE, EnemyKind.BALL_TURRET, EnemyKind.MOUSE_RUNNER, EnemyKind.BALLOON,
         EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.THROWN_BONE,
@@ -365,9 +377,6 @@ private fun kindsFor(stage: Int): List<EnemyKind> = when (stage) {
     13 -> listOf(
         EnemyKind.CHICK, EnemyKind.COW, EnemyKind.DUCKLING, EnemyKind.CARROT_TURRET, EnemyKind.FRISBEE, EnemyKind.BALLOON,
         EnemyKind.ELITE_WOLF, EnemyKind.ELITE_HARE, EnemyKind.BOSS_PIG,
-        // 萌王覺醒時會亮出前 12 關 Boss 的頭像
-        EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT, EnemyKind.BOSS_PENGUIN,
-        EnemyKind.BOSS_KOALA, EnemyKind.BOSS_OTTER, EnemyKind.BOSS_PANDA, EnemyKind.BOSS_SLOTH, EnemyKind.BOSS_RACCOON, EnemyKind.BOSS_MONKEY,
     )
     else -> listOf(
         EnemyKind.DUCKLING, EnemyKind.YUZU, EnemyKind.BUCKET, EnemyKind.BABY_CAPY, EnemyKind.BALLOON,
@@ -430,7 +439,7 @@ private fun stageMusic(world: World): Music = when (world.stage.theme) {
 // ───────────── HUD ─────────────
 
 @Composable
-internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modifier = Modifier, onPause: () -> Unit) {
+internal fun ShooterHud(hud: HudState, stage: String, title: String, modifier: Modifier = Modifier, onPause: () -> Unit) {
     Column(
         modifier
             .fillMaxWidth()
@@ -441,7 +450,7 @@ internal fun ShooterHud(hud: HudState, stage: Int, title: String, modifier: Modi
         Row(verticalAlignment = Alignment.CenterVertically) {
             // 左邊：關卡、分數、護甲；速度不再顯示（兩隻貓的差別在判定點與影閃，不在數值）。
             Column(Modifier.weight(1f)) {
-                FitText("STAGE $stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                FitText("$stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 FitText("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                 Spacer(Modifier.height(4.dp))
                 Gauge("護甲", hud.armor / 100f, Color(0xFFFF5252), Modifier.fillMaxWidth())

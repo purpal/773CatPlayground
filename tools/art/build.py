@@ -18,7 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 import cats  # noqa: E402
 
 MODULES = [cats]
-for name in ("bosses", "minions", "items", "effects", "ultimate", "scifi", "capybara", "rabbit", "penguin", "koala", "otter", "panda", "sloth", "raccoon", "monkey", "pig", "icons", "brand"):
+for name in ("bosses", "minions", "items", "effects", "ultimate", "scifi", "capybara", "rabbit", "penguin", "koala", "otter", "panda", "sloth", "raccoon", "monkey", "pig", "swiss", "tour", "icons", "brand"):
     try:
         MODULES.append(__import__(name))
     except ModuleNotFoundError:

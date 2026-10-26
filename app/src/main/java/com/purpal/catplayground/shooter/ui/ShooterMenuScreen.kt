@@ -43,8 +43,8 @@ import com.purpal.catplayground.audio.LocalSound
 import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.shooter.model.CatType
-import com.purpal.catplayground.shooter.model.StageEntry
-import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.model.Tour
+import com.purpal.catplayground.shooter.model.TourState
 import com.purpal.catplayground.ui.ArtImage
 import com.purpal.catplayground.ui.FitText
 import com.purpal.catplayground.ui.PillButton
@@ -53,10 +53,10 @@ import com.purpal.catplayground.ui.PlayColors
 @Composable
 fun ShooterMenuScreen(
     prefs: AppPrefs,
-    cleared: Int,
-    carryStage: Int = 0,
+    tour: TourState?,
     onBack: () -> Unit,
-    onPlay: (stage: Int, cat: CatType) -> Unit,
+    onNewTour: (cat: CatType) -> Unit,
+    onContinueTour: () -> Unit,
 ) {
     val sound = LocalSound.current
     var cat by remember { mutableStateOf(runCatching { CatType.valueOf(prefs.shooterCat) }.getOrDefault(CatType.ORANGE)) }
@@ -81,7 +81,7 @@ fun ShooterMenuScreen(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     FitText("喵星萌王爭霸戰", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                    FitText("貓咪要成為最萌的動物！打倒所有對手吧！", color = PlayColors.Sun, fontSize = 13.sp)
+                    FitText("從台灣出發，環遊世界打倒所有對手，挑戰萌王！", color = PlayColors.Sun, fontSize = 13.sp)
                 }
             }
 
@@ -119,12 +119,32 @@ fun ShooterMenuScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            SectionTitle("關卡")
-            for (entry in Stages.all) {
-                StageRow(entry, cleared, prefs.shooterBest(entry.number), carried = entry.number == carryStage) {
-                    onPlay(entry.number, cat)
+            SectionTitle("世界巡迴")
+            var confirmNew by remember { mutableStateOf(false) }
+            val inProgress = tour != null && !tour.finished
+            if (tour != null && inProgress) {
+                TourCard(tour) {
+                    sound.play(Sfx.SELECT)
+                    onContinueTour()
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
+            }
+            BigMenuButton(
+                when {
+                    confirmNew -> "⚠️ 放棄目前進度、重新出發？再按一次確定"
+                    inProgress -> "🌏 用${cat.shortName}重新開始巡迴"
+                    else -> "🌏 ${cat.shortName}，出發環遊世界！"
+                },
+                primary = !inProgress,
+            ) {
+                if (inProgress && !confirmNew) {
+                    sound.play(Sfx.SELECT)
+                    confirmNew = true
+                } else {
+                    sound.play(Sfx.SELECT)
+                    confirmNew = false
+                    onNewTour(cat)
+                }
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -206,57 +226,54 @@ private fun StatBar(label: String, value: Float, color: Color) {
     }
 }
 
+/** 進行中的巡迴：哪隻貓、打到第幾站、下一站在哪裡。 */
 @Composable
-private fun StageRow(entry: StageEntry, cleared: Int, best: Int, carried: Boolean, onClick: () -> Unit) {
-    val sound = LocalSound.current
-    val ready = entry.stage != null
-    val unlocked = ready && entry.number <= cleared + 1
-    val done = entry.number <= cleared
+private fun TourCard(tour: TourState, onClick: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(if (unlocked) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.06f))
-            .clickable {
-                if (unlocked) {
-                    sound.play(Sfx.SELECT)
-                    onClick()
-                } else {
-                    sound.play(Sfx.INVALID)
-                }
-            }
+            .background(Color.White.copy(alpha = 0.16f))
+            .border(2.dp, PlayColors.Sun, shape)
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
-        val stage = entry.stage
-        if (stage != null) {
-            // 已完成的關卡用 Boss 頭像（v2 麻糬萌風）
-            ArtImage("${stage.bossArt}_m0_0", Modifier.size(44.dp), contentDescription = stage.bossName, alpha = if (unlocked) 1f else 0.5f)
-        } else {
-            Text(entry.emoji, fontSize = 30.sp)
-        }
+        ArtImage(if (tour.cat == CatType.ORANGE) "cat_orange_front" else "cat_black_front", Modifier.size(48.dp))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
+            FitText("繼續巡迴：${boutTitle(tour.cleared)}", color = PlayColors.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            val next = if (tour.nextRevealed) tour.stageAt(tour.cleared) else null
             FitText(
-                "STAGE ${entry.number}　${entry.animal}",
-                color = if (unlocked) PlayColors.Sun else Color.White.copy(alpha = 0.5f),
-                fontSize = 13.sp,
+                if (next != null) "${next.country.name}・${next.bossName}" else "已打倒 ${tour.cleared} / ${Tour.SIZE} 位對手",
+                color = Color.White,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
             )
-            FitText(entry.title, color = Color.White.copy(alpha = if (unlocked) 1f else 0.5f), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            if (done && best > 0) FitText("最高分 $best", color = PlayColors.Mint, fontSize = 12.sp)
-            if (carried && unlocked) FitText("🎒 上一關的裝備保留中（可用一次）", color = Color(0xFFFFCADA), fontSize = 12.sp)
+            FitText("總分 ${tour.totalScore}", color = PlayColors.Mint, fontSize = 12.sp)
         }
+        FitText("▶", color = Color.White, fontSize = 22.sp)
+    }
+}
+
+@Composable
+private fun BigMenuButton(text: String, primary: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(50))
+            .background(if (primary) PlayColors.Sun else PlayColors.Card)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
         FitText(
-            when {
-                !ready -> "製作中"
-                done -> "⭐"
-                unlocked -> "▶"
-                else -> "🔒"
-            },
-            color = Color.White.copy(alpha = 0.8f),
-            fontSize = if (ready) 22.sp else 13.sp,
+            text,
+            color = if (primary) PlayColors.Night else Color.White,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }

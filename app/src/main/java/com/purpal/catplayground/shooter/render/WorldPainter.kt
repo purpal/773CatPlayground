@@ -65,6 +65,10 @@ import com.purpal.catplayground.shooter.model.MonkeyClone
 import com.purpal.catplayground.shooter.model.MudPuddle
 import com.purpal.catplayground.shooter.model.Opossum
 import com.purpal.catplayground.shooter.model.PigBoss
+import com.purpal.catplayground.shooter.model.MouseBoss
+import com.purpal.catplayground.shooter.model.MouseTrap
+import com.purpal.catplayground.shooter.model.RollingCheese
+import com.purpal.catplayground.shooter.model.Truffle
 import com.purpal.catplayground.shooter.model.PitcherTurret
 import com.purpal.catplayground.shooter.model.RaccoonBoss
 import com.purpal.catplayground.shooter.model.RaccoonDecoy
@@ -204,6 +208,17 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.RACCOON_DECOY -> drawDecoy(e as RaccoonDecoy, w, sprites, flash, squash)
         EnemyKind.MONKEY_CLONE -> drawMonkeyClone(e as MonkeyClone, w, sprites, flash, squash)
         EnemyKind.MUD_PUDDLE -> drawMudPuddle(e as MudPuddle, w)
+        EnemyKind.TRUFFLE -> drawTruffle(e as Truffle, w, sprites)
+        EnemyKind.MOUSETRAP -> {
+            val trap = e as MouseTrap
+            if (trap.triggered >= 0f && !trap.snapped) {
+                val blink = if ((w.time * 14f).toInt() % 2 == 0) 0.9f else 0.4f
+                drawCircle(Color(0xFFFF3D5A).copy(alpha = blink), MouseTrap.SNAP, Offset(e.x, e.y), style = Stroke(6f))
+            }
+            val shake = if (trap.triggered >= 0f && !trap.snapped) sin(w.time * 80f) * 4f else 0f
+            drawSprite(sprites.enemy(e.kind, if (trap.snapped) 1 else 0), e.x + shake, e.y)
+        }
+        EnemyKind.ROLLING_CHEESE -> drawRollingCheese(e as RollingCheese, w, sprites)
         EnemyKind.ELITE_TOUCAN, EnemyKind.ELITE_SKUNK, EnemyKind.ELITE_GORILLA, EnemyKind.ELITE_WOLF -> {
             val pulse = 3.4f + sin(w.time * 6f + e.id) * 0.3f
             drawSprite(sprites.glow(0xFFFF2BD6L), e.x, e.y, pulse, alpha = 0.45f, blendMode = BlendMode.Plus)
@@ -280,7 +295,8 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
         is MonkeyBoss -> drawMonkeyVine(boss)
         // 月光下只有真的怪盜有影子
         is RaccoonBoss -> drawOval(Color.Black.copy(alpha = 0.35f), Offset(x - 130f, boss.y + 150f), Size(260f, 50f))
-        is PigBoss -> if (boss.awakened && !defeated) {
+        // 萌王覺醒：金光＋搬到前面的起司火鍋（火鍋畫在 Boss 下方）
+        is MouseBoss -> if (boss.awakened && !defeated) {
             drawSprite(sprites.glow(0xFFFFD15CL), x, boss.y, 6.5f + sin(w.time * 5f) * 0.4f, alpha = 0.6f, blendMode = BlendMode.Plus)
         }
         else -> Unit
@@ -334,19 +350,23 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
         drawSprite(sprites.glow(0xFFFFE07AL), x + 150f, boss.y - 200f, 1.8f * pulse, alpha = 0.6f, blendMode = BlendMode.Plus)
         drawSprite(sprites.item(item), x + 150f, boss.y - 200f, 0.8f * pulse)
     }
-    if (boss is PigBoss && boss.cameo > 0 && !defeated) {
-        // 萌王覺醒：頭上亮出現在學的是哪一關的 Boss
-        val kind = CAMEO_KINDS[(boss.cameo - 1).coerceIn(0, CAMEO_KINDS.size - 1)]
-        drawSprite(sprites.glow(0xFFFFD15CL), x - 180f, boss.y - 200f, 2.2f, alpha = 0.6f, blendMode = BlendMode.Plus)
-        drawSprite(sprites.boss(kind, 0, 0), x - 180f, boss.y - 200f, 0.26f)
+    if (boss is MouseBoss && boss.awakened && !defeated) {
+        // 起司火鍋擺在萌王前面，咕嘟咕嘟冒泡
+        val bob = sin(w.time * 6f) * 3f
+        drawSprite(sprites.fondue(), x, boss.y + 170f + bob, 1f)
+        for (k in 0 until 3) {
+            val f = (w.time * 1.2f + k / 3f) % 1f
+            circle(x - 50f + k * 50f, boss.y + 150f - f * 40f, 6f + f * 8f, Color(0xFFFFE9A8).copy(alpha = 1f - f))
+        }
+    }
+    if (boss is PigBoss && boss.sniffing && !defeated) {
+        // 嗅松露：鼻子發亮，冒出一圈圈嗅覺波
+        for (k in 0 until 3) {
+            val f = (w.time * 2f + k / 3f) % 1f
+            drawCircle(Color(0xFFFFE07A).copy(alpha = 0.7f * (1f - f)), 30f + f * 80f, Offset(x, boss.y + 50f), style = Stroke(4f))
+        }
     }
 }
-
-/** 萌王覺醒時輪流學的前 12 關 Boss。 */
-private val CAMEO_KINDS = listOf(
-    EnemyKind.BOSS_MOUSE, EnemyKind.BOSS_DOG, EnemyKind.BOSS_BEAR, EnemyKind.BOSS_CAPY, EnemyKind.BOSS_RABBIT, EnemyKind.BOSS_PENGUIN,
-    EnemyKind.BOSS_KOALA, EnemyKind.BOSS_OTTER, EnemyKind.BOSS_PANDA, EnemyKind.BOSS_SLOTH, EnemyKind.BOSS_RACCOON, EnemyKind.BOSS_MONKEY,
-)
 
 /** 頭上飄的「×1.5」（受到的傷害變多）。 */
 private fun DrawScope.drawOneAndHalf(x: Float, y: Float, sprites: SpriteCache) {
@@ -444,6 +464,32 @@ private fun DrawScope.drawMudPuddle(e: MudPuddle, w: World) {
         val by = e.y + cos(k * 1.7f + e.id) * r * 0.3f
         drawCircle(Color(0xFFA1887F).copy(alpha = (1f - f) * fade), 6f + f * 10f, Offset(bx, by), style = Stroke(3f))
     }
+}
+
+/** 地底的松露：地上冒出閃閃發亮的記號，越來越亮，彈出來的瞬間炸開。 */
+private fun DrawScope.drawTruffle(e: Truffle, w: World, sprites: SpriteCache) {
+    val k = (e.age / Truffle.WARN).coerceIn(0f, 1f)
+    val blink = if ((w.time * 12f).toInt() % 2 == 0) 0.9f else 0.5f
+    drawOval(Color(0xFF5D4037).copy(alpha = 0.7f), Offset(e.x - 40f, e.y - 16f), Size(80f, 32f))
+    drawCircle(Color(0xFFFF3D5A).copy(alpha = blink * k), e.radius, Offset(e.x, e.y), style = Stroke(5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f), w.time * 60f)))
+    for (j in 0 until 3) {
+        val a = w.time * 3f + j * 2.094f
+        drawSprite(sprites.star(), e.x + cos(a) * 30f * (1f - k * 0.4f), e.y - 10f + sin(a) * 12f, 0.35f + k * 0.3f)
+    }
+    if (e.age >= Truffle.WARN) circle(e.x, e.y - 20f, 22f, Color(0xFF3E2723))
+}
+
+/** 起司輪雪崩：先亮出整條跑道，起司輪再滾下來。 */
+private fun DrawScope.drawRollingCheese(e: RollingCheese, w: World, sprites: SpriteCache) {
+    if (!e.rolling) {
+        val blink = if ((w.time * 10f).toInt() % 2 == 0) 0.28f else 0.14f
+        val half = e.radius
+        drawRect(Color(0xFFFF3D5A).copy(alpha = blink), Offset(e.x - half, 0f), Size(half * 2f, w.height))
+        val dash = PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -w.time * 200f)
+        for (side in listOf(-1f, 1f)) drawLine(Color(0xFFFF3D5A), Offset(e.x + side * half, 0f), Offset(e.x + side * half, w.height), 5f, pathEffect = dash)
+        return
+    }
+    drawSprite(sprites.enemy(e.kind, 0), e.x, e.y, 1f, e.spin)
 }
 
 /** 大野狼吹氣：往下吹的風（白色虛線），吹到的範圍就是會被推開的地方。 */
@@ -607,7 +653,7 @@ private fun idleLength(style: HazardStyle) = when (style) {
     HazardStyle.CRYO -> 135f
     HazardStyle.LEAF -> 200f
     HazardStyle.HAMMER -> 170f
-    HazardStyle.FORK -> 230f
+    HazardStyle.SWISSKNIFE -> 230f
     HazardStyle.BONE -> 190f
     HazardStyle.DIPPER -> 210f
     HazardStyle.WATER -> 135f
@@ -616,19 +662,20 @@ private fun idleLength(style: HazardStyle) = when (style) {
     HazardStyle.ROCKET -> 140f
     HazardStyle.GRAPPLE -> 120f
     HazardStyle.RUYI -> 230f
-    HazardStyle.COINGUN -> 125f
+    HazardStyle.BAGUETTE -> 220f
     else -> 120f
 }
 
 private fun propWidth(style: HazardStyle) = when (style) {
     HazardStyle.LEAF, HazardStyle.HAMMER -> 16f
-    HazardStyle.FORK -> 16f
+    HazardStyle.SWISSKNIFE -> 16f
     HazardStyle.BONE -> 28f
     HazardStyle.DIPPER -> 18f
     HazardStyle.CARROT -> 18f
     HazardStyle.STAFF -> 16f
     HazardStyle.GRAPPLE -> 12f
     HazardStyle.RUYI -> 20f
+    HazardStyle.BAGUETTE -> 18f
     else -> 24f
 }
 
@@ -727,6 +774,8 @@ private fun DrawScope.drawBackground(theme: StageTheme, scroll: Float, height: F
             StageTheme.RUINS -> ruinsRow(y, random, row)
             StageTheme.MUD_FARM -> mudFarmRow(y, random, row)
         }
+        // 各國的小地標（用另外的亂數，不影響原本的背景）
+        countryAccent(theme, y, Random(row * 131 + theme.ordinal * 17 + 5), row)
     }
     val drift = Random(theme.ordinal)
     repeat(14) {
@@ -1059,6 +1108,96 @@ private fun DrawScope.streamRow(y: Float, random: Random, row: Int, time: Float)
             circle(lx, ly, 26f, Color(0xFF5FB35A))
             drawArc(Color(0xFF6CC6E6), -20f, 40f, true, Offset(lx - 26f, ly - 26f), Size(52f, 52f))
             if (random.nextBoolean()) circle(lx - 6f, ly - 4f, 7f, Color(0xFFFFB3C7))
+        }
+        else -> Unit
+    }
+}
+
+/** 世界巡迴：每一關背景上的國家小地標。 */
+private fun DrawScope.countryAccent(theme: StageTheme, y: Float, random: Random, row: Int) {
+    val side = if (random.nextBoolean()) 110f else WORLD_WIDTH - 110f
+    val ay = y + 40f + random.nextFloat() * (TILE - 80f)
+    when (theme) {
+        // 日本：紅色鳥居與櫻花樹
+        StageTheme.PARK -> if (Math.floorMod(row, 3) == 0) {
+            drawRect(Color(0xFFD7263D), Offset(side - 46f, ay - 30f), Size(10f, 70f))
+            drawRect(Color(0xFFD7263D), Offset(side + 36f, ay - 30f), Size(10f, 70f))
+            drawRect(Color(0xFF2E2433), Offset(side - 62f, ay - 44f), Size(124f, 12f))
+            drawRect(Color(0xFFD7263D), Offset(side - 56f, ay - 32f), Size(112f, 9f))
+        } else if (Math.floorMod(row, 3) == 1) {
+            for (k in 0 until 6) {
+                val a = k * 1.047f
+                circle(side + cos(a) * 30f, ay + sin(a) * 24f, 22f, Color(0xFFFFC1D6))
+            }
+            circle(side, ay, 18f, Color(0xFFFF9EC2))
+        }
+        // 加拿大：地上散落的紅色楓葉
+        StageTheme.HONEY_FOREST -> repeat(3) {
+            val lx = random.nextFloat() * WORLD_WIDTH
+            val ly = y + random.nextFloat() * TILE
+            shape(Shapes.star, lx, ly, 16f, if (random.nextBoolean()) Color(0xFFE53935) else Color(0xFFFF8F00), rotationDegrees = random.nextFloat() * 360f)
+        }
+        // 英國：紅色電話亭（從上面看）
+        StageTheme.CARROT_FIELD -> if (Math.floorMod(row, 4) == 0) {
+            drawRect(Color(0xFF8E1B1B), Offset(side - 30f, ay - 26f), Size(64f, 64f))
+            drawRect(Color(0xFFD32F2F), Offset(side - 32f, ay - 32f), Size(64f, 64f))
+            drawLine(Color(0xFF8E1B1B), Offset(side - 32f, ay), Offset(side + 32f, ay), 4f)
+            drawLine(Color(0xFF8E1B1B), Offset(side, ay - 32f), Offset(side, ay + 32f), 4f)
+            circle(side, ay, 8f, Color(0xFFFFE082))
+        }
+        // 瑞士：起司城堡的紅地毯與白十字盾牌旗
+        StageTheme.CHEESE_BARN -> {
+            drawRect(Color(0xFFB71C1C).copy(alpha = 0.85f), Offset(410f, y), Size(180f, TILE))
+            drawRect(Color(0xFFFFD54F), Offset(404f, y), Size(8f, TILE))
+            drawRect(Color(0xFFFFD54F), Offset(588f, y), Size(8f, TILE))
+            if (Math.floorMod(row, 2) == 0) {
+                for (bx in listOf(90f, WORLD_WIDTH - 90f)) {
+                    drawRoundRect(Color(0xFFDA291C), Offset(bx - 34f, ay - 40f), Size(68f, 80f), CornerRadius(16f))
+                    drawRect(Color.White, Offset(bx - 7f, ay - 24f), Size(14f, 48f))
+                    drawRect(Color.White, Offset(bx - 24f, ay - 7f), Size(48f, 14f))
+                }
+            }
+        }
+        // 美國：屋頂上的木造水塔
+        StageTheme.NIGHT_TOWN -> if (Math.floorMod(row, 2) == 0) {
+            val tx = if (side < 500f) 120f + random.nextFloat() * 160f else 700f + random.nextFloat() * 160f
+            circle(tx + 6f, ay + 8f, 40f, Color(0xFF1E2448))
+            circle(tx, ay, 40f, Color(0xFF8D6E63))
+            for (r in listOf(30f, 18f)) drawCircle(Color(0xFF6D4C41), r, Offset(tx, ay), style = Stroke(4f))
+            circle(tx, ay, 7f, Color(0xFF5D4037))
+        }
+        // 柬埔寨：吳哥窟的石塔（從上面看是一層層的方台，頂端是蓮花尖）
+        StageTheme.RUINS -> if (Math.floorMod(row, 3) == 0) {
+            for ((k, r) in listOf(60f, 46f, 32f, 18f).withIndex()) {
+                drawRect(if (k % 2 == 0) Color(0xFF9E8B66) else Color(0xFFBFAE86), Offset(side - r, ay - r), Size(r * 2f, r * 2f))
+            }
+            circle(side, ay, 9f, Color(0xFF7FA35A))
+        }
+        // 法國：一排排薰衣草
+        StageTheme.MUD_FARM -> for (sx in listOf(150f, WORLD_WIDTH - 150f)) {
+            for (k in 0 until 4) {
+                val ly = y + 30f + k * 75f
+                oval(sx, ly, 170f, 36f, Color(0xFF7E57C2))
+                for (j in -3..3) circle(sx + j * 22f, ly - 6f + (j % 2) * 6f, 7f, Color(0xFFB39DDB))
+            }
+        }
+        // 新加坡：河岸邊的胡姬花（國花）
+        StageTheme.STREAM -> if (Math.floorMod(row, 2) == 0) {
+            val fx = if (side < 500f) 60f else WORLD_WIDTH - 60f
+            for (k in 0 until 5) {
+                val a = k * 1.2566f - 1.5708f
+                oval(fx + cos(a) * 12f, ay + sin(a) * 12f, 20f, 14f, Color(0xFFCE93D8))
+            }
+            circle(fx, ay, 6f, Color(0xFFFFEB3B))
+        }
+        // 巴西：溫泉旁的柳橙樹
+        StageTheme.ONSEN -> if (Math.floorMod(row, 3) == 0) {
+            circle(side + 6f, ay + 8f, 52f, Color(0xFF2E7D32))
+            circle(side, ay, 52f, Color(0xFF43A047))
+            repeat(6) {
+                val a = it * 1.047f + 0.4f
+                circle(side + cos(a) * 30f, ay + sin(a) * 26f, 10f, Color(0xFFFF9800))
+            }
         }
         else -> Unit
     }
@@ -1455,7 +1594,7 @@ private fun hexPath(cx: Float, cy: Float, r: Float, rot: Float): Path {
 
 /** Boss 科技道具的能量色（暖色系）。 */
 private fun energy(style: HazardStyle): Color = when (style) {
-    HazardStyle.FORK, HazardStyle.TAIL -> Color(0xFFFF2BD6)
+    HazardStyle.SWISSKNIFE, HazardStyle.TAIL -> Color(0xFFFF2BD6)
     HazardStyle.BONE, HazardStyle.CLAW, HazardStyle.BEAM -> Color(0xFFFF3D5A)
     HazardStyle.DIPPER -> Amber
     HazardStyle.WATER -> Color(0xFFFF7A45)
@@ -1466,7 +1605,7 @@ private fun energy(style: HazardStyle): Color = when (style) {
     HazardStyle.BAMBOO -> Color(0xFFFF7A45)
     HazardStyle.ROCKET -> Color(0xFFFF7A45)
     HazardStyle.GRAPPLE -> Color(0xFFFF2BD6)
-    HazardStyle.RUYI, HazardStyle.COINGUN -> Amber
+    HazardStyle.RUYI, HazardStyle.BAGUETTE -> Amber
 }
 
 /** 雷射與 Boss 的道具攻擊。預告時畫紅色虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
@@ -1533,9 +1672,13 @@ private fun DrawScope.drawProp(
         drawLine(glow, Offset(sx, sy), Offset(ex, ey), width * 0.3f, StrokeCap.Round)
     }
     when (style) {
-        HazardStyle.FORK -> {
-            shaft(0f, 120f)
-            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 68f, tipY - dy * 68f, 1f, angle * RAD) }
+        HazardStyle.SWISSKNIFE -> {
+            shaft(0f, 130f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 71f, tipY - dy * 71f, 1f, angle * RAD) }
+        }
+        HazardStyle.BAGUETTE -> {
+            shaft(0f, 130f)
+            sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 70f, tipY - dy * 70f, 1f, angle * RAD) }
         }
         HazardStyle.BONE -> {
             shaft(58f, 58f)
@@ -1560,12 +1703,12 @@ private fun DrawScope.drawProp(
             shaft(0f, 140f)
             sprites.propHead(style)?.let { drawSprite(it, tipX - dx * 75f, tipY - dy * 75f, 1f, angle * RAD) }
         }
-        HazardStyle.ROCKET, HazardStyle.COINGUN -> {
-            // 火箭筒的噴射火焰／金幣砲的金色光束，道具拿在手上
+        HazardStyle.ROCKET -> {
+            // 火箭筒的噴射火焰，火箭筒拿在手上
             if (active && length > 130f) {
                 val m = Offset(x0 + dx * 126f, y0 + dy * 126f)
                 val t = Offset(tipX, tipY)
-                val core = if (style == HazardStyle.ROCKET) Color(0xFFFFE07A) else Color(0xFFFFF3C4)
+                val core = Color(0xFFFFE07A)
                 drawLine(glow.copy(alpha = 0.35f), m, t, hitWidth * 2.4f, StrokeCap.Round)
                 drawLine(glow, m, t, hitWidth, StrokeCap.Round)
                 drawLine(core, m, t, hitWidth * 0.55f, StrokeCap.Round)
@@ -1576,7 +1719,7 @@ private fun DrawScope.drawProp(
                     val f = ((time * 2.2f + k * 0.125f) % 1f)
                     val px = m.x + dx * reach * f - dy * sin(k * 2.3f + time * 9f) * hitWidth * 0.7f
                     val py = m.y + dy * reach * f + dx * sin(k * 2.3f + time * 9f) * hitWidth * 0.7f
-                    if (style == HazardStyle.COINGUN) circle(px, py, 7f, Color(0xFFFFD15C)) else circle(px, py, 5f, Color.White.copy(alpha = 0.8f))
+                    circle(px, py, 5f, Color.White.copy(alpha = 0.8f))
                     k++
                 }
             }

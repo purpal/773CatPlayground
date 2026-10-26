@@ -42,8 +42,10 @@ enum class EnemyKind {
     /** 猴王拔毛變出來的小分身。 */
     MONKEY_CLONE,
     CHICK, COW,
-    /** 萌王的泥巴坑（踩進去會變慢）。 */
-    MUD_PUDDLE,
+    /** 松露獵人的泥巴坑（踩進去會變慢）與地底的松露。 */
+    MUD_PUDDLE, TRUFFLE,
+    /** 萌王的老鼠夾與起司輪雪崩。 */
+    MOUSETRAP, ROLLING_CHEESE,
     ELITE_MOUSE, ELITE_DOG, ELITE_BEE, ELITE_MONKEY, ELITE_HARE, ELITE_SEAL, ELITE_KANGAROO, ELITE_BEAVER, ELITE_RED_PANDA,
     ELITE_TOUCAN, ELITE_SKUNK, ELITE_GORILLA, ELITE_WOLF,
     BOSS_MOUSE, BOSS_DOG, BOSS_BEAR, BOSS_CAPY, BOSS_RABBIT, BOSS_PENGUIN, BOSS_KOALA, BOSS_OTTER, BOSS_PANDA,
@@ -205,8 +207,9 @@ abstract class GroundShooter(x: Float, hp: Float, radius: Float, score: Int) : E
         age += dt
         y += World.SCROLL_SPEED * dt
         if (y > 40f && y < w.height * 0.72f) {
-            fireTime += dt
-            fire(w, fireTime, dt)
+            val tdt = dt * w.difficulty.tempo
+            fireTime += tdt
+            fire(w, fireTime, tdt)
         }
         leaveIfOffscreen(w)
     }

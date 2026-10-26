@@ -166,17 +166,21 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             EnemyKind.ELITE_SKUNK -> art(ELITE_SKUNK[f], ELITE_WIDTH)
             EnemyKind.ELITE_GORILLA -> art(ELITE_GORILLA[f], ELITE_WIDTH)
             EnemyKind.ELITE_WOLF -> art(ELITE_WOLF[f], ELITE_WIDTH)
+            EnemyKind.MOUSETRAP -> art(MOUSETRAP[f], 130f)
+            EnemyKind.ROLLING_CHEESE -> art("min_cheese_wheel", 124f)
             EnemyKind.THROWN_BONE -> art("lost_bone", 200f)
             else -> boss(kind, 0, f)
         }
     }
 
     fun cheeseWheel() = art("min_cheese_wheel", 120f)
+    /** 萌王覺醒時搬出來的起司火鍋。 */
+    fun fondue() = art("fx_fondue", 300f)
     fun barrel() = art("min_barrel", 140f)
 
     /** 科技道具的頭（電漿叉頭、硬光骨頭的一端、熱熔鑽頭、橘子砲），朝 +x，寬度即世界長度。 */
     fun propHead(style: HazardStyle): Sprite? = when (style) {
-        HazardStyle.FORK -> art("prop_fork_head", 140f)
+        HazardStyle.SWISSKNIFE -> art("prop_swissknife_head", 150f)
         HazardStyle.BONE -> art("prop_bone_end", 75f)
         HazardStyle.DIPPER -> art("prop_dipper_head", 125f)
         HazardStyle.WATER -> art("prop_yuzu_head", 135f)
@@ -188,7 +192,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         HazardStyle.ROCKET -> art("prop_rocket_head", 140f)
         HazardStyle.GRAPPLE -> art("prop_grapple_head", 110f)
         HazardStyle.RUYI -> art("prop_ruyi_head", 110f)
-        HazardStyle.COINGUN -> art("prop_coin_head", 115f)
+        HazardStyle.BAGUETTE -> art("prop_baguette_head", 140f)
         else -> null
     }
 
@@ -210,10 +214,10 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         LostProp.POSTCAP -> art("lost_postcap", 130f)
         LostProp.TOPHAT -> art("lost_tophat", 110f)
         LostProp.HELMET -> art("lost_helmet", 150f)
-        LostProp.SASH -> art("lost_sash", 160f)
+        LostProp.BERET -> art("lost_beret", 130f)
         LostProp.GRAPPLE -> art("lost_grapple", 200f)
-        LostProp.COINGUN -> art("lost_coingun", 200f)
-        else -> art("lost_fork", 200f)
+        LostProp.BAGUETTE -> art("lost_baguette", 220f)
+        else -> art("lost_swissknife", 200f)
     }
 
     // ── 道具 ──
@@ -315,9 +319,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
                 }
             }
         }
-        cheeseWheel(); barrel()
+        cheeseWheel(); barrel(); fondue()
         HazardStyle.entries.forEach { propHead(it) }
-        (1..LostProp.COINGUN).forEach { lostProp(it) }
+        (1..LostProp.BAGUETTE).forEach { lostProp(it) }
         ItemType.entries.forEach { item(it) }
         plasma(); casing(); catHolo(); graviton(); gravitonPaw(); fishMissile(); reticle(); hexPaw(); hitMark(); pawStamp()
         star(); heart(); comboLabel(); roar(); overdrive()
@@ -399,6 +403,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         private val ELITE_SKUNK = frames("elite_skunk")
         private val ELITE_GORILLA = frames("elite_gorilla")
         private val ELITE_WOLF = frames("elite_wolf")
+        private val MOUSETRAP = frames("min_mousetrap")
         private val ITEMS = ItemType.entries.map { "item_${it.name.lowercase()}" }.toTypedArray()
         private val SFX = arrayOf("sfx_hit", "sfx_term", "sfx_crit", "sfx_data", "sfx_elite", "sfx_break", "sfx_armor", "sfx_chain")
         private val SFX_WIDTH = floatArrayOf(110f, 260f, 240f, 170f, 300f, 330f, 380f, 220f)
@@ -418,7 +423,7 @@ private val WarnAmber = Color(0xFFFFB300)
 private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
     val color = when (style) {
         BulletStyle.RICE, BulletStyle.SEED, BulletStyle.ORB, BulletStyle.ICE, BulletStyle.FISH -> WarnRed
-        BulletStyle.COIN, BulletStyle.BANANA, BulletStyle.BAMBOO -> WarnAmber
+        BulletStyle.BANANA, BulletStyle.BAMBOO, BulletStyle.CROISSANT -> WarnAmber
         else -> WarnMagenta
     }
     drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.5f), color.copy(alpha = 0f)), Offset.Zero, r * 2f), r * 2f, Offset.Zero)
@@ -551,8 +556,8 @@ private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
             drawRoundRect(color, Offset(-r * 0.8f, -r * 1.15f), Size(r * 1.6f, r * 2.3f), CornerRadius(r * 0.3f))
             shape(Shapes.heart, 0f, 0f, r * 0.55f, Color.White)
         }
-        BulletStyle.LID, BulletStyle.COIN -> {
-            // 桶蓋／金幣：扁圓盤＋中間的把手或刻印
+        BulletStyle.LID -> {
+            // 桶蓋：扁圓盤＋中間的把手
             drawCircle(BulletInk, r * 1.1f + 2.5f, Offset.Zero)
             drawCircle(color, r * 1.1f, Offset.Zero)
             drawCircle(Color.White.copy(alpha = 0.85f), r * 0.55f, Offset.Zero, style = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.18f))
@@ -573,10 +578,28 @@ private fun DrawScope.drawBulletArt(style: BulletStyle, r: Float) {
             }
             drawLine(Color.White, Offset(-r * 0.6f, r * 0.25f), Offset(r * 0.6f, r * 0.25f), r * 0.18f, StrokeCap.Round)
         }
-        BulletStyle.HEART -> {
-            shape(Shapes.heart, 0f, 0f, r * 1.25f + 3f, BulletInk)
-            shape(Shapes.heart, 0f, 0f, r * 1.25f, color)
-            drawCircle(Color.White, r * 0.3f, Offset(-r * 0.35f, -r * 0.25f))
+        BulletStyle.MACARON -> {
+            // 馬卡龍：上下兩片圓餅夾著白色的內餡
+            drawOval(BulletInk, Offset(-r * 1.2f - 2.5f, -r * 0.95f - 2.5f), Size(r * 2.4f + 5f, r * 1.9f + 5f))
+            drawOval(color, Offset(-r * 1.2f, -r * 0.95f), Size(r * 2.4f, r * 0.85f))
+            drawOval(color, Offset(-r * 1.2f, r * 0.1f), Size(r * 2.4f, r * 0.85f))
+            drawRect(Color.White, Offset(-r * 1.05f, -r * 0.12f), Size(r * 2.1f, r * 0.3f))
+            drawCircle(Color.White.copy(alpha = 0.8f), r * 0.2f, Offset(-r * 0.5f, -r * 0.55f))
+        }
+        BulletStyle.CROISSANT -> {
+            // 可頌：月牙形＋一道道烤痕
+            for (pass in 0..1) {
+                val c = if (pass == 0) BulletInk else color
+                val g = if (pass == 0) 2.5f else 0f
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(-r * 1.4f - g, r * 0.3f)
+                    quadraticTo(0f, -r * 1.5f - g * 1.5f, r * 1.4f + g, r * 0.3f)
+                    quadraticTo(0f, -r * 0.2f, -r * 1.4f - g, r * 0.3f)
+                    close()
+                }
+                drawPath(p, c)
+            }
+            for (k in -1..1) drawLine(BulletInk, Offset(k * r * 0.5f, -r * 0.7f), Offset(k * r * 0.4f, -r * 0.1f), r * 0.16f, StrokeCap.Round)
         }
     }
 }

@@ -283,10 +283,6 @@ def stone_hammer():
 def lost_props():
     """卸甲時被打飛的整把武器。"""
     out = []
-    # 叉子
-    f = path("M-90,-6 L-10,-6 L-10,6 L-90,6 Z", "url(#steel)", NAVY, 3)
-    f += f'<g transform="translate(-10 0) scale(0.75)">{fork_head().body}</g>'
-    out.append(Sprite("lost_fork", 400, 120, "-100 -30 200 60", f, GLOW))
     # 骨頭
     bn = path("M-50,-11 L50,-11 L50,11 L-50,11 Z", f"{RED}", NAVY, 3, 'fill-opacity="0.6"')
     bn += f'<g transform="translate(40 0) scale(0.75)">{bone_end().body}</g><g transform="translate(-40 0) scale(-0.75 0.75)">{bone_end().body}</g>'
@@ -307,7 +303,7 @@ def lost_props():
 
 def all_sprites():
     out = [plasma_bolt(), casing(), cat_holo(), graviton(), graviton_paw(), fish_missile(), reticle(), hex_paw(),
-           hit_mark(), paw_stamp(), data_bit(), fork_head(), bone_end(), dipper_head(), yuzu_cannon(), carrot_drill(),
+           hit_mark(), paw_stamp(), data_bit(), bone_end(), dipper_head(), yuzu_cannon(), carrot_drill(),
            cryo_gun(), leaf_launcher(), stone_hammer()]
     out += lost_props()
     out += [

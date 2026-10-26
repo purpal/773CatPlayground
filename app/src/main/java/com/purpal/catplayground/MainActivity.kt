@@ -30,11 +30,12 @@ import com.purpal.catplayground.audio.Music
 import com.purpal.catplayground.audio.SoundManager
 import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.lobby.LobbyScreen
-import com.purpal.catplayground.shooter.model.Loadout
-import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.model.Tour
+import com.purpal.catplayground.shooter.model.TourState
 import com.purpal.catplayground.shooter.render.FxSettings
 import com.purpal.catplayground.shooter.ui.ShooterGameScreen
 import com.purpal.catplayground.shooter.ui.ShooterMenuScreen
+import com.purpal.catplayground.shooter.ui.TourScreen
 import com.purpal.catplayground.ui.BrandSplash
 import com.purpal.catplayground.ui.CatPlaygroundTheme
 import com.purpal.catplayground.ui.PlayColors
@@ -96,16 +97,11 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     var stack by remember { mutableStateOf(debug?.initialStack() ?: listOf<Screen>(Screen.Lobby)) }
     var waterSortCleared by remember { mutableIntStateOf(prefs.waterSortCleared) }
     var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
-    var carryStage by remember { mutableIntStateOf(prefs.shooterCarryStage) }
+    var tour by remember { mutableStateOf(TourState.decode(prefs.shooterTour)) }
 
-    /** 取出保留給這一關的機體狀態（只能用一次）。 */
-    fun takeCarry(stage: Int): Loadout? {
-        if (prefs.shooterCarryStage != stage) return null
-        val loadout = Loadout.decode(prefs.shooterCarry)
-        prefs.shooterCarry = null
-        prefs.shooterCarryStage = 0
-        carryStage = 0
-        return loadout
+    fun saveTour(next: TourState?) {
+        tour = next
+        prefs.shooterTour = next?.encode()
     }
     // 啟動時先顯示開發商品牌頁（自動測試時略過）；旋轉螢幕不會重播。
     var showBrand by rememberSaveable { mutableStateOf(debug == null) }
@@ -179,11 +175,32 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
 
             Screen.ShooterMenu -> ShooterMenuScreen(
                 prefs = prefs,
-                cleared = shooterCleared,
-                carryStage = carryStage,
+                tour = tour,
                 onBack = { pop() },
-                onPlay = { stage, cat -> push(Screen.ShooterPlay(stage, cat, takeCarry(stage))) },
+                onNewTour = { cat ->
+                    saveTour(Tour.start(cat))
+                    push(Screen.ShooterTour)
+                },
+                onContinueTour = { push(Screen.ShooterTour) },
             )
+
+            Screen.ShooterTour -> {
+                val current = tour
+                if (current == null) {
+                    LaunchedEffect(Unit) { pop() }
+                } else {
+                    TourScreen(
+                        tour = current,
+                        onRevealed = { saveTour(it) },
+                        onFight = {
+                            val stage = current.nextStage
+                            if (stage != null) push(Screen.ShooterPlay(stage, current.cat, current.loadout, bout = current.cleared))
+                        },
+                        onNewTour = { saveTour(Tour.start(current.cat)) },
+                        onBack = { pop() },
+                    )
+                }
+            }
 
             is Screen.ShooterPlay -> {
                 FxSettings.damageNumbers = prefs.shooterDamageNumbers
@@ -195,20 +212,22 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                     ultimateOnLeft = prefs.shooterUltimateOnLeft,
                     bestScore = prefs.shooterBest(screen.stage),
                     loadout = screen.loadout,
+                    bout = screen.bout,
                     onCleared = { stage, score, loadout ->
                         prefs.setShooterBest(stage, score)
-                        if (stage > shooterCleared) {
-                            shooterCleared = stage
-                            prefs.shooterCleared = stage
-                        }
-                        // 破關時的機體狀態先存起來：直接進下一關會用掉，回列表的話下次挑戰下一關時用。
-                        if (Stages.get(stage + 1) != null) {
-                            prefs.shooterCarry = loadout.encode()
-                            prefs.shooterCarryStage = stage + 1
-                            carryStage = stage + 1
+                        val current = tour
+                        // 巡迴進度：這一站打完，機體狀態帶到下一站
+                        if (screen.bout != null && current != null && current.cleared == screen.bout) {
+                            val next = current.afterClear(score, loadout)
+                            saveTour(next)
+                            if (next.cleared > shooterCleared) {
+                                shooterCleared = next.cleared
+                                prefs.shooterCleared = next.cleared
+                            }
                         }
                     },
-                    onNextStage = { replaceTop(Screen.ShooterPlay(screen.stage + 1, screen.cat, takeCarry(screen.stage + 1))) },
+                    // 下一站：回到世界地圖抽籤、搭飛機
+                    onNextStage = { pop() },
                     onExit = { pop() },
                 )
             }

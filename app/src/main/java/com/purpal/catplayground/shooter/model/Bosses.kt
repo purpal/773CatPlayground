@@ -17,7 +17,17 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
     protected class Attack(val duration: Float, val step: (w: World, t: Float, dt: Float) -> Unit)
 
     abstract val name: String
-    val maxHp = hp
+    var maxHp = hp
+        private set
+
+    /** 依出場順序設定血量時乘上的倍率：有自帶「打得比較快的時機」（打瞌睡、雙胞胎…）的 Boss 會比較硬一點。 */
+    open val hpFactor: Float get() = 1f
+
+    /** 依出場順序重新設定血量（開打前呼叫）。 */
+    fun setMaxHp(value: Float) {
+        maxHp = value
+        hp = value
+    }
     var entering = true
         private set
     var phase = 0
@@ -167,8 +177,10 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
         }
         val list = attacks(phase)
         val attack = list[attackIndex % list.size]
-        attackTime += dt
-        attack.step(w, attackTime, dt)
+        // 越後面的站出招越快（只影響招式本身的節奏；預告雷射的預告時間不變）
+        val tdt = dt * w.difficulty.tempo
+        attackTime += tdt
+        attack.step(w, attackTime, tdt)
         if (attackTime >= attack.duration) {
             attackTime = 0f
             attackIndex++
@@ -184,50 +196,95 @@ const val MELEE_DAMAGE = 30f
 const val BEAM_DAMAGE = 26f
 
 /**
- * 第 1 關：起司鼠王（小起司）。拿著電漿叉。
- * 老鼠膽小，65% 血就被打到「卸甲」：叉子飛走，嚇得滿場亂跑、叫小老鼠來幫忙、甩電漿尾巴。
+ * 最終關（瑞士）：萌王 鼠鼠。戴著起司帽和歪掉的紙王冠，拿著瑞士刀——刀刃突刺、剪刀交叉、開瓶器螺旋，
+ * 還有招牌的「起司洞洞牆」：一整排起司從上面壓下來，只有洞的地方鑽得過去。
+ * 60% 瑞士刀被打飛「卸甲」：在地上擺老鼠夾（靠近會先抖再夾下去）、讓起司輪沿著預告的跑道滾下來。
+ * 30% 搬出起司火鍋「萌王覺醒」（第二次變身）：起司火鍋雨、火鍋冒泡炸開的起司圈，洞洞牆和老鼠夾一起來。
  */
-class MouseBoss : Boss(hp = 15000f, radius = 180f, score = 20000, homeY = 410f) {
+class MouseBoss : Boss(hp = 46000f, radius = 180f, score = 300000, homeY = 410f) {
     override val kind = EnemyKind.BOSS_MOUSE
-    override val name = "起司鼠王"
-    override val breakAt = 0.65f
+    override val name = "萌王 鼠鼠"
+    override val breakAt = 0.6f
     override val breakKind = BreakKind.DISARM
-    override val weapon = HazardStyle.FORK
-    override val lostWeapon = LostProp.FORK
+    override val weapon = HazardStyle.SWISSKNIFE
+    override val lostWeapon = LostProp.SWISSKNIFE
     override val lostProps = intArrayOf(LostProp.CROWN)
     override val handX = 156f
     override val handY = 138f
 
-    override fun move(w: World, dt: Float) {
-        // 卸甲後慌張地快速左右跑
-        x = if (broken) WORLD_WIDTH / 2f + sin(moveTime * 1.5f) * 240f else WORLD_WIDTH / 2f + sin(moveTime * 0.6f) * 180f
+    /** 搬出起司火鍋（萌王覺醒）了。 */
+    var awakened = false
+        private set
+
+    override fun update(w: World, dt: Float) {
+        super.update(w, dt)
+        if (broken && !awakened && hpRatio <= AWAKEN_AT) {
+            awakened = true
+            transform(w)
+        }
     }
 
-    private val cheeseRings = Attack(4f) { w, t, dt ->
-        if (every(t, dt, 0.9f)) w.ring(x, y + 40f, 16, 190f, t, BulletStyle.CHEESE, Tint.CHEESE)
+    override fun move(w: World, dt: Float) {
+        x = when {
+            // 守著起司火鍋，只在附近左右晃
+            awakened -> WORLD_WIDTH / 2f + sin(moveTime * 0.5f) * 120f
+            // 卸甲後慌張地快速左右跑
+            broken -> WORLD_WIDTH / 2f + sin(moveTime * 1.2f) * 240f
+            else -> WORLD_WIDTH / 2f + sin(moveTime * 0.6f) * 180f
+        }
+        y = approach(y, homeY, 3f, dt)
     }
-    private val seedFans = Attack(3.5f) { w, t, dt ->
-        if (every(t, dt, 0.55f)) w.fan(x, y + 60f, w.aimAt(x, y), 5, 50f * DEG, 280f, BulletStyle.SEED, Tint.SEED)
+
+    /** 起司洞洞牆：一整排起司從畫面上方壓下來，只有 holes 個洞鑽得過去。 */
+    private fun cheeseWall(w: World, speed: Float, holes: Int) {
+        val holeHalf = 90f
+        val centers = ArrayList<Float>()
+        var guard = 0
+        while (centers.size < holes && guard++ < 50) {
+            val c = 140f + w.random.nextFloat() * (WORLD_WIDTH - 280f)
+            if (centers.all { kotlin.math.abs(it - c) > holeHalf * 3f }) centers += c
+        }
+        var bx = 26f
+        while (bx < WORLD_WIDTH) {
+            if (centers.none { kotlin.math.abs(it - bx) < holeHalf }) w.bullet(bx, -20f, 0f, speed, BulletStyle.CHEESE, Tint.CHEESE)
+            bx += 52f
+        }
+        w.cue(SoundCue.SWING)
     }
-    /** 電漿叉朝玩家突刺。 */
-    private val forkStab = Attack(2.2f) { w, t, dt ->
-        if (crossed(t, dt, 0.01f)) melee(w, HazardStyle.FORK, aimFrom(w, handX, handY), 44f)
-        if (every(t, dt, 0.7f, offset = 0.5f)) w.fan(x, y + 60f, w.aimAt(x, y), 3, 30f * DEG, 260f, BulletStyle.SEED, Tint.SEED)
-    }
-    /** 叉尖射出三發能量針。 */
-    private val forkVolley = Attack(2.6f) { w, t, dt ->
-        if (crossed(t, dt, 0.3f) || crossed(t, dt, 1.1f) || crossed(t, dt, 1.9f)) {
+
+    /** 瑞士刀的刀刃朝玩家突刺兩次，刀尖再射出三發能量針。 */
+    private val knifeThrust = Attack(2.8f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f) || crossed(t, dt, 1.4f)) melee(w, HazardStyle.SWISSKNIFE, aimFrom(w, handX, handY), 44f, warn = 0.7f)
+        if (crossed(t, dt, 0.9f) || crossed(t, dt, 2.3f)) {
             val a = aimFrom(w, handX, handY)
             for (k in -1..1) w.shoot(x + handX, y + handY, a + k * 9f * DEG, 420f, BulletStyle.RICE, Tint.PINK)
         }
     }
-    /** 蓄力三連刺：扇形依序刺出。 */
-    private val tripleStab = Attack(3f) { w, t, dt ->
-        val base = aimFrom(w, handX, handY)
-        if (crossed(t, dt, 0.01f)) melee(w, HazardStyle.FORK, base - 22f * DEG, 40f, warn = 0.7f, active = 0.4f)
-        if (crossed(t, dt, 0.5f)) melee(w, HazardStyle.FORK, base + 22f * DEG, 40f, warn = 0.6f, active = 0.4f)
-        if (crossed(t, dt, 1.0f)) melee(w, HazardStyle.FORK, base, 48f, warn = 0.6f, active = 0.5f)
+    /**
+     * 剪刀交叉：兩片刀刃從左右兩邊往中間合起來，停在正下方兩側，
+     * 中間那一條和外側是安全區。
+     */
+    private val scissorCross = Attack(3.4f) { w, t, dt ->
+        if (crossed(t, dt, 0.01f)) {
+            melee(w, HazardStyle.SWISSKNIFE, 150f * DEG, 40f, warn = 0.9f, active = 1f, extend = 0.2f, sweep = -50f * DEG, length = 1300f, fromX = -110f, fromY = 110f)
+            melee(w, HazardStyle.SWISSKNIFE, 30f * DEG, 40f, warn = 0.9f, active = 1f, extend = 0.2f, sweep = 50f * DEG, length = 1300f, fromX = 110f, fromY = 110f)
+        }
+        if (every(t, dt, 1.1f, offset = 2f)) w.ring(x, y + 40f, 14, 180f, t, BulletStyle.CHEESE, Tint.CHEESE)
     }
+    /** 開瓶器螺旋：刀尖快速旋轉，種子彈扭成一道道螺旋。 */
+    private val corkscrew = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.08f)) {
+            val a = t * 6f
+            w.shoot(x + handX, y + handY, a, 230f, BulletStyle.SEED, Tint.SEED).turn = 0.6f
+            w.shoot(x + handX, y + handY, a + PI_F, 230f, BulletStyle.SEED, Tint.SEED).turn = 0.6f
+        }
+    }
+    /** 起司洞洞牆兩道。 */
+    private val cheeseWalls = Attack(4.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.2f) || crossed(t, dt, 2.4f)) cheeseWall(w, 150f, 2)
+        if (every(t, dt, 1.2f, offset = 0.8f)) w.aimed(x, y + 60f, 260f, BulletStyle.SEED, Tint.SEED)
+    }
+    /** 叫小老鼠親衛隊來幫忙。 */
     private val summon = Attack(2.6f) { w, t, dt ->
         if (crossed(t, dt, 0.3f) || crossed(t, dt, 1.4f)) {
             w.spawn(MiniMouse(x - 130f, y + 40f, -1f))
@@ -235,39 +292,135 @@ class MouseBoss : Boss(hp = 15000f, radius = 180f, score = 20000, homeY = 410f) 
         }
         if (every(t, dt, 1f)) w.aimed(x, y + 60f, 180f, BulletStyle.BIG_ORB, Tint.CHEESE)
     }
-    private val spiral = Attack(5f) { w, t, dt ->
-        if (every(t, dt, 0.09f)) {
-            val a = t * 2.4f
-            w.shoot(x, y + 40f, a, 210f, BulletStyle.CHEESE, Tint.CHEESE)
-            w.shoot(x, y + 40f, a + HALF_PI * 2f, 210f, BulletStyle.CHEESE, Tint.CHEESE)
+    /** 卸甲後：在地上擺三個老鼠夾（其中一個在玩家附近），靠近就會抖一抖再夾下去。 */
+    private val mouseTraps = Attack(4f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) {
+            w.spawn(MouseTrap(w.player.x + w.jitter(80f), (w.player.y - 120f).coerceAtLeast(y + 320f)))
+            repeat(2) {
+                val top = y + 320f
+                w.spawn(MouseTrap(120f + w.random.nextFloat() * (WORLD_WIDTH - 240f), top + w.random.nextFloat() * maxOf(60f, w.height * 0.75f - top)))
+            }
+            w.cue(SoundCue.SWING)
+        }
+        if (every(t, dt, 1f, offset = 1f)) w.fan(x, y + 60f, w.aimAt(x, y), 5, 50f * DEG, 280f, BulletStyle.SEED, Tint.SEED)
+    }
+    /** 卸甲後：起司輪雪崩，先亮出跑道，起司輪再一顆顆滾下來（兩波，跑道錯開）。 */
+    private val cheeseAvalanche = Attack(4.6f) { w, t, dt ->
+        if (crossed(t, dt, 0.2f) || crossed(t, dt, 2.2f)) {
+            val lanes = (0 until RollingCheese.LANES).shuffled(w.random).take(RollingCheese.LANES - 3)
+            for (lane in lanes) w.spawn(RollingCheese(RollingCheese.laneX(lane), w.random.nextFloat() * 0.3f))
         }
     }
-    /** 邊跑邊撒種子。 */
+    /** 卸甲後：起司洞洞牆變快、一次壓兩道。 */
+    private val fastWalls = Attack(4.2f) { w, t, dt ->
+        if (crossed(t, dt, 0.2f) || crossed(t, dt, 1.6f) || crossed(t, dt, 3f)) cheeseWall(w, 200f, 2)
+    }
+    /** 卸甲後：邊跑邊撒種子。 */
     private val panicSpray = Attack(3.6f) { w, t, dt ->
         if (every(t, dt, 0.16f)) w.shoot(x, y + 60f, HALF_PI + w.jitter(0.5f), 260f, BulletStyle.SEED, Tint.SEED)
     }
-    /** 甩電漿尾巴：從玩家的另一側掃過來。 */
+    /** 卸甲後：甩電漿尾巴，從玩家的另一側掃過來 70°，玩家那一側的外緣是安全區。 */
     private val tailWhip = Attack(4.2f) { w, t, dt ->
         if (crossed(t, dt, 0.01f)) {
             val playerLeft = w.player.x < x
             melee(
                 w, HazardStyle.TAIL, if (playerLeft) HALF_PI - 62f * DEG else HALF_PI + 62f * DEG, 34f,
-                // 掃 70°，掃完停在正下方偏玩家那一側，玩家那一側的外緣一直是安全區
                 warn = 0.8f, active = 1.5f, extend = 0.25f, sweep = if (playerLeft) 70f * DEG else -70f * DEG,
                 length = 1150f, fromX = 0f, fromY = 110f,
             )
         }
         if (every(t, dt, 1.2f, offset = 0.4f)) w.ring(x, y + 40f, 14, 180f, t, BulletStyle.CHEESE, Tint.CHEESE)
     }
-    private val rageStream = Attack(4f) { w, t, dt ->
-        if (every(t, dt, 0.13f)) w.shoot(x, y + 60f, w.aimAt(x, y) + w.jitter(0.12f), 330f, BulletStyle.SEED, Tint.SEED)
-        if (every(t, dt, 1f)) w.ring(x, y + 40f, 20, 170f, t, BulletStyle.CHEESE, Tint.CHEESE)
+    /** 萌王覺醒：起司火鍋雨，融化的起司從上面一滴滴落下，越落越快。 */
+    private val fondueRain = Attack(4f) { w, t, dt ->
+        if (every(t, dt, 0.13f)) w.bullet(40f + w.random.nextFloat() * (WORLD_WIDTH - 80f), -20f, 0f, 100f, BulletStyle.HONEY, Tint.CHEESE).ay = 280f
+        if (every(t, dt, 1.3f, offset = 0.6f)) w.aimed(x, y + 80f, 300f, BulletStyle.BIG_ORB, Tint.CHEESE)
+    }
+    /** 萌王覺醒：火鍋咕嘟冒泡，一圈圈起司炸開，再補一道洞洞牆。 */
+    private val fondueBubbles = Attack(4.4f) { w, t, dt ->
+        if (every(t, dt, 0.7f)) w.ring(x, y + 160f, 16, 180f, t, BulletStyle.CHEESE, Tint.CHEESE)
+        if (crossed(t, dt, 1.5f)) cheeseWall(w, 170f, 2)
+    }
+    /** 萌王覺醒：老鼠夾和洞洞牆一起來。 */
+    private val trapsAndWall = Attack(4.4f) { w, t, dt ->
+        if (crossed(t, dt, 0.3f)) {
+            w.spawn(MouseTrap(w.player.x + w.jitter(80f), (w.player.y - 120f).coerceAtLeast(y + 320f)))
+            w.spawn(MouseTrap(120f + w.random.nextFloat() * (WORLD_WIDTH - 240f), y + 420f + w.random.nextFloat() * 300f))
+        }
+        if (crossed(t, dt, 1.2f)) cheeseWall(w, 170f, 2)
     }
 
     override fun attacks(phase: Int) = when {
-        !broken -> listOf(cheeseRings, forkStab, forkVolley, seedFans, tripleStab)
-        phase < 2 -> listOf(panicSpray, summon, tailWhip, spiral)
-        else -> listOf(tailWhip, rageStream, summon, spiral)
+        !broken && phase == 0 -> listOf(knifeThrust, cheeseWalls, corkscrew, summon, scissorCross)
+        !broken -> listOf(scissorCross, cheeseWalls, corkscrew, knifeThrust)
+        !awakened -> listOf(mouseTraps, cheeseAvalanche, fastWalls, tailWhip, panicSpray)
+        else -> listOf(fondueRain, cheeseAvalanche, fondueBubbles, trapsAndWall)
+    }
+
+    companion object {
+        const val AWAKEN_AT = 0.3f
+        private const val PI_F = HALF_PI * 2f
+    }
+}
+
+/** 萌王的老鼠夾：貓咪靠近（或擺好一段時間）就會抖一抖、預告，再「啪」地夾下去。打不到。 */
+class MouseTrap(x: Float, y: Float) : Enemy(x, y, 1f, 70f, 0) {
+    override val kind = EnemyKind.MOUSETRAP
+    override val invulnerable = true
+    override val contactDamage = 0f
+    /** 被觸發後的秒數（-1 表示還沒觸發）。 */
+    var triggered = -1f
+        private set
+    val snapped: Boolean get() = triggered >= SNAP_DELAY
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        if (triggered < 0f && (age > AUTO_TRIGGER || dist2(x, y, w.player.x, w.player.y) < TRIGGER * TRIGGER)) {
+            triggered = 0f
+            w.cue(SoundCue.WARNING)
+        }
+        if (triggered >= 0f) {
+            triggered += dt
+            if (crossed(triggered, dt, SNAP_DELAY)) {
+                w.shake(0.2f)
+                w.cue(SoundCue.SWING)
+                w.burst(x, y, 0xFFFFD54FL, 8, 220f, ParticleKind.STAR)
+                if (dist2(x, y, w.player.x, w.player.y) < SNAP * SNAP) w.damagePlayer(SNAP_DAMAGE)
+            }
+            if (triggered > SNAP_DELAY + 0.8f) alive = false
+        }
+    }
+
+    companion object {
+        const val TRIGGER = 140f
+        const val SNAP = 100f
+        const val SNAP_DELAY = 0.7f
+        const val SNAP_DAMAGE = 26f
+        const val AUTO_TRIGGER = 4.5f
+    }
+}
+
+/** 起司輪雪崩的起司輪：先亮出整條跑道（預告），再從畫面上方高速滾下來。打不到，碰到會痛。 */
+class RollingCheese(x: Float, private val delay: Float) : Enemy(x, -80f, 1f, 54f, 0) {
+    override val kind = EnemyKind.ROLLING_CHEESE
+    override val invulnerable = true
+    override val hurtsOnContact: Boolean get() = rolling
+    override val contactDamage = 26f
+    val rolling: Boolean get() = age > WARN + delay
+    /** 滾動的角度（度，畫面用）。 */
+    val spin: Float get() = y * 0.8f
+
+    override fun update(w: World, dt: Float) {
+        age += dt
+        if (rolling) y += SPEED * w.difficulty.bulletSpeed * dt
+        if (y > w.height + 120f) alive = false
+    }
+
+    companion object {
+        const val WARN = 0.9f
+        const val SPEED = 700f
+        const val LANES = 8
+        fun laneX(lane: Int) = WORLD_WIDTH / LANES * (lane + 0.5f)
     }
 }
 
@@ -834,6 +987,8 @@ class PenguinBoss : Boss(hp = 34000f, radius = 190f, score = 70000, homeY = 430f
 class KoalaBoss : Boss(hp = 44000f, radius = 200f, score = 80000, homeY = 420f) {
     override val kind = EnemyKind.BOSS_KOALA
     override val name = "無尾熊長老 尤加"
+    // 打瞌睡時受到兩倍傷害
+    override val hpFactor = 1.2f
     override val breakAt = 0.3f
     override val breakKind = BreakKind.ARMOR
     override val weapon = HazardStyle.LEAF
@@ -1029,6 +1184,8 @@ class SnotBubble(private val koala: KoalaBoss) : Enemy(koala.x, koala.y + 90f, 6
 class OtterBoss : Boss(hp = 40000f, radius = 140f, score = 90000, homeY = 400f) {
     override val kind = EnemyKind.BOSS_OTTER
     override val name = "水獺姊妹 啾啾＆嚕嚕"
+    // 兩隻一起上，打得到的地方比較多
+    override val hpFactor = 1.1f
     override val breakAt = 0.45f
     override val breakKind = BreakKind.DISARM
     override val weapon = HazardStyle.HAMMER
@@ -1234,6 +1391,8 @@ class OtterTwin(val boss: OtterBoss) : Enemy(WORLD_WIDTH - boss.x, boss.y, 1f, 1
 class PandaBoss : Boss(hp = 38000f, radius = 200f, score = 100000, homeY = 420f) {
     override val kind = EnemyKind.BOSS_PANDA
     override val name = "熊貓師父 波波"
+    // 竹筍會擋子彈、吃到還會回血
+    override val hpFactor = 0.9f
     override val breakAt = 0.4f
     override val breakKind = BreakKind.DISARM
     override val weapon = HazardStyle.STAFF

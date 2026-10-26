@@ -57,6 +57,7 @@ import com.purpal.catplayground.shooter.model.Phase
 import com.purpal.catplayground.shooter.model.Speaker
 import com.purpal.catplayground.shooter.model.StageDef
 import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.model.Tour
 import com.purpal.catplayground.shooter.model.World
 import com.purpal.catplayground.shooter.model.CatType
 import com.purpal.catplayground.ui.ArtImage
@@ -90,6 +91,9 @@ fun StageOverlays(
     }
 }
 
+/** 關卡標題：世界巡迴的第幾站（三大天王、萌王決戰另外稱呼）。 */
+private fun stageLabel(world: World): String = boutTitle(world.bout - 1)
+
 /** Boss 頭像：警告時是逞強的樣子（m0），被打倒後的對話是哭哭的樣子（m2）。 */
 private fun bossArt(stage: StageDef, mood: Int) = "${stage.bossArt}_m${mood}_0"
 
@@ -113,8 +117,12 @@ private fun StageTitle(world: World) {
                 translationX = (1f - alpha.value) * 60.dp.toPx()
             },
     ) {
-        FitText("STAGE ${world.stage.number}", style = titleStyle(52.sp))
-        FitText("${world.stage.animal}的${world.stage.title}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        FitText(stageLabel(world), style = titleStyle(52.sp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ArtImage(world.stage.country.flag, Modifier.height(30.dp).width(45.dp))
+            Spacer(Modifier.width(10.dp))
+            FitText("${world.stage.country.name}・${world.stage.title}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        }
         Spacer(Modifier.height(18.dp))
         Text(
             "按住畫面下方：自動射擊\n手指移動：貓咪跟著移動",
@@ -183,7 +191,7 @@ private fun Warning(world: World) {
                     ) { ArtImage(bossArt(world.stage, 0), Modifier.size(84.dp)) }
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f, fill = false)) {
-                        FitText("STAGE ${world.stage.number}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                        FitText("${stageLabel(world)}　BOSS", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Black)
                         FitText(world.stage.bossName, style = titleStyle(34.sp, Color.White))
                         FitText("接近中！", color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
@@ -320,15 +328,15 @@ private fun ClearPanel(world: World, bestScore: Int, hasNextStage: Boolean, onNe
         else FitText("最高分 $bestScore", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
         Spacer(Modifier.height(20.dp))
         if (hasNextStage) {
-            BigButton("下一關 ▶", Gold, PlayColors.Night, onNextStage)
-            FitText("武器等級與機體狀態會帶到下一關", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
-        } else if (world.stage.number == Stages.all.size) {
+            BigButton("下一站 ▶", Gold, PlayColors.Night, onNextStage)
+            FitText("武器等級與機體狀態會帶到下一站", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        } else if (world.bout == Tour.SIZE) {
             Ending(world)
         } else {
             FitText("下一關製作中，敬請期待！", color = Color.White, fontSize = 15.sp)
         }
         Spacer(Modifier.height(10.dp))
-        BigButton("📋 關卡選單", Color(0xFF3949AB), Color.White, onExit)
+        BigButton("🗺️ 世界地圖", Color(0xFF3949AB), Color.White, onExit)
     }
 }
 

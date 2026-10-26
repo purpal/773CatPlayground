@@ -18,7 +18,7 @@ class AppPrefs(context: Context) {
         get() = prefs.getInt("water_sort_cleared", 0)
         set(value) = prefs.edit().putInt("water_sort_cleared", value).apply()
 
-    /** 射擊遊戲已通過的最高關卡。 */
+    /** 射擊遊戲世界巡迴最多打到第幾站。 */
     var shooterCleared: Int
         get() = prefs.getInt("shooter_cleared", 0)
         set(value) = prefs.edit().putInt("shooter_cleared", value).apply()
@@ -42,15 +42,10 @@ class AppPrefs(context: Context) {
         get() = prefs.getBoolean("shooter_fx_high", true)
         set(value) = prefs.edit().putBoolean("shooter_fx_high", value).apply()
 
-    /** 破關時保留下來、下一關可以用一次的機體狀態（[com.purpal.catplayground.shooter.model.Loadout] 的編碼）。 */
-    var shooterCarry: String?
-        get() = prefs.getString("shooter_carry", null)
-        set(value) = prefs.edit().putString("shooter_carry", value).apply()
-
-    /** [shooterCarry] 給哪一關用；0 表示沒有。 */
-    var shooterCarryStage: Int
-        get() = prefs.getInt("shooter_carry_stage", 0)
-        set(value) = prefs.edit().putInt("shooter_carry_stage", value).apply()
+    /** 目前這一趟世界巡迴的進度（[com.purpal.catplayground.shooter.model.TourState] 的編碼）；null 表示還沒開始。 */
+    var shooterTour: String?
+        get() = prefs.getString("shooter_tour", null)
+        set(value) = prefs.edit().putString("shooter_tour", value).apply()
 
     fun shooterBest(stage: Int): Int = prefs.getInt("shooter_best_$stage", 0)
 

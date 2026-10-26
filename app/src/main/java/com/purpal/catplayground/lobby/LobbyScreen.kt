@@ -44,7 +44,7 @@ import com.purpal.catplayground.ui.FitText
 import com.purpal.catplayground.ui.PillButton
 import com.purpal.catplayground.ui.PlayBackground
 import com.purpal.catplayground.ui.PlayColors
-import com.purpal.catplayground.shooter.model.Stages
+import com.purpal.catplayground.shooter.model.Tour
 import com.purpal.catplayground.watersort.Ranks
 import com.purpal.catplayground.watersort.model.LevelGenerator
 
@@ -119,7 +119,7 @@ private fun statusFor(id: String, waterSortCleared: Int, shooterCleared: Int): S
         val rank = Ranks.forCleared(waterSortCleared)
         "${rank.emoji} ${rank.title}　已過 $waterSortCleared / ${LevelGenerator.LEVEL_COUNT} 關"
     }
-    GameRegistry.SHOOTER -> "已過 $shooterCleared / ${Stages.all.size} 關"
+    GameRegistry.SHOOTER -> "世界巡迴 $shooterCleared / ${Tour.SIZE} 站"
     else -> null
 }
 

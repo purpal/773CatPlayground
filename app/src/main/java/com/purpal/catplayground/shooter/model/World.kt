@@ -18,6 +18,10 @@ class World(
     seed: Int = stage.number,
     /** 從上一關帶過來的機體狀態。 */
     loadout: Loadout? = null,
+    /** 依出場順序決定的強度（見 [Difficulty]）。 */
+    val difficulty: Difficulty = Difficulty.NEUTRAL,
+    /** 畫面上顯示的「第幾站」。 */
+    val bout: Int = stage.number,
 ) {
     val random = Random(seed)
     val player = Player(cat)
@@ -182,6 +186,7 @@ class World(
 
     private fun spawnBoss() {
         val b = stage.createBoss()
+        difficulty.bossHp?.let { b.setMaxHp(it * b.hpFactor) }
         boss = b
         enemies += b
     }
@@ -884,6 +889,8 @@ class World(
     // ───────────────────────── 給敵人用的工具 ─────────────────────────
 
     fun spawn(e: Enemy) {
+        // 越後面的站，小怪與菁英怪越硬（Boss 的血量另外依出場順序決定；共用血量的分身只有 1 點）
+        if (!e.isBoss && e.hp > 1f) e.hp *= difficulty.enemyHp
         enemies += e
         if (e.isElite) sfx(e.x.coerceIn(150f, WORLD_WIDTH - 150f), 160f, SfxText.ELITE)
     }
@@ -937,7 +944,8 @@ class World(
 
     /** 敵彈一律放大 [BULLET_SCALE] 倍（判定與外觀一起），比較好看清楚、也比較好閃。 */
     fun bullet(x: Float, y: Float, vx: Float, vy: Float, style: BulletStyle, color: Long, radius: Float = defaultRadius(style)): EnemyBullet {
-        val b = EnemyBullet(x, y, vx, vy, style, color, radius * BULLET_SCALE, defaultDamage(style))
+        val k = difficulty.bulletSpeed
+        val b = EnemyBullet(x, y, vx * k, vy * k, style, color, radius * BULLET_SCALE, defaultDamage(style))
         bullets += b
         return b
     }
@@ -953,17 +961,21 @@ class World(
      */
     fun fan(x: Float, y: Float, center: Float, count: Int, spread: Float, speed: Float, style: BulletStyle, color: Long) {
         val wide = spread * BULLET_SPACING
-        for (i in 0 until count) {
-            val a = if (count == 1) center else center - wide / 2f + wide * i / (count - 1)
+        val n = scaledCount(count)
+        for (i in 0 until n) {
+            val a = if (n == 1) center else center - wide / 2f + wide * i / (n - 1)
             shoot(x, y, a, if (i % 2 == 1) speed * SLOW_LAYER else speed, style, color)
         }
     }
 
     /** 環形彈：顆數減少讓間隔放大 [BULLET_SPACING] 倍；奇數顆慢一點，形成快慢兩層。 */
     fun ring(x: Float, y: Float, count: Int, speed: Float, offset: Float, style: BulletStyle, color: Long) {
-        val n = (count / BULLET_SPACING).toInt().coerceAtLeast(3)
+        val n = (count / BULLET_SPACING * difficulty.density).toInt().coerceAtLeast(3)
         for (i in 0 until n) shoot(x, y, offset + i * TWO_PI / n, if (i % 2 == 1) speed * SLOW_LAYER else speed, style, color)
     }
+
+    /** 依出場順序調整的扇形彈顆數。 */
+    private fun scaledCount(count: Int): Int = if (count <= 1) count else Math.round(count * difficulty.density).coerceAtLeast(1)
 
     /**
      * 爆炸：閃光 → 數團火球 → 火花四射 → 煙 → 衝擊波圈。大爆炸還會震動、閃白。
@@ -1088,8 +1100,8 @@ class World(
             BulletStyle.CARD -> 12f
             BulletStyle.LID -> 15f
             BulletStyle.BANANA -> 13f
-            BulletStyle.COIN -> 11f
-            BulletStyle.HEART -> 13f
+            BulletStyle.MACARON -> 11f
+            BulletStyle.CROISSANT -> 13f
         }
 
         fun defaultDamage(style: BulletStyle): Float = when (style) {

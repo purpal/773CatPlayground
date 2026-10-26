@@ -41,10 +41,17 @@ class WorldTest {
         }
     }
 
+    /** 這一關在巡迴裡大約第幾站出場：天王與萌王位置固定，隨機池取中間（第 5 站）。 */
+    private fun typicalBout(number: Int): Int =
+        if (number == Tour.CHAMPION) Tour.SIZE - 1
+        else Tour.KINGS.indexOf(number).takeIf { it >= 0 }?.let { Tour.RANDOM_BOUTS + it }
+            ?: (Tour.RANDOM_BOUTS / 2)
+
     @Test
     fun bossFightLengthIsReasonableAtMaxPower() {
         for (entry in Stages.all.filter { it.stage != null }) {
-            val w = World(entry.stage!!, CatType.ORANGE, height = 2000f)
+            val bout = typicalBout(entry.number)
+            val w = World(entry.stage!!, CatType.ORANGE, height = 2000f, difficulty = Difficulty.forBout(bout))
             w.godMode = true
             w.player.mainWeapon = MainWeapon.FOCUS
             w.player.mainLevel = Player.MAX_MAIN_LEVEL
@@ -58,8 +65,66 @@ class WorldTest {
                 w.cues.clear()
                 t += STEP
             }
-            // Boss 血量加倍後，滿火力時 boss 戰大約 40～120 秒。
-            assertTrue("stage ${entry.number} boss took $t s", t in 30f..140f)
+            // 滿火力時，中段的 boss 戰大約 30～100 秒；天王與萌王血比較厚，可以再長一些。
+            val limit = if (bout >= Tour.RANDOM_BOUTS) 170f else 140f
+            assertTrue("stage ${entry.number} (bout $bout) boss took $t s", t in 25f..limit)
+        }
+    }
+
+    /** 整趟巡迴：機體狀態一站一站帶下去，越後面越難，但每一站都要打得完。 */
+    @Test
+    fun wholeTourCanBeClearedWithEscalatingDifficulty() {
+        for (cat in CatType.entries) {
+            var tour = Tour.start(cat, kotlin.random.Random(7))
+            val times = ArrayList<Float>()
+            while (!tour.finished) {
+                val bout = tour.nextBout
+                val w = World(
+                    tour.stageAt(bout)!!, cat, height = 2000f,
+                    loadout = tour.loadout, difficulty = Difficulty.forBout(bout), bout = bout + 1,
+                )
+                w.godMode = true
+                val time = autoplay(w, 600f)
+                assertEquals("bout $bout (stage ${tour.nextStage}) with $cat", Phase.CLEAR, w.phase)
+                assertTrue("bout $bout (stage ${tour.nextStage}) with $cat took $time s", time < 400f)
+                times += time
+                tour = tour.reveal().afterClear(w.score, w.loadout())
+            }
+            assertEquals(Tour.SIZE, times.size)
+        }
+    }
+
+    @Test
+    fun tourDrawsEveryAnimalOnceAndEndsWithKingsAndChampion() {
+        val tour = Tour.start(CatType.BLACK, kotlin.random.Random(3))
+        assertEquals(Tour.SIZE, tour.order.size)
+        assertEquals(Tour.POOL.toSet(), tour.order.take(Tour.RANDOM_BOUTS).toSet())
+        assertEquals(Tour.KINGS + Tour.CHAMPION, tour.order.drop(Tour.RANDOM_BOUTS))
+        assertEquals((0 until Tour.RANDOM_BOUTS).toSet(), tour.boxes.toSet())
+        assertEquals(Countries.HOME, tour.departure())
+        assertFalse(tour.nextRevealed)
+
+        val next = tour.reveal()
+        assertTrue(next.nextRevealed)
+        val loadout = World(Stages.dog, CatType.BLACK, 2000f).loadout()
+        val after = next.afterClear(1234, loadout)
+        assertEquals(1, after.cleared)
+        assertFalse(after.nextRevealed)
+        assertEquals(tour.stageAt(0)!!.country, after.departure())
+
+        val decoded = TourState.decode(after.encode())
+        assertEquals(after, decoded)
+        assertEquals(null, TourState.decode("garbage"))
+        assertEquals(null, TourState.decode(null))
+    }
+
+    @Test
+    fun laterBoutsAreHarder() {
+        for (i in 1 until Tour.SIZE) {
+            val a = Difficulty.forBout(i - 1)
+            val b = Difficulty.forBout(i)
+            assertTrue(b.bossHp!! > a.bossHp!!)
+            assertTrue(b.bulletSpeed > a.bulletSpeed && b.tempo > a.tempo && b.density > a.density)
         }
     }
 
@@ -247,7 +312,7 @@ class WorldTest {
         val w = worldInStage()
         w.player.x = 500f
         w.player.y = 900f
-        val fork = Laser(500f, 100f, HALF_PI, 1000f, 40f, warnTime = 0.2f, activeTime = 1f, color = Tint.PINK, damage = 30f, style = HazardStyle.FORK, extendTime = 0.4f)
+        val fork = Laser(500f, 100f, HALF_PI, 1000f, 40f, warnTime = 0.2f, activeTime = 1f, color = Tint.PINK, damage = 30f, style = HazardStyle.SWISSKNIFE, extendTime = 0.4f)
         w.lasers += fork
         val armor = w.player.armor
         repeat((0.3f / STEP).toInt()) { w.update(STEP) }
@@ -265,24 +330,24 @@ class WorldTest {
     }
 
     @Test
-    fun timidMouseDisarmsEarlyAndLosesItsFork() {
+    fun championMouseDisarmsAndLosesItsSwissKnife() {
         val w = bossFight(Stages.mouse)
         val boss = w.boss!!
-        assertEquals(HazardStyle.FORK, boss.heldProp())
-        boss.hp = boss.maxHp * 0.7f
+        assertEquals(HazardStyle.SWISSKNIFE, boss.heldProp())
+        boss.hp = boss.maxHp * 0.65f
         w.update(STEP)
-        assertFalse("70% is above the mouse's break point", boss.broken)
-        boss.hp = boss.maxHp * 0.62f
+        assertFalse("65% is above the mouse's break point", boss.broken)
+        boss.hp = boss.maxHp * 0.58f
         w.update(STEP)
         assertTrue(boss.broken)
         assertEquals(null, boss.heldProp())
-        assertTrue(w.particles.any { it.kind == ParticleKind.PROP && it.tag == LostProp.FORK })
+        assertTrue(w.particles.any { it.kind == ParticleKind.PROP && it.tag == LostProp.SWISSKNIFE })
         assertTrue(w.particles.any { it.kind == ParticleKind.SFX && it.tag == SfxText.BREAK })
     }
 
     @Test
     fun eachBossBreaksAtItsOwnThreshold() {
-        assertEquals(0.65f, MouseBoss().breakAt, 0f)
+        assertEquals(0.6f, MouseBoss().breakAt, 0f)
         assertEquals(0.35f, DogBoss().breakAt, 0f)
         assertEquals(0.25f, BearBoss().breakAt, 0f)
         assertEquals(BreakKind.ARMOR, CapyBoss().breakKind)
@@ -810,32 +875,81 @@ class WorldTest {
         assertTrue("stands still while copying", still)
     }
 
-    /** 最終關的萌王：撲滿機甲爆開（卸甲、灑金幣），之後再覺醒一次（第二次變身），輪流學前面幾關的 Boss。 */
+    /** 松露獵人：45% 法棍被打飛（卸甲）；嗅松露時地上冒出記號，時間到才炸開。 */
     @Test
-    fun championPigBreaksItsMechThenAwakens() {
+    fun truffleHunterSniffsTrufflesThatBurstLater() {
         val w = bossFight(Stages.pig)
         val pig = w.boss as PigBoss
         w.firing = false
-        assertEquals(HazardStyle.COINGUN, pig.heldProp())
-        assertEquals(0, pig.mood())
+        assertEquals(HazardStyle.BAGUETTE, pig.heldProp())
         pig.hp = pig.maxHp * 0.5f
         w.update(STEP)
-        assertTrue(pig.broken)
-        assertEquals(null, pig.heldProp())
-        assertTrue("coins spill out of the piggy bank", w.items.count { it.type == ItemType.COIN } >= 20)
-        assertFalse(pig.awakened)
-        pig.hp = pig.maxHp * 0.28f
-        // 卸甲後有短暫的停格，多跑幾步
-        repeat(20) { w.update(STEP) }
-        assertTrue(pig.awakened)
-        assertTrue("invulnerable while transforming", pig.invulnerable)
+        assertFalse(pig.broken)
         var t = 0f
-        while (pig.cameo == 0 && t < 5f) {
+        while (w.enemies.none { it is Truffle } && t < 30f) {
             w.update(STEP)
             w.cues.clear()
             t += STEP
         }
-        assertEquals(1, pig.cameo)
+        val truffle = w.enemies.filterIsInstance<Truffle>().first()
+        assertTrue("one truffle under the cat", w.enemies.filterIsInstance<Truffle>().any { kotlin.math.abs(it.x - w.player.x) < 80f })
+        w.bullets.clear()
+        runFor(w, Truffle.WARN - truffle.age - 0.1f)
+        assertTrue("nothing bursts before the warning ends", w.bullets.none { dist2(it.x, it.y, truffle.x, truffle.y) < 30f * 30f })
+        runFor(w, 0.2f)
+        assertTrue("bursts after the warning", w.bullets.any { dist2(it.x, it.y, truffle.x, truffle.y) < 80f * 80f })
+        pig.hp = pig.maxHp * 0.44f
+        repeat(10) { w.update(STEP) }
+        assertTrue(pig.broken)
+        assertEquals(null, pig.heldProp())
+    }
+
+    /** 萌王鼠鼠：60% 卸甲後擺老鼠夾（靠近才會夾），30% 搬出起司火鍋（第二次變身）。 */
+    @Test
+    fun championMouseSetsTrapsThenAwakens() {
+        val w = bossFight(Stages.mouse)
+        val mouse = w.boss as MouseBoss
+        w.firing = false
+        mouse.hp = mouse.maxHp * 0.58f
+        repeat(20) { w.update(STEP) }
+        assertTrue(mouse.broken)
+        var t = 0f
+        while (w.enemies.none { it is MouseTrap } && t < 30f) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+        }
+        val traps = w.enemies.filterIsInstance<MouseTrap>()
+        assertEquals(3, traps.size)
+        val far = traps.maxBy { dist2(it.x, it.y, w.player.x, w.player.y) }
+        if (dist2(far.x, far.y, w.player.x, w.player.y) > MouseTrap.TRIGGER * MouseTrap.TRIGGER) assertTrue(far.triggered < 0f)
+        mouse.hp = mouse.maxHp * 0.28f
+        repeat(20) { w.update(STEP) }
+        assertTrue(mouse.awakened)
+        assertTrue("invulnerable while transforming", mouse.invulnerable)
+    }
+
+    /** 起司洞洞牆：一整排起司裡一定留著鑽得過去的洞。 */
+    @Test
+    fun cheeseWallsAlwaysLeaveHoles() {
+        val w = bossFight(Stages.mouse)
+        w.firing = false
+        var walls = 0
+        var t = 0f
+        while (walls < 3 && t < 40f) {
+            w.bullets.clear()
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+            val row = w.bullets.filter { it.style == BulletStyle.CHEESE && it.y < 0f }
+            if (row.size > 8) {
+                walls++
+                val xs = row.map { it.x }.sorted()
+                val widest = (listOf(0f) + xs + WORLD_WIDTH).zipWithNext { a, b -> b - a }.max()
+                assertTrue("a hole wide enough to fly through ($widest)", widest > 140f)
+            }
+        }
+        assertTrue(walls > 0)
     }
 
     /** 泥巴坑：落地後踩進去會變慢，離開就恢復。 */

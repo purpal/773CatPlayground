@@ -33,6 +33,8 @@ class StageDef(
     val animal: String,
     val title: String,
     val theme: StageTheme,
+    /** 世界巡迴裡這一關所在的國家。 */
+    val country: Country,
     val bossName: String,
     /** 選關、警告畫面用的 Boss 頭像（assets/art 的名稱，不含心情與影格）。 */
     val bossArt: String,
@@ -54,14 +56,15 @@ object Stages {
     val mouse = StageDef(
         number = 1,
         animal = "老鼠",
-        title = "起司倉庫",
+        title = "阿爾卑斯起司城堡",
         theme = StageTheme.CHEESE_BARN,
-        bossName = "起司鼠王",
+        country = Countries.SWITZERLAND,
+        bossName = "萌王 鼠鼠",
         bossArt = "boss_mouse",
         createBoss = ::MouseBoss,
         outro = listOf(
-            boss("吱…你的肉球真的好可愛…起司分你一半…"),
-            cat("謝謝招待喵！下一站，出發！"),
+            boss("吱…萌王的紙皇冠…（雙手遞過來）你的肉球是全世界最可愛的…這個位子給你坐…"),
+            cat("繞了地球一大圈…我、我是新的萌王了喵？！謝謝大家陪我一路打過來！"),
         ),
         script = script {
             line(1.5f, 10, 0.12f) { w, i -> w.spawn(MouseRunner(140f + (i % 5) * 180f + (i / 5) * 90f)) }
@@ -95,8 +98,9 @@ object Stages {
     val dog = StageDef(
         number = 2,
         animal = "狗狗",
-        title = "汪汪公園",
+        title = "櫻花公園",
         theme = StageTheme.PARK,
+        country = Countries.JAPAN,
         bossName = "柴犬隊長",
         bossArt = "boss_dog",
         createBoss = ::DogBoss,
@@ -134,8 +138,9 @@ object Stages {
     val bear = StageDef(
         number = 3,
         animal = "熊熊",
-        title = "蜂蜜森林",
+        title = "楓葉蜂蜜森林",
         theme = StageTheme.HONEY_FOREST,
+        country = Countries.CANADA,
         bossName = "熊熊大王",
         bossArt = "boss_bear",
         createBoss = ::BearBoss,
@@ -175,8 +180,9 @@ object Stages {
     val capybara = StageDef(
         number = 4,
         animal = "卡皮巴拉",
-        title = "溫泉河畔",
+        title = "亞馬遜溫泉",
         theme = StageTheme.ONSEN,
+        country = Countries.BRAZIL,
         bossName = "溫泉大王 卡皮",
         bossArt = "boss_capy",
         createBoss = ::CapyBoss,
@@ -214,8 +220,9 @@ object Stages {
     val rabbit = StageDef(
         number = 5,
         animal = "兔子",
-        title = "胡蘿蔔田",
+        title = "英式菜園",
         theme = StageTheme.CARROT_FIELD,
+        country = Countries.UK,
         bossName = "兔兔隊長 蘿蔔",
         bossArt = "boss_rabbit",
         createBoss = ::RabbitBoss,
@@ -255,6 +262,7 @@ object Stages {
         animal = "企鵝",
         title = "冰雪南極",
         theme = StageTheme.ICE_FIELD,
+        country = Countries.ANTARCTICA,
         bossName = "企鵝艦長 冰冰",
         bossArt = "boss_penguin",
         createBoss = ::PenguinBoss,
@@ -294,6 +302,7 @@ object Stages {
         animal = "無尾熊",
         title = "尤加利樹林",
         theme = StageTheme.EUCALYPTUS,
+        country = Countries.AUSTRALIA,
         bossName = "無尾熊長老 尤加",
         bossArt = "boss_koala",
         createBoss = ::KoalaBoss,
@@ -331,8 +340,9 @@ object Stages {
     val otter = StageDef(
         number = 8,
         animal = "水獺",
-        title = "清澈溪流",
+        title = "新加坡河畔",
         theme = StageTheme.STREAM,
+        country = Countries.SINGAPORE,
         bossName = "水獺姊妹 啾啾＆嚕嚕",
         bossArt = "boss_otter",
         createBoss = ::OtterBoss,
@@ -372,6 +382,7 @@ object Stages {
         animal = "熊貓",
         title = "翠綠竹林",
         theme = StageTheme.BAMBOO,
+        country = Countries.CHINA,
         bossName = "熊貓師父 波波",
         bossArt = "boss_panda",
         createBoss = ::PandaBoss,
@@ -411,6 +422,7 @@ object Stages {
         animal = "樹懶",
         title = "雨林樹冠",
         theme = StageTheme.RAINFOREST,
+        country = Countries.COSTA_RICA,
         bossName = "樹懶郵差 閃電",
         bossArt = "boss_sloth",
         createBoss = ::SlothBoss,
@@ -448,8 +460,9 @@ object Stages {
     val raccoon = StageDef(
         number = 11,
         animal = "浣熊",
-        title = "月夜小鎮",
+        title = "紐約月夜屋頂",
         theme = StageTheme.NIGHT_TOWN,
+        country = Countries.USA,
         bossName = "月夜怪盜 基德",
         bossArt = "boss_raccoon",
         createBoss = ::RaccoonBoss,
@@ -487,14 +500,15 @@ object Stages {
     val monkey = StageDef(
         number = 12,
         animal = "猴子",
-        title = "叢林遺跡",
+        title = "吳哥叢林遺跡",
         theme = StageTheme.RUINS,
+        country = Countries.CAMBODIA,
         bossName = "遺跡猴王 吱吱",
         bossArt = "boss_monkey",
         createBoss = ::MonkeyBoss,
         outro = listOf(
             boss("吱…學不來…你的肉球太可愛了，學不來啦…香蕉分你一根…"),
-            cat("學我是沒用的喵！下一關就是決賽了，萌王等著吧！"),
+            cat("學我是沒用的喵！下一站，出發！"),
         ),
         script = script {
             line(1.5f, 10, 0.14f) { w, i -> w.spawn(SwingMonkey(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
@@ -526,14 +540,15 @@ object Stages {
     val pig = StageDef(
         number = 13,
         animal = "豬豬",
-        title = "泥巴農場",
+        title = "薰衣草農場",
         theme = StageTheme.MUD_FARM,
-        bossName = "現任萌王 佩奇",
+        country = Countries.FRANCE,
+        bossName = "松露獵人 佩奇",
         bossArt = "boss_pig",
         createBoss = ::PigBoss,
         outro = listOf(
-            boss("嗚哇…萌王的位子…讓給你坐…（把皇冠戴到你頭上）"),
-            cat("我、我是新的萌王了喵？！謝謝大家陪我一路打過來！"),
+            boss("嗚哇…貝雷帽被打飛了…（吸鼻子）剛挖到的松露分你一顆…"),
+            cat("香香的！不過我還是比較想要小魚乾喵～下一站，出發！"),
         ),
         script = script {
             line(1.5f, 10, 0.14f) { w, i -> w.spawn(Chick(140f + (i % 5) * 180f, (i / 5) * 0.3f)) }
@@ -563,19 +578,19 @@ object Stages {
     )
 
     val all = listOf(
-        StageEntry(1, "老鼠", "起司倉庫", "🐭", mouse),
-        StageEntry(2, "狗狗", "汪汪公園", "🐶", dog),
-        StageEntry(3, "熊熊", "蜂蜜森林", "🐻", bear),
-        StageEntry(4, "卡皮巴拉", "溫泉河畔", "♨️", capybara),
-        StageEntry(5, "兔子", "胡蘿蔔田", "🐰", rabbit),
+        StageEntry(1, "老鼠", "阿爾卑斯起司城堡", "🐭", mouse),
+        StageEntry(2, "狗狗", "櫻花公園", "🐶", dog),
+        StageEntry(3, "熊熊", "楓葉蜂蜜森林", "🐻", bear),
+        StageEntry(4, "卡皮巴拉", "亞馬遜溫泉", "♨️", capybara),
+        StageEntry(5, "兔子", "英式菜園", "🐰", rabbit),
         StageEntry(6, "企鵝", "冰雪南極", "🐧", penguin),
         StageEntry(7, "無尾熊", "尤加利樹林", "🐨", koala),
-        StageEntry(8, "水獺", "清澈溪流", "🦦", otter),
+        StageEntry(8, "水獺", "新加坡河畔", "🦦", otter),
         StageEntry(9, "熊貓", "翠綠竹林", "🐼", panda),
         StageEntry(10, "樹懶", "雨林樹冠", "🦥", sloth),
-        StageEntry(11, "浣熊", "月夜小鎮", "🦝", raccoon),
-        StageEntry(12, "猴子", "叢林遺跡", "🐵", monkey),
-        StageEntry(13, "豬豬", "泥巴農場", "🐷", pig),
+        StageEntry(11, "浣熊", "紐約月夜屋頂", "🦝", raccoon),
+        StageEntry(12, "猴子", "吳哥叢林遺跡", "🐵", monkey),
+        StageEntry(13, "豬豬", "薰衣草農場", "🐷", pig),
     )
 
     fun get(number: Int): StageDef? = all.getOrNull(number - 1)?.stage
