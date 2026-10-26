@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/purpal/773CatPlayground/compare/v0.16.0...v0.17.0) (2026-10-26)
+
+
+### Features
+
+* stages 10-13 and the ending - sloth postman, raccoon phantom thief, ruins monkey king and the champion pig ([2b85004](https://github.com/purpal/773CatPlayground/commit/2b85004bd0b07b68d7505b7870b7c0963e8d7dfb))
+
 ## [0.16.0](https://github.com/purpal/773CatPlayground/compare/v0.15.0...v0.16.0) (2026-10-26)
 
 
