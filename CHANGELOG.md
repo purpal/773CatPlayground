@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/purpal/773CatPlayground/compare/v0.15.0...v0.16.0) (2026-10-26)
+
+
+### Features
+
+* stage 9 bamboo forest with the panda master Bobo ([a9a3f70](https://github.com/purpal/773CatPlayground/commit/a9a3f708ca2dc3002f34d1fa7f5409db89aab62e))
+
 ## [0.15.0](https://github.com/purpal/773CatPlayground/compare/v0.14.1...v0.15.0) (2026-10-25)
 
 
