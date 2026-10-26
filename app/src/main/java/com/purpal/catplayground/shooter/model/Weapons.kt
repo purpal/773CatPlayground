@@ -156,7 +156,8 @@ object Weapons {
             }
             SubWeapon.SONIC -> if (w.canDeployWall()) {
                 val shot = PlayerShot(p.x, p.y - 40f, 0f, -900f, 0f, 16f, ShotStyle.SONIC)
-                shot.burstAt = 0.26f
+                // 飛 0.39 秒（約 350）才展開
+                shot.burstAt = 0.39f
                 shot.wallLevel = level
                 w.playerShots += shot
                 p.subTimer = 1.5f

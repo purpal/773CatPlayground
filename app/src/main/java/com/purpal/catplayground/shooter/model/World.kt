@@ -508,7 +508,10 @@ class World(
             if (s.style == ShotStyle.SONIC && s.age >= s.burstAt) {
                 s.alive = false
                 val level = s.wallLevel
-                walls += SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG, maxHp = WALL_HP + level * WALL_HP_PER_LEVEL)
+                val wall = SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG, maxHp = WALL_HP + level * WALL_HP_PER_LEVEL)
+                walls += wall
+                // 下一道的時間在展開時就排好：就算提前碎掉也一樣要等到原本的時間
+                wallReadyAt = time + wall.life + WALL_GAP
                 cue(SoundCue.SONIC)
             }
             if (s.y < -80f || s.y > height + 80f || s.x < -80f || s.x > WORLD_WIDTH + 80f) s.alive = false
@@ -669,7 +672,6 @@ class World(
     /** 力場盾擋太多子彈：整片碎成六角碎片往外飛散。 */
     private fun shatterWall(wall: SonicWall) {
         wall.alive = false
-        wallReadyAt = time + WALL_GAP
         val n = 16
         for (i in 0 until n) {
             val a = -HALF_PI - wall.halfAngle + wall.halfAngle * 2f * (i + 0.5f) / n
@@ -695,7 +697,6 @@ class World(
             wall.age += dt
             if (wall.age > wall.life) {
                 wall.alive = false
-                wallReadyAt = time + WALL_GAP
                 continue
             }
             // 雷射、近身攻擊與撞上來的敵人擋不住，但穿過力場盾時一樣會消耗耐久（每個攻擊算一次）
@@ -728,9 +729,12 @@ class World(
         if (wall.hp <= 0f) shatterWall(wall)
     }
 
-    /** 力場盾一次只有一道：上一道消失 [WALL_GAP] 秒後才能再放，飛出去還沒展開的也算。 */
+    /**
+     * 力場盾一次只有一道，施放間隔固定：上一道展開後撐滿時間、再過 [WALL_GAP] 秒才能放下一道；
+     * 提前碎掉也不會提早。飛出去還沒展開的也算一道。
+     */
     fun canDeployWall(): Boolean =
-        time >= wallReadyAt && walls.none { it.alive } && playerShots.none { it.alive && it.style == ShotStyle.SONIC }
+        time >= wallReadyAt && playerShots.none { it.alive && it.style == ShotStyle.SONIC }
 
     private fun updateItems(dt: Float) {
         val p = player

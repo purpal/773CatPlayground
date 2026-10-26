@@ -562,6 +562,34 @@ class WorldTest {
         assertTrue("waits ${World.WALL_GAP}s after the last wall ($gap)", gap >= World.WALL_GAP)
     }
 
+    /** 力場盾提前碎掉，下一道還是照原本的時間放（展開後撐滿時間再加 0.3 秒）。 */
+    @Test
+    fun shatteredForceFieldDoesNotHurryTheNextOne() {
+        val w = worldInStage()
+        w.godMode = true
+        w.enemies.clear()
+        w.player.subWeapon = SubWeapon.SONIC
+        w.player.subLevel = 1
+        w.firing = true
+        var t = 0f
+        while (w.walls.none { it.alive } && t < 3f) { w.update(STEP); w.cues.clear(); t += STEP }
+        val first = w.walls.single { it.alive }
+        val deployedAt = w.time
+        // 一道很強的雷射直接把它打碎
+        w.lasers += Laser(first.x, 0f, HALF_PI, 3000f, 30f, 0f, 0.3f, Tint.RED, 500f)
+        while (first.alive) { w.update(STEP); w.cues.clear() }
+        assertTrue("shattered early", w.time - deployedAt < first.life)
+        val shotsBefore = w.playerShots.count { it.style == ShotStyle.SONIC }
+        assertEquals(0, shotsBefore)
+        var nextAt = -1f
+        while (nextAt < 0f && w.time < deployedAt + 6f) {
+            w.update(STEP)
+            w.cues.clear()
+            if (w.playerShots.any { it.alive && it.style == ShotStyle.SONIC }) nextAt = w.time
+        }
+        assertEquals(deployedAt + first.life + World.WALL_GAP, nextAt, STEP * 2)
+    }
+
     /** 雷射擋不住，但穿過力場盾時一樣扣盾的耐久（同一道雷射只算一次）。 */
     @Test
     fun lasersPassThroughForceFieldsButWearThemDown() {
