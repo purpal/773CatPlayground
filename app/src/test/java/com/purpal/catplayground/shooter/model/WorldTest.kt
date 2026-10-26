@@ -120,7 +120,6 @@ class WorldTest {
         assertEquals(Tour.SIZE, tour.order.size)
         assertEquals(Tour.POOL.toSet(), tour.order.take(Tour.RANDOM_BOUTS).toSet())
         assertEquals(Tour.KINGS + Tour.CHAMPION, tour.order.drop(Tour.RANDOM_BOUTS))
-        assertEquals((0 until Tour.RANDOM_BOUTS).toSet(), tour.boxes.toSet())
         assertEquals(Countries.HOME, tour.departure())
         assertFalse(tour.nextRevealed)
 
@@ -135,6 +134,9 @@ class WorldTest {
         val decoded = TourState.decode(after.encode())
         assertEquals(after, decoded)
         assertEquals(null, TourState.decode("garbage"))
+        // 舊版（有 3×3 格子欄位）的存檔也讀得回來
+        val old = after.encode().split(";").toMutableList().apply { add(2, "0.1.2.3.4.5.6.7.8") }.joinToString(";")
+        assertEquals(after, TourState.decode(old))
         assertEquals(null, TourState.decode(null))
     }
 
@@ -534,6 +536,71 @@ class WorldTest {
         }
     }
 
+    /** 力場盾一次只有一道：上一道消失 0.3 秒後才放下一道。 */
+    @Test
+    fun onlyOneForceFieldAtATime() {
+        val w = worldInStage()
+        w.godMode = true
+        w.player.subWeapon = SubWeapon.SONIC
+        w.player.subLevel = 3
+        w.firing = true
+        var maxWalls = 0
+        var gone = -1f
+        var gap = Float.MAX_VALUE
+        var t = 0f
+        while (t < 12f) {
+            val before = w.walls.count { it.alive }
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+            val now = w.walls.count { it.alive }
+            maxWalls = maxOf(maxWalls, now + w.playerShots.count { it.alive && it.style == ShotStyle.SONIC })
+            if (before > 0 && now == 0) gone = t
+            if (before == 0 && now > 0 && gone >= 0f) gap = minOf(gap, t - gone)
+        }
+        assertEquals(1, maxWalls)
+        assertTrue("waits ${World.WALL_GAP}s after the last wall ($gap)", gap >= World.WALL_GAP)
+    }
+
+    /** 雷射擋不住，但穿過力場盾時一樣扣盾的耐久（同一道雷射只算一次）。 */
+    @Test
+    fun lasersPassThroughForceFieldsButWearThemDown() {
+        val w = worldInStage()
+        w.godMode = true
+        w.enemies.clear()
+        val wall = SonicWall(500f, 900f, 160f, 50f * DEG, maxHp = 100f)
+        w.walls += wall
+        w.lasers += Laser(500f, 0f, HALF_PI, 3000f, 30f, 0f, 1f, Tint.RED, 30f)
+        runFor(w, 0.5f)
+        assertTrue(wall.alive)
+        assertEquals(70f, wall.hp, 0.01f)
+        w.lasers += Laser(500f, 0f, HALF_PI, 3000f, 30f, 0f, 1f, Tint.RED, 80f)
+        runFor(w, 0.2f)
+        assertFalse("second laser breaks it", wall.alive)
+    }
+
+    /** 熊熊大王的蜂蜜鑽：來回橫掃身體下方，不會往上轉。 */
+    @Test
+    fun bearDipperSweepsTheLowerHalf() {
+        val w = bossFight(Stages.bear)
+        w.firing = false
+        val sweeps = HashSet<Laser>()
+        var t = 0f
+        while (t < 60f && (sweeps.size < 2 || w.lasers.any { it in sweeps })) {
+            w.update(STEP)
+            w.cues.clear()
+            t += STEP
+            for (l in w.lasers) {
+                if (l.style != HazardStyle.DIPPER || l.sweep == 0f) continue
+                sweeps += l
+                if (!l.active) continue
+                val a = Math.floorMod((l.angle / DEG).toInt(), 360)
+                assertTrue("dipper points down ($a°)", a in 0..180)
+            }
+        }
+        assertTrue("sweeps there and back (${sweeps.size})", sweeps.size >= 2)
+    }
+
     /** 小橘的肉球護甲：時間內的傷害先扣臨時護甲；沒扣完的時間到就消失，扣超過的才扣本體。 */
     @Test
     fun orangeFlickGivesTemporaryArmorThatAbsorbsDamageThenFades() {
@@ -620,7 +687,10 @@ class WorldTest {
         assertTrue("no projectiles", w.playerShots.isEmpty())
     }
 
-    /** 掃擊型的雷射／道具一定要留安全區：柴犬的雙眼光束與熊的旋轉蜂蜜鑽，正下方那一塊永遠打不到。 */
+    /**
+     * 掃擊型的雷射／道具一定要留安全區：柴犬的雙眼光束正下方那一塊永遠打不到；
+     * 熊的蜂蜜鑽會來回橫掃身體下方，但搆不到更下面的地方。
+     */
     @Test
     fun sweepingAttacksLeaveASafeZoneBelowTheBoss() {
         for (stage in listOf(Stages.dog, Stages.bear)) {
@@ -637,12 +707,13 @@ class WorldTest {
                 w.update(STEP)
                 w.cues.clear()
                 t += STEP
-                val sx = boss.x
-                val sy = boss.y + boss.radius + 260f
                 for (l in w.lasers) {
                     if (l.sweep == 0f || !l.active) continue
                     if (l.style != HazardStyle.BEAM && l.style != HazardStyle.DIPPER) continue
                     sweeps++
+                    val sx = boss.x
+                    val sy = if (l.style == HazardStyle.DIPPER) l.y + l.length + l.width + 40f else boss.y + boss.radius + 260f
+                    assertTrue("safe zone is on screen", sy < w.height * 0.8f)
                     assertTrue("${stage.title}: ${l.style} hits the safe zone", l.distance2To(sx, sy) > (l.width * 0.4f + 12f).let { it * it })
                 }
             }

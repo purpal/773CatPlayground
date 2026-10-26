@@ -607,15 +607,23 @@ class BearBoss : Boss(hp = 28000f, radius = 210f, score = 40000, homeY = 440f) {
         if (every(t, dt, 0.8f, offset = 1.4f)) w.fan(x, y + 60f, w.aimAt(x, y), 5, 40f * DEG, 240f, BulletStyle.RICE, Tint.ORANGE)
     }
     /**
-     * 抓著蜂蜜鑽原地轉一大圈（312°），熱熔的鑽頭掃過畫面；
-     * 正下方留一個 48° 的缺口，鑽頭也搆不到畫面最下方，兩處都是安全區。
+     * 抓著蜂蜜鑽在身體下方來回橫掃：先從玩家的另一側掃過整個下半部，再掃回來；
+     * 鑽頭搆不到畫面最下方，那裡是安全區。
      */
-    private val dipperSpin = Attack(4.2f) { w, t, dt ->
+    private val dipperSpin = Attack(4.6f) { w, t, dt ->
         if (crossed(t, dt, 0.01f)) {
-            melee(w, HazardStyle.DIPPER, HALF_PI + 24f * DEG, 50f, warn = 1f, active = 2.6f, extend = 0.3f, sweep = 120f * DEG, length = 700f, fromX = 0f, fromY = 40f)
+            // 從玩家的另一側開始，預告時間內有空躲
+            spinSide = if (w.player.x < x) 1f else -1f
+            val start = if (spinSide > 0f) SPIN_EDGE else HALF_PI * 2f - SPIN_EDGE
+            melee(w, HazardStyle.DIPPER, start, 50f, warn = 1f, active = SPIN_TIME, extend = 0.3f, sweep = spinSide * SPIN_SPEED, length = 700f, fromX = 0f, fromY = 40f)
+        }
+        if (crossed(t, dt, 1f + SPIN_TIME + 0.05f)) {
+            val start = if (spinSide > 0f) HALF_PI * 2f - SPIN_EDGE else SPIN_EDGE
+            melee(w, HazardStyle.DIPPER, start, 50f, warn = 0.5f, active = SPIN_TIME, extend = 0.1f, sweep = -spinSide * SPIN_SPEED, length = 700f, fromX = 0f, fromY = 40f)
         }
         if (every(t, dt, 0.5f, offset = 1f)) w.aimed(x, y + 60f, 230f, BulletStyle.HONEY, Tint.HONEY)
     }
+    private var spinSide = 1f
     private val spiral = Attack(4f) { w, t, dt ->
         if (every(t, dt, 0.1f)) {
             val a = -t * 2f
@@ -649,6 +657,13 @@ class BearBoss : Boss(hp = 28000f, radius = 210f, score = 40000, homeY = 440f) {
         !broken && phase == 0 -> listOf(honeyCurtain, dipperSlam, groundSlam, dipperSpin)
         !broken -> listOf(hives, dipperSpin, dipperSlam, spiral)
         else -> listOf(fury, claws, groundSlam, hives)
+    }
+
+    companion object {
+        /** 來回橫掃：從水平線往下 8° 掃到另一側（164°），每趟 1.3 秒。 */
+        const val SPIN_EDGE = 8f * DEG
+        const val SPIN_TIME = 1.3f
+        const val SPIN_SPEED = (HALF_PI * 2f - SPIN_EDGE * 2f) / SPIN_TIME
     }
 }
 

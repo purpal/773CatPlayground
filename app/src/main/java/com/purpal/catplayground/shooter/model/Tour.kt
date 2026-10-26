@@ -80,7 +80,6 @@ object Tour {
         TourState(
             cat = cat,
             order = POOL.shuffled(random) + KINGS + CHAMPION,
-            boxes = (0 until RANDOM_BOUTS).shuffled(random),
             cleared = 0,
             revealed = 0,
             loadout = null,
@@ -89,14 +88,13 @@ object Tour {
 }
 
 /**
- * 一趟巡迴的進度。[order] 是 13 站依序要挑戰的關卡（前 9 站開局就先洗好，但畫面上一站一站揭曉）；
- * [boxes] 是前 9 站各自揭曉在 3×3 格子的哪一格。[revealed] 是已經揭曉（抽籤、飛過去）的站數，
+ * 一趟巡迴的進度。[order] 是 13 站依序要挑戰的關卡（前 9 站開局就先洗好，但畫面上一站一站揭曉）。
+ * [revealed] 是已經揭曉（抽籤、飛過去）的站數，
  * 比 [cleared] 多 1 表示下一站已經抽好、飛機也到了。[loadout] 是打完上一站時的機體狀態，下一站沿用。
  */
 data class TourState(
     val cat: CatType,
     val order: List<Int>,
-    val boxes: List<Int>,
     val cleared: Int,
     val revealed: Int,
     val loadout: Loadout?,
@@ -123,7 +121,6 @@ data class TourState(
     fun encode(): String = listOf(
         cat.name,
         order.joinToString("."),
-        boxes.joinToString("."),
         cleared,
         revealed,
         loadout?.encode()?.replace(",", "~") ?: "",
@@ -132,20 +129,20 @@ data class TourState(
 
     companion object {
         fun decode(text: String?): TourState? {
-            val parts = text?.split(";") ?: return null
-            if (parts.size != 7) return null
+            var parts = text?.split(";") ?: return null
+            // 舊版存檔多一欄 3×3 格子的位置，直接略過
+            if (parts.size == 7) parts = parts.filterIndexed { i, _ -> i != 2 }
+            if (parts.size != 6) return null
             return runCatching {
                 val order = parts[1].split(".").map { it.toInt() }
-                val boxes = parts[2].split(".").map { it.toInt() }
-                require(order.size == Tour.SIZE && boxes.size == Tour.RANDOM_BOUTS)
+                require(order.size == Tour.SIZE)
                 TourState(
                     cat = CatType.valueOf(parts[0]),
                     order = order,
-                    boxes = boxes,
-                    cleared = parts[3].toInt().coerceIn(0, Tour.SIZE),
-                    revealed = parts[4].toInt().coerceIn(0, Tour.SIZE),
-                    loadout = Loadout.decode(parts[5].replace("~", ",").ifEmpty { null }),
-                    totalScore = parts[6].toInt(),
+                    cleared = parts[2].toInt().coerceIn(0, Tour.SIZE),
+                    revealed = parts[3].toInt().coerceIn(0, Tour.SIZE),
+                    loadout = Loadout.decode(parts[4].replace("~", ",").ifEmpty { null }),
+                    totalScore = parts[5].toInt(),
                 )
             }.getOrNull()
         }

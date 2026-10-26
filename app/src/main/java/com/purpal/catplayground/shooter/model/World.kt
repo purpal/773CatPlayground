@@ -31,6 +31,7 @@ class World(
     val bullets = ArrayList<EnemyBullet>()
     val lasers = ArrayList<Laser>()
     val walls = ArrayList<SonicWall>()
+    private var wallReadyAt = 0f
     val items = ArrayList<Item>()
     val particles = ArrayList<Particle>()
 
@@ -668,6 +669,7 @@ class World(
     /** 力場盾擋太多子彈：整片碎成六角碎片往外飛散。 */
     private fun shatterWall(wall: SonicWall) {
         wall.alive = false
+        wallReadyAt = time + WALL_GAP
         val n = 16
         for (i in 0 until n) {
             val a = -HALF_PI - wall.halfAngle + wall.halfAngle * 2f * (i + 0.5f) / n
@@ -688,11 +690,47 @@ class World(
     }
 
     private fun updateWalls(dt: Float) {
-        for (w in walls) {
-            w.age += dt
-            if (w.age > w.life) w.alive = false
+        for (wall in walls) {
+            if (!wall.alive) continue
+            wall.age += dt
+            if (wall.age > wall.life) {
+                wall.alive = false
+                wallReadyAt = time + WALL_GAP
+                continue
+            }
+            // 雷射、近身攻擊與撞上來的敵人擋不住，但穿過力場盾時一樣會消耗耐久（每個攻擊算一次）
+            for (l in lasers) {
+                if (!l.active || l in wall.struck) continue
+                val reach = l.width * 0.5f + wall.thickness
+                if (wallTouched(wall) { px, py -> l.distance2To(px, py) < reach * reach }) strikeWall(wall, l, l.damage)
+            }
+            for (e in enemies) {
+                if (!e.alive || e.contactDamage <= 0f || !e.hurtsOnContact || e in wall.struck) continue
+                if (wall.blocks(e.x, e.y, e.radius * 0.8f)) strikeWall(wall, e, e.contactDamage)
+            }
         }
     }
+
+    /** 沿著力場盾的弧線取樣，看有沒有哪一點被碰到。 */
+    private inline fun wallTouched(wall: SonicWall, hit: (Float, Float) -> Boolean): Boolean {
+        for (i in 0..WALL_SAMPLES) {
+            val a = -HALF_PI - wall.halfAngle + wall.halfAngle * 2f * i / WALL_SAMPLES
+            if (hit(wall.x + cos(a) * wall.radius, wall.centerY + sin(a) * wall.radius)) return true
+        }
+        return false
+    }
+
+    private fun strikeWall(wall: SonicWall, source: Any, damage: Float) {
+        wall.struck += source
+        wall.hp -= damage
+        val top = wall.centerY - wall.radius
+        particles += Particle(wall.x, top, 0f, 0f, 0.35f, 1f, 0, ParticleKind.HEXHIT)
+        if (wall.hp <= 0f) shatterWall(wall)
+    }
+
+    /** 力場盾一次只有一道：上一道消失 [WALL_GAP] 秒後才能再放，飛出去還沒展開的也算。 */
+    fun canDeployWall(): Boolean =
+        time >= wallReadyAt && walls.none { it.alive } && playerShots.none { it.alive && it.style == ShotStyle.SONIC }
 
     private fun updateItems(dt: Float) {
         val p = player
@@ -1120,8 +1158,11 @@ class World(
 
         /** 黑貓影閃：手指移動速度超過基本速度的這個倍數就觸發。 */
         /** 力場盾的耐久（不隨難度變化，後面的關卡子彈多，盾就撐得比較短）。 */
-        const val WALL_HP = 40f
-        const val WALL_HP_PER_LEVEL = 25f
+        const val WALL_HP = 32f
+        const val WALL_HP_PER_LEVEL = 20f
+        /** 上一道力場盾消失後，隔多久才能放下一道。 */
+        const val WALL_GAP = 0.3f
+        const val WALL_SAMPLES = 16
         const val DASH_TRIGGER = 2.6f
         const val DASH_TIME = 0.3f
         const val DASH_COOLDOWN = 0.9f

@@ -181,6 +181,8 @@ class SonicWall(val x: Float, val y: Float, val radius: Float, val halfAngle: Fl
     /** 力場盾的耐久：擋下的子彈傷害扣在這裡，扣完就碎掉。 */
     var hp = maxHp
     val hpRatio: Float get() = (hp / maxHp).coerceIn(0f, 1f)
+    /** 已經穿過這道盾、扣過耐久的雷射與敵人（每個只算一次）。 */
+    val struck = HashSet<Any>()
     val life = 2.4f
     val thickness = 26f
     val centerY: Float get() = y + radius

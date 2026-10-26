@@ -154,7 +154,7 @@ object Weapons {
                 p.subTimer = 0.6f
                 w.cue(SoundCue.MISSILE)
             }
-            SubWeapon.SONIC -> {
+            SubWeapon.SONIC -> if (w.canDeployWall()) {
                 val shot = PlayerShot(p.x, p.y - 40f, 0f, -900f, 0f, 16f, ShotStyle.SONIC)
                 shot.burstAt = 0.26f
                 shot.wallLevel = level
