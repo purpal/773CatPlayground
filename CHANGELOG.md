@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/purpal/773CatPlayground/compare/v0.17.0...v0.17.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* stage 11 crashed on start ([455f993](https://github.com/purpal/773CatPlayground/commit/455f993ba6c245141c8876aa8a7bd203433303ee))
+
 ## [0.17.0](https://github.com/purpal/773CatPlayground/compare/v0.16.0...v0.17.0) (2026-10-26)
 
 
