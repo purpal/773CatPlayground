@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/purpal/773CatPlayground/compare/v0.20.1...v0.21.0) (2026-10-27)
+
+
+### Features
+
+* 機體卡改成顯示特技、設定收進對話框、力場盾展開距離調整 ([7992208](https://github.com/purpal/773CatPlayground/commit/7992208d51aa844ace8a3d7b7a235d11d5967dde))
+
 ## [0.20.1](https://github.com/purpal/773CatPlayground/compare/v0.20.0...v0.20.1) (2026-10-26)
 
 
