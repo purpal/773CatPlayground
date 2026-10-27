@@ -328,8 +328,8 @@ class World(
         var dx = mx * p.speed * dt + dragDx * gain
         var dy = my * p.speed * dt + dragDy * gain
         val step = hypot(dx, dy)
-        // 快速一甩：黑貓「影閃」瞬間閃過去，短暫無敵並留下殘影；
-        // 橘貓「肉球護甲」在同樣的時間內套上一層臨時護甲。
+        // 快速一甩：黑貓「閃身步」瞬間閃過去，短暫無敵並留下殘影；
+        // 橘貓「金鐘罩」在同樣的時間內套上一層臨時護甲。
         if (p.dashCooldown <= 0f && step / dt > p.cat.baseSpeed * DASH_TRIGGER) {
             p.dashCooldown = DASH_COOLDOWN
             if (p.cat == CatType.BLACK) {
@@ -1160,7 +1160,7 @@ class World(
         const val DAMAGE_NUMBER_INTERVAL = 0.12f
 
 
-        /** 黑貓影閃：手指移動速度超過基本速度的這個倍數就觸發。 */
+        /** 黑貓閃身步：手指移動速度超過基本速度的這個倍數就觸發。 */
         /** 力場盾的耐久（不隨難度變化，後面的關卡子彈多，盾就撐得比較短）。 */
         const val WALL_HP = 32f
         const val WALL_HP_PER_LEVEL = 20f

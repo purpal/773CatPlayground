@@ -25,7 +25,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +65,36 @@ fun ShooterMenuScreen(
     var ultimateLeft by remember { mutableStateOf(prefs.shooterUltimateOnLeft) }
     var damageNumbers by remember { mutableStateOf(prefs.shooterDamageNumbers) }
     var fxHigh by remember { mutableStateOf(prefs.shooterFxHigh) }
+    var showSettings by remember { mutableStateOf(false) }
+
+    if (showSettings) {
+        AlertDialog(
+            onDismissRequest = { showSettings = false },
+            containerColor = PlayColors.Dusk,
+            title = { Text("⚙️ 設定", color = PlayColors.Sun, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    OptionRow("大絕按鈕位置", listOf("左下" to true, "右下" to false), ultimateLeft) {
+                        ultimateLeft = it
+                        prefs.shooterUltimateOnLeft = it
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    OptionRow("傷害數字", listOf("顯示" to true, "隱藏" to false), damageNumbers) {
+                        damageNumbers = it
+                        prefs.shooterDamageNumbers = it
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    OptionRow("特效品質", listOf("高" to true, "低" to false), fxHigh) {
+                        fxHigh = it
+                        prefs.shooterFxHigh = it
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettings = false }) { Text("完成", color = PlayColors.Sun, fontWeight = FontWeight.Bold) }
+            },
+        )
+    }
 
     Box(
         Modifier
@@ -101,21 +133,10 @@ fun ShooterMenuScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            SectionTitle("設定")
-            OptionRow("大絕按鈕位置", listOf("左下" to true, "右下" to false), ultimateLeft) {
-                ultimateLeft = it
-                prefs.shooterUltimateOnLeft = it
-            }
-            Spacer(Modifier.height(8.dp))
-            OptionRow("傷害數字", listOf("顯示" to true, "隱藏" to false), damageNumbers) {
-                damageNumbers = it
-                prefs.shooterDamageNumbers = it
-            }
-            Spacer(Modifier.height(8.dp))
-            OptionRow("特效品質", listOf("高" to true, "低" to false), fxHigh) {
-                fxHigh = it
-                prefs.shooterFxHigh = it
+            Spacer(Modifier.height(12.dp))
+            BigMenuButton("⚙️ 設定", primary = false) {
+                sound.play(Sfx.SELECT)
+                showSettings = true
             }
 
             Spacer(Modifier.height(16.dp))
@@ -156,13 +177,13 @@ private fun OptionRow(title: String, options: List<Pair<String, Boolean>>, curre
     Row(verticalAlignment = Alignment.CenterVertically) {
         FitText(title, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
         for ((label, value) in options) {
+            Spacer(Modifier.width(6.dp))
             PillButton(
                 label,
-                modifier = Modifier.width(76.dp),
+                modifier = Modifier.width(64.dp),
                 background = if (current == value) PlayColors.Sun else PlayColors.Card,
                 contentColor = if (current == value) PlayColors.Night else Color.White,
             ) { onSelect(value) }
-            Spacer(Modifier.width(8.dp))
         }
     }
 }
@@ -197,8 +218,8 @@ private fun CatCard(cat: CatType, selected: Boolean, modifier: Modifier, onClick
         FitText(cat.displayName, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
         StatBar("護甲", cat.maxArmor / 100f, Color(0xFFFF8A80))
-        StatBar("速度", cat.baseSpeed / 780f, Color(0xFF80D8FF))
         Spacer(Modifier.height(6.dp))
+        FitText("特技：${cat.skillName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
         FitText("專武：${cat.specialName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
         FitText("大絕：${cat.ultimateName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
     }

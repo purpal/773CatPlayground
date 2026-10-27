@@ -41,7 +41,7 @@ class Difficulty private constructor(val level: Int, private val neutral: Boolea
     val density: Float get() = if (neutral) 1f else 0.7f + level * 0.028f
     /** 小怪與菁英怪的血量倍率。 */
     val enemyHp: Float get() = if (neutral) 1f else 0.8f + level * 0.05f
-    /** 小橘「肉球護甲」一次給的臨時護甲（一般子彈 12～22 傷害）。 */
+    /** 小橘「金鐘罩」一次給的臨時護甲（一般子彈 12～22 傷害）。 */
     val tempArmor: Float get() = TEMP_ARMOR + level * TEMP_ARMOR_PER_BOUT
 
     companion object {

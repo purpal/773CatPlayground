@@ -126,6 +126,10 @@ object Weapons {
         return hit
     }
 
+    /** 力場盾從貓咪前方多遠射出、飛多快，以及展開時離貓咪多遠。 */
+    const val SONIC_LAUNCH = 40f
+    const val SONIC_SPEED = 900f
+    const val SONIC_DISTANCE = 330f
     /** 飛魚追蹤彈每顆的傷害。 */
     const val HOMING_DAMAGE = 16f
     const val VIBRO_TICK = 0.2f
@@ -155,9 +159,9 @@ object Weapons {
                 w.cue(SoundCue.MISSILE)
             }
             SubWeapon.SONIC -> if (w.canDeployWall()) {
-                val shot = PlayerShot(p.x, p.y - 40f, 0f, -900f, 0f, 16f, ShotStyle.SONIC)
-                // 飛 0.39 秒（約 350）才展開
-                shot.burstAt = 0.39f
+                val shot = PlayerShot(p.x, p.y - SONIC_LAUNCH, 0f, -SONIC_SPEED, 0f, 16f, ShotStyle.SONIC)
+                // 在比小黑 Lv5 震動掌上緣（約 364）略近一點的地方展開
+                shot.burstAt = (SONIC_DISTANCE - SONIC_LAUNCH) / SONIC_SPEED
                 shot.wallLevel = level
                 w.playerShots += shot
                 p.subTimer = 1.5f

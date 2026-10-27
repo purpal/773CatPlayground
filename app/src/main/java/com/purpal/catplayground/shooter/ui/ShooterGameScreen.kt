@@ -448,7 +448,7 @@ internal fun ShooterHud(hud: HudState, stage: String, title: String, modifier: M
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // 左邊：關卡、分數、護甲；速度不再顯示（兩隻貓的差別在判定點與影閃，不在數值）。
+            // 左邊：關卡、分數、護甲；速度不再顯示（兩隻貓的差別在判定點與特技（閃身步／金鐘罩），不在數值）。
             Column(Modifier.weight(1f)) {
                 FitText("$stage　$title", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 FitText("SCORE ${hud.score.toString().padStart(7, '0')}", color = Color(0xFFFFD54F), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)

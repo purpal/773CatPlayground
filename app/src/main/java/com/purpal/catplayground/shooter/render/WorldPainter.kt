@@ -151,7 +151,7 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
     val frame = (w.time * 12f).toInt() and 3
     drawSprite(sprites.cat(p.cat, pose, frame, beast), p.x, p.y, if (beast) 1.2f else 1f, bank * 5f, alpha = if (blink) 0.35f else 1f)
     if (p.tempArmor > 0f && p.tempArmorMax > 0f) {
-        // 肉球護甲：琥珀色六角護罩，剩下的臨時護甲越少越淡
+        // 金鐘罩：琥珀色六角護罩，剩下的臨時護甲越少越淡
         val k = (p.tempArmor / p.tempArmorMax).coerceIn(0f, 1f)
         val r = 74f + (1f - k) * 6f
         drawSprite(sprites.glow(0xFFFFB300L), p.x, p.y, 1.9f, alpha = 0.45f * k, blendMode = BlendMode.Plus)

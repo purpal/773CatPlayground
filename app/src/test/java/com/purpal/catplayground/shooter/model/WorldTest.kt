@@ -629,7 +629,7 @@ class WorldTest {
         assertTrue("sweeps there and back (${sweeps.size})", sweeps.size >= 2)
     }
 
-    /** 小橘的肉球護甲：時間內的傷害先扣臨時護甲；沒扣完的時間到就消失，扣超過的才扣本體。 */
+    /** 小橘的金鐘罩：時間內的傷害先扣臨時護甲；沒扣完的時間到就消失，扣超過的才扣本體。 */
     @Test
     fun orangeFlickGivesTemporaryArmorThatAbsorbsDamageThenFades() {
         fun flicked(): World {

@@ -21,11 +21,11 @@ class Player(val cat: CatType) {
     var alive = true
     /** 判定點：黑貓比較小。 */
     val radius = if (cat == CatType.BLACK) 9f else 12f
-    /** 黑貓的影閃：剩餘秒數與冷卻。 */
+    /** 黑貓的閃身步：剩餘秒數與冷卻。 */
     var dashTime = 0f
     var dashCooldown = 0f
     /**
-     * 小橘的「肉球護甲」：同樣快速一甩，改成套上一層臨時護甲，持續時間和小黑的影閃一樣。
+     * 小橘的「金鐘罩」：同樣快速一甩，改成套上一層臨時護甲，持續時間和小黑的閃身步一樣。
      * 這段時間內的傷害先扣臨時護甲，扣完才扣本體護甲；時間到就消失。
      */
     var tempArmor = 0f
@@ -306,7 +306,7 @@ enum class ParticleKind {
     CATHOLO,
     /** 傷害數字，tag 為顯示的數值；color 不為 0 表示爆擊。 */
     DAMAGE,
-    /** 黑貓影閃的殘影，tag 為跑步姿勢（0 直、1 左、2 右）。 */
+    /** 黑貓閃身步的殘影，tag 為跑步姿勢（0 直、1 左、2 右）。 */
     GHOST,
     /** 力場盾碎掉時飛散的六角碎片，會受重力往下掉。 */
     SHARD,
