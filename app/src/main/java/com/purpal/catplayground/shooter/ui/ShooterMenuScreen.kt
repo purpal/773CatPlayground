@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.purpal.catplayground.audio.LocalSound
@@ -219,9 +220,9 @@ private fun CatCard(cat: CatType, selected: Boolean, modifier: Modifier, onClick
         Spacer(Modifier.height(6.dp))
         StatBar("護甲", cat.maxArmor / 100f, Color(0xFFFF8A80))
         Spacer(Modifier.height(6.dp))
-        FitText("特技：${cat.skillName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-        FitText("專武：${cat.specialName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-        FitText("大絕：${cat.ultimateName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+        FitText("特技：${cat.skillName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+        FitText("專武：${cat.specialName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+        FitText("大絕：${cat.ultimateName}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
     }
 }
 
