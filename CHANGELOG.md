@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/purpal/773CatPlayground/compare/v0.21.1...v0.22.0) (2026-10-27)
+
+
+### Features
+
+* 滿等後再吃同樣的道具換成額外分數 ([e5e1261](https://github.com/purpal/773CatPlayground/commit/e5e1261955d0a8e6a8cfe6d17b49274cdb91da18))
+
 ## [0.21.1](https://github.com/purpal/773CatPlayground/compare/v0.21.0...v0.21.1) (2026-10-27)
 
 
