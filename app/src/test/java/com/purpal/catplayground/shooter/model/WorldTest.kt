@@ -184,6 +184,34 @@ class WorldTest {
         assertEquals(Player.MAX_BOMBS, w.player.bombs)
     }
 
+    /** 滿等後再吃同樣的道具（主武器 Lv5、副武器 Lv3、大絕 3 顆、滿血）換成額外分數。 */
+    @Test
+    fun maxedItemsTurnIntoBonusScore() {
+        val w = World(Stages.mouse, CatType.ORANGE, 2000f)
+        repeat(Player.MAX_MAIN_LEVEL) { w.collect(ItemType.SPREAD) }
+        repeat(Player.MAX_SUB_LEVEL) { w.collect(ItemType.SONIC) }
+        repeat(Player.MAX_BOMBS) { w.collect(ItemType.BOMB) }
+        assertEquals(Player.MAX_MAIN_LEVEL, w.player.mainLevel)
+        assertEquals(Player.MAX_SUB_LEVEL, w.player.subLevel)
+        assertEquals(Player.MAX_BOMBS, w.player.bombs)
+        assertEquals(CatType.ORANGE.maxArmor, w.player.armor, 0f)
+        for (type in listOf(ItemType.SPREAD, ItemType.SONIC, ItemType.BOMB, ItemType.REPAIR)) {
+            val before = w.score
+            w.collect(type)
+            assertEquals("$type gives bonus", before + World.MAXED_BONUS, w.score)
+        }
+        // 換別種武器不算滿等：照常切換、等級保留
+        val before = w.score
+        w.collect(ItemType.FOCUS)
+        assertEquals(MainWeapon.FOCUS, w.player.mainWeapon)
+        assertEquals(before + 500, w.score)
+        // 受傷後補血照常回血
+        w.damagePlayer(30f)
+        val armor = w.player.armor
+        w.collect(ItemType.REPAIR)
+        assertTrue(w.player.armor > armor)
+    }
+
     private fun worldInStage(): World {
         val w = World(Stages.mouse, CatType.ORANGE, 2000f)
         while (w.phase != Phase.STAGE) w.update(STEP)

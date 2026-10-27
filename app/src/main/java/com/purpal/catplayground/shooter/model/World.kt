@@ -785,6 +785,7 @@ class World(
                     ItemType.FOCUS -> MainWeapon.FOCUS
                     else -> MainWeapon.SPECIAL
                 }
+                if (p.mainWeapon == weapon && p.mainLevel >= Player.MAX_MAIN_LEVEL) return maxedBonus()
                 if (p.mainWeapon == weapon) p.mainLevel = (p.mainLevel + 1).coerceAtMost(Player.MAX_MAIN_LEVEL)
                 p.mainWeapon = weapon
                 score += 500
@@ -792,17 +793,20 @@ class World(
             }
             ItemType.HOMING, ItemType.SONIC -> {
                 val sub = if (type == ItemType.HOMING) SubWeapon.HOMING else SubWeapon.SONIC
+                if (p.subWeapon == sub && p.subLevel >= Player.MAX_SUB_LEVEL) return maxedBonus()
                 p.subLevel = if (p.subWeapon == sub) (p.subLevel + 1).coerceAtMost(Player.MAX_SUB_LEVEL) else p.subLevel.coerceAtLeast(1)
                 p.subWeapon = sub
                 score += 500
                 cue(SoundCue.POWER_UP)
             }
             ItemType.REPAIR -> {
+                if (p.armor >= p.cat.maxArmor) return maxedBonus()
                 p.armor = (p.armor + p.cat.maxArmor * 0.4f).coerceAtMost(p.cat.maxArmor)
                 cue(SoundCue.POWER_UP)
                 burst(p.x, p.y, 0xFFFF80ABL, 10, 200f, ParticleKind.HEART)
             }
             ItemType.BOMB -> {
+                if (p.bombs >= Player.MAX_BOMBS) return maxedBonus()
                 p.bombs = (p.bombs + 1).coerceAtMost(Player.MAX_BOMBS)
                 cue(SoundCue.POWER_UP)
             }
@@ -818,6 +822,14 @@ class World(
                 }
             }
         }
+    }
+
+    /** 已經滿等（滿血、大絕滿 3 顆）再吃到同樣的道具：換成額外分數，在貓咪頭上跳出來。 */
+    private fun maxedBonus() {
+        score += MAXED_BONUS
+        particles += Particle(player.x, player.y - 60f, 0f, -90f, 0.9f, 1.2f, 0, ParticleKind.SCORE, MAXED_BONUS)
+        burst(player.x, player.y, 0xFFFFE07AL, 8, 220f, ParticleKind.STAR)
+        cue(SoundCue.ITEM)
     }
 
     private fun collideShots() {
@@ -1162,6 +1174,8 @@ class World(
 
         /** 黑貓閃身步：手指移動速度超過基本速度的這個倍數就觸發。 */
         /** 力場盾的耐久（不隨難度變化，後面的關卡子彈多，盾就撐得比較短）。 */
+        /** 滿等後再吃到同樣道具換成的分數。 */
+        const val MAXED_BONUS = 5000
         const val WALL_HP = 32f
         const val WALL_HP_PER_LEVEL = 20f
         /** 上一道力場盾消失後，隔多久才能放下一道。 */
