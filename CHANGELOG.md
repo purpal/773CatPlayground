@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/purpal/773CatPlayground/compare/v0.21.0...v0.21.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* 機體卡的特技、專武、大絕改成靠左對齊 ([a945349](https://github.com/purpal/773CatPlayground/commit/a945349e5e65cdd311d2aab9b988c415c7462717))
+
 ## [0.21.0](https://github.com/purpal/773CatPlayground/compare/v0.20.1...v0.21.0) (2026-10-27)
 
 
