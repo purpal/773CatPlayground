@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/purpal/773CatPlayground/compare/v0.22.0...v0.23.0) (2026-10-28)
+
+
+### Features
+
+* 新增科幻喵航特攻隊與立體地球遠征 ([deeba30](https://github.com/purpal/773CatPlayground/commit/deeba3062e63db704444b66dedf1e24ff0b2baea))
+
 ## [0.22.0](https://github.com/purpal/773CatPlayground/compare/v0.21.1...v0.22.0) (2026-10-27)
 
 
