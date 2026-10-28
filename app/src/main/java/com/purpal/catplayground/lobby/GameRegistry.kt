@@ -22,6 +22,7 @@ data class GameEntry(
 object GameRegistry {
     const val WATER_SORT = "water_sort"
     const val SHOOTER = "shooter"
+    const val NOVA = "nova"
 
     val games = listOf(
         GameEntry(
@@ -39,6 +40,14 @@ object GameRegistry {
             icon = "lobby_shooter",
             colors = listOf(Color(0xFFFF9100), Color(0xFFD81B60)),
             start = Screen.ShooterMenu,
+        ),
+        GameEntry(
+            id = NOVA,
+            title = "喵航特攻隊",
+            description = "貓系機甲出擊・全球戰區遠征",
+            icon = "lobby_nova",
+            colors = listOf(Color(0xFF163C51), Color(0xFF07121F)),
+            start = Screen.NovaMenu,
         ),
     )
 }

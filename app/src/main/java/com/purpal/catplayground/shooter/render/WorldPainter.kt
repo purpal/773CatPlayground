@@ -111,7 +111,15 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
         scale(view.scale, view.scale, Offset.Zero)
     }) {
         clipRect(0f, 0f, WORLD_WIDTH, w.height) {
-            drawBackground(w.stage.theme, w.scroll, w.height, w.time)
+            if (sprites.nova != null && w.stage.number == 2) {
+                val bg = sprites.nova.image("background")
+                val tileH = WORLD_WIDTH * bg.height / bg.width
+                var top = w.scroll % tileH - tileH
+                while (top < w.height) {
+                    drawImage(bg, dstOffset = androidx.compose.ui.unit.IntOffset(0, top.toInt()), dstSize = androidx.compose.ui.unit.IntSize(WORLD_WIDTH.toInt(), tileH.toInt() + 1))
+                    top += tileH
+                }
+            } else drawBackground(w.stage.theme, w.scroll, w.height, w.time)
             // 背景壓暗一些，讓霓虹般的火力更突出。
             drawRect(Color(0xFF0A0E24).copy(alpha = 0.3f), size = Size(WORLD_WIDTH, w.height))
             for (wall in w.walls) drawSonicWall(wall)
@@ -196,8 +204,11 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.FRISBEE -> sprite(sprites.enemy(e.kind, 0), rotation = (e as Frisbee).spin * RAD)
         EnemyKind.YUZU -> sprite(sprites.enemy(e.kind, 0), rotation = (e as YuzuDrone).spin * RAD * 0.4f)
         EnemyKind.BALL_TURRET -> {
-            sprite(sprites.barrel(), rotation = (e as BallTurret).aim * RAD)
-            sprite(sprites.enemy(e.kind, 0))
+            if (sprites.nova != null) sprite(sprites.enemy(e.kind, 0), rotation = (e as BallTurret).aim * RAD - 90f)
+            else {
+                sprite(sprites.barrel(), rotation = (e as BallTurret).aim * RAD)
+                sprite(sprites.enemy(e.kind, 0))
+            }
         }
         EnemyKind.BEEHIVE -> sprite(sprites.enemy(e.kind, 0), rotation = e.age * 200f)
         EnemyKind.MOUSE_PLANE -> sprite(sprites.enemy(e.kind, fast), flipX = (e as MousePlane).facing < 0f)
@@ -247,11 +258,11 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         EnemyKind.OTTER_TWIN -> drawOtterTwin(e as OtterTwin, w, sprites, flash, squash)
         EnemyKind.BALLOON -> {
             // 氣球本體在判定圓上，道具掛在線的下端。
-            sprite(sprites.enemy(e.kind, 0), dy = 30f)
+            sprite(sprites.enemy(e.kind, 0), dy = if(sprites.nova!=null)0f else 30f)
             val drop = (e as Balloon).drop
             if (drop != null) {
                 val art = if (drop == ItemType.BOMB) sprites.ultButton(w.player.cat) else sprites.item(drop)
-                drawSprite(art, e.x, e.y + 126f, 0.85f)
+                drawSprite(art, e.x, e.y + if(sprites.nova!=null)8f else 126f, if(sprites.nova!=null).38f else .85f)
             }
         }
         EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_DOG, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY, EnemyKind.ELITE_HARE,
@@ -319,7 +330,7 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
     }
     val held = boss.heldProp()
     val busy = held != null && w.lasers.any { it.owner === boss && it.style == held }
-    val sprite = sprites.boss(boss.kind, mood, frame)
+    val sprite = sprites.boss(boss.kind, mood, frame, boss.broken)
     val scale = bossScale(boss.kind)
     val rotation = wobble * 0.5f + boss.tilt
     drawSprite(sprite, x, boss.y, scale, rotationDegrees = rotation, stretch = squash)
@@ -1428,6 +1439,13 @@ private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
 
 /** 玩家子彈：冷色硬光＋深藍描邊（明亮背景上也清楚）＋拖尾。 */
 private fun DrawScope.drawShot(s: PlayerShot, w: World, sprites: SpriteCache) {
+    if(sprites.nova != null && s.style != ShotStyle.SONIC) {
+        val id = when(s.style) { ShotStyle.PELLET -> "SPREAD.plasma_bolt"; ShotStyle.PAW -> "ORANGE.SPECIAL.energy_bolt"; else -> "HOMING.missile" }
+        val width = if(s.style==ShotStyle.PAW)s.radius*2.6f else if(s.style==ShotStyle.MISSILE)34f else 23f
+        trail(s,if(s.style==ShotStyle.PAW)Amber else Cyan,width*.3f,.03f)
+        drawSprite(sprites.nova.sprite(id,width,1f),s.x,s.y,rotationDegrees=atan2(s.vy,s.vx)*RAD+90f)
+        return
+    }
     when (s.style) {
         ShotStyle.PELLET -> {
             if (FxSettings.high) drawSprite(sprites.glow(0xFF00E5FFL), s.x, s.y, 0.42f, alpha = 0.55f, blendMode = BlendMode.Plus)
@@ -1667,6 +1685,14 @@ private fun DrawScope.drawProp(
     hitWidth: Float = width,
     active: Boolean,
 ) {
+    if (sprites.nova != null && style == HazardStyle.BONE) {
+        val image = sprites.nova.image(if (active) "BONE_ACTIVE" else "BONE_IDLE")
+        withTransform({ rotate(angle * RAD, Offset(x0, y0)) }) {
+            drawImage(image, dstOffset = androidx.compose.ui.unit.IntOffset(x0.toInt(), (y0 - width).toInt()), dstSize = androidx.compose.ui.unit.IntSize(length.toInt().coerceAtLeast(1), (width * 2).toInt().coerceAtLeast(1)))
+        }
+        return
+    }
+
     val dx = cos(angle)
     val dy = sin(angle)
     val tipX = x0 + dx * length

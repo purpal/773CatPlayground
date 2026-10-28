@@ -2,8 +2,8 @@ package com.purpal.catplayground.data
 
 import android.content.Context
 
-class AppPrefs(context: Context) {
-    private val prefs = context.getSharedPreferences("cat_playground", Context.MODE_PRIVATE)
+class AppPrefs(context: Context, namespace: String = "cat_playground") {
+    private val prefs = context.getSharedPreferences(namespace, Context.MODE_PRIVATE)
 
     var musicOn: Boolean
         get() = prefs.getBoolean("music_on", true)

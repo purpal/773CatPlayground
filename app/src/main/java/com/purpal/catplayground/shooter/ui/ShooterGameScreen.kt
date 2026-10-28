@@ -137,6 +137,8 @@ fun ShooterGameScreen(
     stageNumber: Int,
     cat: CatType,
     autotest: Boolean = false,
+    nova: Boolean = false,
+    novaBossHp: Float? = null,
     ultimateOnLeft: Boolean,
     bestScore: Int,
     loadout: Loadout? = null,
@@ -146,6 +148,8 @@ fun ShooterGameScreen(
     onNextStage: () -> Unit,
     onExit: () -> Unit,
 ) {
+    var novaReady by remember { mutableStateOf(!nova) }
+    var novaOverdrive by remember { mutableStateOf(false) }
     val stage = remember(stageNumber) { Stages.get(stageNumber)!! }
     val difficulty = remember(bout) { bout?.let { Difficulty.forBout(it) } ?: Difficulty.NEUTRAL }
     val boutLabel = if (bout != null) boutTitle(bout) else "STAGE ${stage.number}"
@@ -171,7 +175,8 @@ fun ShooterGameScreen(
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val density = LocalDensity.current
         if (hudPx == 0) {
-            ShooterHud(hud, boutLabel, stage.title, Modifier.onSizeChanged { if (it.height > 0) hudPx = it.height }, onPause = {})
+            if (nova) com.purpal.catplayground.nova.NovaHud(hud,boutLabel,stage.title,Modifier.onSizeChanged { if(it.height>0)hudPx=it.height },onPause={})
+            else ShooterHud(hud, boutLabel, stage.title, Modifier.onSizeChanged { if (it.height > 0) hudPx = it.height }, onPause = {})
             return@BoxWithConstraints
         }
         // 上方是 HUD，下方才是遊戲畫面，避免 HUD 擋住 Boss。
@@ -180,7 +185,7 @@ fun ShooterGameScreen(
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
         val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
         val context = LocalContext.current
-        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit, context.assets) }
+        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit, context.assets, if(nova)com.purpal.catplayground.nova.NovaAssets.get(context.assets) else null) }
         val world = remember(attempt, stageNumber, worldHeight) {
             // 巡迴中重新開始這一站時，一樣從打完上一站時的機體狀態開始。
             World(
@@ -188,7 +193,8 @@ fun ShooterGameScreen(
                 difficulty = difficulty, bout = if (bout != null) bout + 1 else stage.number,
             )
                 .also {
-                    it.godMode = autotest
+                    if(nova && novaBossHp!=null) com.purpal.catplayground.nova.NovaPreview.boss(it,novaBossHp)
+                    it.godMode = autotest || (nova && novaBossHp!=null)
                     // 自動測試直接拿專武，好在截圖裡看到專武特效
                     if (autotest) {
                         it.player.mainWeapon = com.purpal.catplayground.shooter.model.MainWeapon.SPECIAL
@@ -199,6 +205,7 @@ fun ShooterGameScreen(
 
         LaunchedEffect(sprites, cat, stageNumber) {
             withContext(Dispatchers.Default) { sprites.prewarm(cat, kindsFor(stageNumber)) }
+            novaReady = true
         }
 
         LaunchedEffect(world) {
@@ -211,7 +218,7 @@ fun ShooterGameScreen(
                 perf?.frame((now - last) / 1_000_000f, world)
                 val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
                 last = now
-                if (!paused && world.running) {
+                if (!paused && world.running && novaReady) {
                     // 手指移動量直接換算成世界座標，第一個物理步就套用，跟手不延遲。
                     world.drag(touch.pendingDx / pxPerUnit, touch.pendingDy / pxPerUnit)
                     world.firing = touch.active
@@ -232,6 +239,7 @@ fun ShooterGameScreen(
                 sound.playMusic(musicFor(world))
                 val next = HudState.of(world)
                 if (next != hud) hud = next
+                if (nova) novaOverdrive = world.ultimateCinematic > 0f
                 if (world.phase != lastPhase) {
                     if (world.phase == Phase.CLEAR) {
                         sound.play(Sfx.WIN)
@@ -249,14 +257,14 @@ fun ShooterGameScreen(
                 .fillMaxSize()
                 .padding(top = hudHeight),
         ) {
-            if (frame < 0) return@Canvas // 讀取 frame 讓畫布每幀重畫
+            if (frame < 0 || !novaReady) return@Canvas // 讀取 frame 讓畫布每幀重畫
             drawWorld(world, viewportFor(size, world.height), sprites)
             if (touch.active && world.ultimateCinematic <= 0f) {
                 drawCircle(Color.White.copy(alpha = 0.18f), 46.dp.toPx(), Offset(touch.x, touch.y))
                 drawCircle(Color.White.copy(alpha = 0.5f), 46.dp.toPx(), Offset(touch.x, touch.y), style = Stroke(3.dp.toPx()))
                 drawCircle(Color(0xFFFFD54F).copy(alpha = 0.8f), 10.dp.toPx(), Offset(touch.x, touch.y))
             }
-            drawUltimateCinematic(world, sprites, textMeasurer)
+            if (!nova) drawUltimateCinematic(world, sprites, textMeasurer)
         }
 
         // 觸控板：按住下半部任何地方開始射擊，手指移動多少，貓咪就跟著移動多少。
@@ -291,9 +299,12 @@ fun ShooterGameScreen(
                 },
         )
 
-        ShooterHud(hud, boutLabel, stage.title, onPause = { paused = true })
+        if (nova) com.purpal.catplayground.nova.NovaHud(hud,boutLabel,stage.title,onPause={paused=true})
+        else ShooterHud(hud, boutLabel, stage.title, onPause = { paused = true })
         BossBar(hud, Modifier.padding(top = hudHeight))
-        UltimateButton(
+        if (nova) Box(Modifier.align(if(ultimateOnLeft)Alignment.BottomStart else Alignment.BottomEnd).systemBarsPadding().padding(16.dp).width(120.dp)) {
+            com.purpal.catplayground.nova.NovaButton("核心超載 ${hud.bombs}",hud.bombs>0) { world.requestUltimate() }
+        } else UltimateButton(
             cat = cat,
             bombs = hud.bombs,
             onPress = { world.requestUltimate() },
@@ -303,7 +314,10 @@ fun ShooterGameScreen(
                 .padding(20.dp),
         )
 
-        StageOverlays(
+        if (nova) {
+            if (!novaReady) Box(Modifier.fillMaxSize().background(Color(0xFF07121F)),contentAlignment=Alignment.Center) { Text("艦載系統同步中…",color=Color(0xFF68E5F5)) }
+            else com.purpal.catplayground.nova.NovaStageOverlays(world,hud.phase,novaOverdrive,bestScore,if(bout!=null)bout+1<Tour.SIZE else Stages.get(stageNumber+1)!=null,onNextStage,{attempt++;paused=false},onExit)
+        } else StageOverlays(
             world = world,
             phase = hud.phase,
             bestScore = bestScore,
@@ -317,7 +331,8 @@ fun ShooterGameScreen(
         )
 
         if (paused) {
-            PauseMenu(
+            if(nova) com.purpal.catplayground.nova.NovaPause({paused=false},{attempt++;paused=false},onExit)
+            else PauseMenu(
                 onResume = { paused = false },
                 onRestart = {
                     attempt++
