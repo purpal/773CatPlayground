@@ -68,3 +68,13 @@ APK 簽署需要在 repo 的 **Settings → Secrets and variables → Actions** 
 - `assets/nova/` 保存獨立素材與圖集矩形。載入時依 alpha 去除留白並按顯示大小縮放，不修改原 `assets/art/` 檔案。
 
 在隔離 Android 模擬器上可執行 `bash scripts/nova-smoke.sh`，檢查選機、台灣到日本航線、狗狗關及卸甲畫面，再回歸檢查原射擊遊戲。此腳本會開始／取代測試機內第三款遊戲的巡迴，不清除 app 資料。Debug 額外支援 `--es open nova_menu|nova_tour|nova_play|nova_boss`（狗狗關請加 `--ei stage 2`）；`nova_boss --ef hp_ratio 0.3` 用來檢查殘血外觀。正式版不接受這些除錯入口。
+
+## 畫面測試（GitHub Actions）
+
+之後的畫面與操作驗證使用 `.github/workflows/ui-test.yml`，在有 KVM 的 GitHub-hosted Ubuntu runner 啟動 Android 34 模擬器。Codex 雲端容器缺少 `/dev/kvm` 時，不在該容器啟動軟體模擬器。
+
+- PR 或 main 的 app、素材、Gradle、UI 測試腳本變動會自動執行；也可以在 Actions → **ui-test** → **Run workflow** 手動執行。
+- 檢查大廳入口、機庫旋轉、台灣到日本航線、射擊拖曳、暫停／繼續、狗狗 Boss 三種血量外觀與原射擊遊戲。
+- 每次執行的 **Artifacts → ui-test-執行編號-次數** 保存截圖、UI 階層、啟動日誌、logcat、記憶體與繪圖統計，保留 14 天；失敗也會上傳已取得的資料。
+- 自動檢查涵蓋畫面狀態、操作與崩潰。機體造型、裁切、旋轉連貫性等仍需檢視截圖，尚未建立像素差異基準。
+- 原有 **emulator-test** 保留作手動長時間遊玩與效能診斷，仍在 GitHub runner 執行。**ui-test** 是獨立檢查，目前不作為 Release 發布的前置條件。
