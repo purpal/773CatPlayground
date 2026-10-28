@@ -91,6 +91,7 @@ finish() {
     if [ -n "$LOGCAT_PID" ]; then kill "$LOGCAT_PID" 2>/dev/null; wait "$LOGCAT_PID" 2>/dev/null; fi
     grep -E -A24 'FATAL EXCEPTION|Fatal signal|ANR in com\.purpal\.catplayground|am_crash.*com\.purpal\.catplayground' "$OUT"/logcat-*.txt > "$OUT/crashes.txt"
     if [ -s "$OUT/crashes.txt" ]; then result=1; fi
+    if [ "$result" != 0 ]; then printf '::error title=UI smoke failed::Checkpoint: %s\n' "$STEP_LABEL"; fi
     {
         printf '## UI smoke test\n\n- Result: %s\n' "$([ "$result" = 0 ] && echo PASS || echo FAIL)"
         printf -- '- Last checkpoint: %s\n- Commit: %s\n' "$STEP_LABEL" "${GITHUB_SHA:-local}"

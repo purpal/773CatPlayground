@@ -76,5 +76,6 @@ APK 簽署需要在 repo 的 **Settings → Secrets and variables → Actions** 
 - PR 或 main 的 app、素材、Gradle、UI 測試腳本變動會自動執行；也可以在 Actions → **ui-test** → **Run workflow** 手動執行。
 - 檢查大廳入口、機庫旋轉、台灣到日本航線、射擊拖曳、暫停／繼續、狗狗 Boss 三種血量外觀與原射擊遊戲。
 - 每次執行的 **Artifacts → ui-test-執行編號-次數** 保存截圖、UI 階層、啟動日誌、logcat、記憶體與繪圖統計，保留 14 天；失敗也會上傳已取得的資料。
+- main 執行後也會將最新報告保存到 `emulator-results-ui` 分支，方便直接瀏覽；該分支只保存最新一次結果。PR 測試不會寫入 repo。
 - 自動檢查涵蓋畫面狀態、操作與崩潰。機體造型、裁切、旋轉連貫性等仍需檢視截圖，尚未建立像素差異基準。
 - 原有 **emulator-test** 保留作手動長時間遊玩與效能診斷，仍在 GitHub runner 執行。**ui-test** 是獨立檢查，目前不作為 Release 發布的前置條件。

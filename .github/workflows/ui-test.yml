@@ -93,3 +93,35 @@ jobs:
           path: ui-test-results/
           retention-days: 14
           if-no-files-found: warn
+
+  # Keep a browsable latest report, matching this repo's emulator-results pattern.
+  # Only trusted main pushes can publish; PR runs retain read-only permissions.
+  publish-report:
+    needs: screens
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-test-${{ github.run_id }}-${{ github.run_attempt }}
+          path: report
+      - name: Publish latest UI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          cd report
+          printf 'Commit: %s\nRun: %s\n' "$SOURCE_SHA" "$RUN_URL" > RUN.txt
+          git init -q
+          git checkout -q -b emulator-results-ui
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -qm "UI evidence for $SOURCE_SHA"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          previous=$(git ls-remote "$remote" refs/heads/emulator-results-ui | cut -f1)
+          git push --force-with-lease="refs/heads/emulator-results-ui:$previous" "$remote" HEAD:refs/heads/emulator-results-ui
