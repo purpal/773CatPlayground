@@ -5,6 +5,7 @@ local.properties
 *.iml
 .DS_Store
 captures/
+ui-test-results/
 .kotlin/
 # 簽署金鑰絕對不要進版控
 *.jks
