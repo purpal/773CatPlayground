@@ -11,9 +11,13 @@ import com.purpal.catplayground.shooter.model.CatType
  * autotest 會讓射擊遊戲無敵、自動放大絕，並在 logcat（ShooterPerf）記錄每幀耗時。
  * probe 可關掉部分繪圖功能來找模擬器當掉的原因（見 [DebugFlags]）。
  */
-data class DebugLaunch(val open: String, val stage: Int, val cat: CatType, val autotest: Boolean) {
+data class DebugLaunch(val open: String, val stage: Int, val cat: CatType, val autotest: Boolean, val bossHp: Float? = null) {
 
     fun initialStack(): List<Screen> = when (open) {
+        "nova_menu" -> listOf(Screen.Lobby, Screen.NovaMenu)
+        "nova_tour" -> listOf(Screen.Lobby, Screen.NovaMenu, Screen.NovaTour)
+        "nova_boss" -> listOf(Screen.Lobby, Screen.NovaMenu, Screen.NovaPlay(stage, cat))
+        "nova_play" -> listOf(Screen.Lobby, Screen.NovaMenu, Screen.NovaPlay(stage, cat))
         "shooter_menu" -> listOf(Screen.Lobby, Screen.ShooterMenu)
         "shooter_play" -> listOf(Screen.Lobby, Screen.ShooterMenu, Screen.ShooterPlay(stage, cat))
         else -> listOf(Screen.Lobby)
@@ -28,6 +32,7 @@ data class DebugLaunch(val open: String, val stage: Int, val cat: CatType, val a
                 stage = intent.getIntExtra("stage", 1),
                 cat = runCatching { CatType.valueOf(intent.getStringExtra("cat") ?: "") }.getOrDefault(CatType.ORANGE),
                 autotest = intent.getBooleanExtra("autotest", false),
+                bossHp = if(intent.getStringExtra("open")=="nova_boss") intent.getFloatExtra("hp_ratio",.3f) else null,
             ).also { DebugFlags.apply(intent.getStringExtra("probe") ?: "") }
         }
     }

@@ -56,3 +56,15 @@ APK 簽署需要在 repo 的 **Settings → Secrets and variables → Actions** 
 
 > 首次使用前，請到 repo 的 **Settings → Actions → General → Workflow permissions**，
 > 勾選「Allow GitHub Actions to create and approve pull requests」。
+
+## 喵航特攻隊（第三款遊戲）
+
+大廳新增獨立的科幻射擊入口，與「喵星萌王爭霸戰」共用戰鬥規則，使用獨立機體選擇、巡迴進度、最高分與設定存檔。原遊戲的素材、巡迴隨機規則及存檔命名空間保持原樣。
+
+- 選機：八方向機體展示與小橘／小黑駕駛員，科技風機庫介面。
+- 巡迴：球面地球儀、依經緯度計算的大圓航線、同步轉動與飛行動畫。
+- 狗狗關：新場景、機體、敵人、道具、彈體，以及 35% 卸武器和 25% 掉指揮裝甲片的艦體狀態。警告線、碰撞、出招節奏仍由既有戰鬥模型決定。
+- 目前 `nova/NovaTour.kt` 的 `DOG_FIRST` 為 `true`，只讓新遊戲首戰固定狗狗；設為 `false` 即恢復原本隨機首戰。其餘尚未重製的對手沿用既有素材。
+- `assets/nova/` 保存獨立素材與圖集矩形。載入時依 alpha 去除留白並按顯示大小縮放，不修改原 `assets/art/` 檔案。
+
+在隔離 Android 模擬器上可執行 `bash scripts/nova-smoke.sh`，檢查選機、台灣到日本航線、狗狗關及卸甲畫面，再回歸檢查原射擊遊戲。此腳本會開始／取代測試機內第三款遊戲的巡迴，不清除 app 資料。Debug 額外支援 `--es open nova_menu|nova_tour|nova_play|nova_boss`（狗狗關請加 `--ei stage 2`）；`nova_boss --ef hp_ratio 0.3` 用來檢查殘血外觀。正式版不接受這些除錯入口。

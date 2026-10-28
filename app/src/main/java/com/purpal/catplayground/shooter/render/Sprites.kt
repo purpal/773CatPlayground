@@ -38,7 +38,7 @@ class Sprite(val image: ImageBitmap, val pxPerUnit: Float)
  * 載入時依螢幕解析度縮放好；子彈與光暈這類簡單的圖則用程式先畫成圖片。
  * 每幀只要貼圖，名稱都事先組好，不會每幀產生字串。
  */
-class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager) {
+class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager, val nova: com.purpal.catplayground.nova.NovaAssets? = null) {
     private val drawn = AtomicReferenceArray<Sprite?>(512)
     private val art = ConcurrentHashMap<String, Sprite>()
 
@@ -84,17 +84,21 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     /** pose：0 直走、1 往左、2 往右；frame 0～3 奔跑循環。 */
     fun cat(cat: CatType, pose: Int, frame: Int, beast: Boolean): Sprite =
-        art(RUN[(if (beast) 2 else 0) + cat.ordinal][pose][frame and 3], CAT_WIDTH)
+        nova?.ship(cat, CAT_WIDTH, pxPerUnit) ?: art(RUN[(if (beast) 2 else 0) + cat.ordinal][pose][frame and 3], CAT_WIDTH)
 
     /** 大絕特寫（寫實漫畫風）。 */
     /** 大絕道具：和大絕按鈕同一個圖示。 */
-    fun ultButton(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ITEM_WIDTH)
+    fun ultButton(cat: CatType): Sprite = nova?.sprite("ItemType.BOMB", ITEM_WIDTH, pxPerUnit) ?: art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ITEM_WIDTH)
 
     fun ultimate(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_tiger" else "ult_panther", ULT_WIDTH)
 
     // ── 敵人 ──
 
-    fun boss(kind: EnemyKind, mood: Int, frame: Int): Sprite {
+    fun boss(kind: EnemyKind, mood: Int, frame: Int, broken: Boolean = false): Sprite {
+        if (kind == EnemyKind.BOSS_DOG && nova != null) {
+            val state = com.purpal.catplayground.nova.NovaBossArt.body(mood,broken)
+            return nova.sprite(state, BOSS_WIDTH, pxPerUnit)
+        }
         val index = when (kind) {
             EnemyKind.BOSS_DOG -> 1
             EnemyKind.BOSS_BEAR -> 2
@@ -115,6 +119,17 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     }
 
     fun enemy(kind: EnemyKind, frame: Int): Sprite {
+        if (nova != null) {
+            if (kind == EnemyKind.BALLOON) return nova.sprite("carrier", 100f, pxPerUnit)
+            if (kind == EnemyKind.THROWN_BONE) return nova.sprite("BONE_THROWN_RETURNING", 200f, pxPerUnit)
+            val id = "EnemyKind.${kind.name}"
+            if (nova.contains(id)) return nova.sprite(id, when (kind) {
+                EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE -> ELITE_WIDTH
+                EnemyKind.MOUSE_RUNNER -> 105f
+                EnemyKind.FRISBEE -> 104f
+                else -> 120f
+            }, pxPerUnit)
+        }
         val f = frame and 1
         return when (kind) {
             EnemyKind.MOUSE_RUNNER, EnemyKind.MINI_MOUSE -> art(MOUSE[f], 105f)
@@ -196,7 +211,11 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         else -> null
     }
 
-    fun lostProp(id: Int): Sprite = when (id) {
+    fun lostProp(id: Int): Sprite = (if (nova != null) when (id) {
+        LostProp.BONE -> nova.sprite("BONE_DISABLED_DROP", 200f, pxPerUnit)
+        LostProp.HAT -> nova.sprite("COMMAND_CAP_DROP", 100f, pxPerUnit)
+        else -> null
+    } else null) ?: when (id) {
         LostProp.CROWN -> art("lost_crown", 100f)
         LostProp.RIBBON -> art("lost_ribbon", 110f)
         LostProp.HAT -> art("lost_hat", 170f)
@@ -222,7 +241,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     // ── 道具 ──
 
-    fun item(type: ItemType): Sprite = when (type) {
+    fun item(type: ItemType): Sprite = nova?.sprite("ItemType.${type.name}", when (type) {
+        ItemType.COIN -> 64f; ItemType.DATA -> 24f; else -> ITEM_WIDTH
+    }, pxPerUnit) ?: when (type) {
         ItemType.COIN -> art("item_coin", 75f)
         ItemType.DATA -> art("item_data", 34f)
         else -> art(ITEMS[type.ordinal], ITEM_WIDTH)
@@ -252,6 +273,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     /** 敵人子彈：統一的糖果粉色系（深梅色描邊＋白色核心），在任何背景上都一眼看得出來。 */
     fun bullet(style: BulletStyle, radius: Float): Sprite {
+        val key = "BulletStyle.${style.name}"
+        if (nova != null && nova.contains(key)) return nova.sprite(key, bulletReference(radius) * 2.7f, pxPerUnit)
         val reference = bulletReference(radius)
         val id = style.ordinal * 2 + if (reference > 11f) 1 else 0
         val r = reference * 1.3f
@@ -309,6 +332,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     /** 先在背景執行緒把這一關會用到的圖都載入好，避免開打時卡頓。 */
     fun prewarm(cat: CatType, kinds: Collection<EnemyKind>) {
+        nova?.prewarm()
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {
             for (f in 0..1) {

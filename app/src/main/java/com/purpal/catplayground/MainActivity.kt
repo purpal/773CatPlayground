@@ -98,6 +98,13 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     var waterSortCleared by remember { mutableIntStateOf(prefs.waterSortCleared) }
     var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
     var tour by remember { mutableStateOf(TourState.decode(prefs.shooterTour)) }
+    val novaPrefs = remember { AppPrefs(context, "cat_playground_nova") }
+    var novaTour by remember { mutableStateOf(if(debug?.open == "nova_tour") com.purpal.catplayground.nova.NovaTour.start(debug.cat) else TourState.decode(novaPrefs.shooterTour)) }
+    fun saveNovaTour(next: TourState?) {
+        novaTour = next
+        novaPrefs.shooterTour = next?.encode()
+    }
+
 
     fun saveTour(next: TourState?) {
         tour = next
@@ -138,7 +145,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
 
     // 射擊遊戲自己管理背景音樂，其他畫面都用大廳音樂。
     LaunchedEffect(stack.last()) {
-        if (stack.last() !is Screen.ShooterPlay) sound.playMusic(Music.LOBBY)
+        if (stack.last() !is Screen.ShooterPlay && stack.last() !is Screen.NovaPlay) sound.playMusic(Music.LOBBY)
     }
 
     BackHandler(enabled = stack.size > 1) { pop() }
@@ -202,6 +209,39 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                 }
             }
 
+            Screen.NovaMenu -> com.purpal.catplayground.nova.NovaMenuScreen(
+                prefs = novaPrefs, tour = novaTour, onBack = { pop() },
+                onNewTour = { saveNovaTour(com.purpal.catplayground.nova.NovaTour.start(it)); push(Screen.NovaTour) },
+                onContinue = { push(Screen.NovaTour) },
+            )
+            Screen.NovaTour -> {
+                val current = novaTour
+                if(current == null) { LaunchedEffect(Unit) { pop() } }
+                else com.purpal.catplayground.nova.NovaTourScreen(
+                    current, ::saveNovaTour,
+                    onFight = { current.nextStage?.let { push(Screen.NovaPlay(it,current.cat,current.loadout,current.cleared)) } },
+                    onNewTour = { saveNovaTour(com.purpal.catplayground.nova.NovaTour.start(current.cat)) },
+                    onBack = { pop() },
+                )
+            }
+            is Screen.NovaPlay -> {
+                FxSettings.damageNumbers = novaPrefs.shooterDamageNumbers
+                FxSettings.high = novaPrefs.shooterFxHigh
+                ShooterGameScreen(
+                    stageNumber=screen.stage, cat=screen.cat, nova=true, novaBossHp=debug?.bossHp, autotest=debug?.autotest==true,
+                    ultimateOnLeft=novaPrefs.shooterUltimateOnLeft, bestScore=novaPrefs.shooterBest(screen.stage),
+                    loadout=screen.loadout, bout=screen.bout,
+                    onCleared={stage,score,loadout ->
+                        novaPrefs.setShooterBest(stage,score)
+                        val current=novaTour
+                        if(screen.bout!=null && current!=null && current.cleared==screen.bout) {
+                            val next=current.afterClear(score,loadout)
+                            saveNovaTour(next)
+                            novaPrefs.shooterCleared=maxOf(novaPrefs.shooterCleared,next.cleared)
+                        }
+                    },onNextStage={pop()},onExit={pop()},
+                )
+            }
             is Screen.ShooterPlay -> {
                 FxSettings.damageNumbers = prefs.shooterDamageNumbers
                 FxSettings.high = prefs.shooterFxHigh

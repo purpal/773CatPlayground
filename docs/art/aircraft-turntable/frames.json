@@ -1,0 +1,251 @@
+{
+  "layout": {
+    "columns": 4,
+    "rows": 2,
+    "order": "row-major"
+  },
+  "camera": "low side-view turntable",
+  "angle_note": "Nominal 45-degree directions; generated artwork, not exact 3D renders.",
+  "sheets": [
+    {
+      "name": "orange",
+      "file": "orange-turntable.png",
+      "width": 1774,
+      "height": 887,
+      "frames": [
+        {
+          "name": "front",
+          "nominal_degrees": 0,
+          "rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            222.5,
+            252.5
+          ]
+        },
+        {
+          "name": "front_left",
+          "nominal_degrees": 45,
+          "rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            224.5,
+            256.0
+          ]
+        },
+        {
+          "name": "left",
+          "nominal_degrees": 90,
+          "rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            224.0,
+            259.0
+          ]
+        },
+        {
+          "name": "rear_left",
+          "nominal_degrees": 135,
+          "rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            223.5,
+            263.0
+          ]
+        },
+        {
+          "name": "rear",
+          "nominal_degrees": 180,
+          "rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            222.5,
+            211.0
+          ]
+        },
+        {
+          "name": "rear_right",
+          "nominal_degrees": 225,
+          "rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            211.5,
+            211.0
+          ]
+        },
+        {
+          "name": "right",
+          "nominal_degrees": 270,
+          "rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            223.5,
+            213.0
+          ]
+        },
+        {
+          "name": "front_right",
+          "nominal_degrees": 315,
+          "rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            220.5,
+            202.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "black",
+      "file": "black-turntable.png",
+      "width": 1774,
+      "height": 887,
+      "frames": [
+        {
+          "name": "front",
+          "nominal_degrees": 0,
+          "rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            225.0,
+            265.5
+          ]
+        },
+        {
+          "name": "front_left",
+          "nominal_degrees": 45,
+          "rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            232.5,
+            272.5
+          ]
+        },
+        {
+          "name": "left",
+          "nominal_degrees": 90,
+          "rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            242.5,
+            287.5
+          ]
+        },
+        {
+          "name": "rear_left",
+          "nominal_degrees": 135,
+          "rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            218.5,
+            284.5
+          ]
+        },
+        {
+          "name": "rear",
+          "nominal_degrees": 180,
+          "rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            225.0,
+            238.5
+          ]
+        },
+        {
+          "name": "rear_right",
+          "nominal_degrees": 225,
+          "rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            226.5,
+            238.5
+          ]
+        },
+        {
+          "name": "right",
+          "nominal_degrees": 270,
+          "rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            227.0,
+            245.0
+          ]
+        },
+        {
+          "name": "front_right",
+          "nominal_degrees": 315,
+          "rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            223.5,
+            231.5
+          ]
+        }
+      ]
+    }
+  ]
+}

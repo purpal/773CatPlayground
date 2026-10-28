@@ -1,0 +1,274 @@
+{
+  "boss": "DogBoss / 柴犬隊長",
+  "runtime_changes": false,
+  "source_reference": "../boss-reference.png",
+  "atlases": [
+    {
+      "file": "body-states.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 2,
+      "rows": 2,
+      "frames": [
+        {
+          "id": "BODY_HEALTHY",
+          "source_window_px": {
+            "x": 0,
+            "y": 0,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BODY_ALERT",
+          "source_window_px": {
+            "x": 627,
+            "y": 0,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BODY_DISARMED",
+          "source_window_px": {
+            "x": 0,
+            "y": 627,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BODY_CRITICAL",
+          "source_window_px": {
+            "x": 627,
+            "y": 627,
+            "width": 627,
+            "height": 627
+          }
+        }
+      ]
+    },
+    {
+      "file": "equipment.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 3,
+      "rows": 2,
+      "frames": [
+        {
+          "id": "BONE_IDLE",
+          "source_window_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "BONE_CHARGE",
+          "source_window_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "BONE_ACTIVE",
+          "source_window_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "BONE_THROWN_RETURNING",
+          "source_window_px": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "BONE_DISABLED_DROP",
+          "source_window_px": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "COMMAND_CAP_DROP",
+          "source_window_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "attack-effects.png",
+      "width": 1293,
+      "height": 1216,
+      "columns": 3,
+      "rows": 3,
+      "frames": [
+        {
+          "id": "SWEEP_WARNING",
+          "source_window_px": {
+            "x": 0,
+            "y": 0,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "SWEEP_TRAIL",
+          "source_window_px": {
+            "x": 431,
+            "y": 0,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "THRUST_WARNING",
+          "source_window_px": {
+            "x": 862,
+            "y": 0,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "V_LASER_WARNING",
+          "source_window_px": {
+            "x": 0,
+            "y": 405,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "V_LASER_ACTIVE",
+          "source_window_px": {
+            "x": 431,
+            "y": 405,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "V_LASER_CHARGE",
+          "source_window_px": {
+            "x": 862,
+            "y": 405,
+            "width": 431,
+            "height": 405
+          }
+        },
+        {
+          "id": "DASH_TRAIL",
+          "source_window_px": {
+            "x": 0,
+            "y": 810,
+            "width": 431,
+            "height": 406
+          }
+        },
+        {
+          "id": "DISARM_BURST",
+          "source_window_px": {
+            "x": 431,
+            "y": 810,
+            "width": 431,
+            "height": 406
+          }
+        },
+        {
+          "id": "HOWL_PULSE_REFERENCE",
+          "source_window_px": {
+            "x": 862,
+            "y": 810,
+            "width": 431,
+            "height": 406
+          }
+        }
+      ]
+    }
+  ],
+  "body_selection_priority": [
+    "phase == 2: BODY_CRITICAL",
+    "broken: BODY_DISARMED",
+    "phase == 1: BODY_ALERT",
+    "otherwise: BODY_HEALTHY"
+  ],
+  "equipment_rules": {
+    "bone_visible": "!broken && !boneOut; hide idle overlay while matching melee hazard is active",
+    "bone_drop": "onBossBreak at hpRatio <= 0.35, LostProp.BONE; cosmetic particle, not a pickup",
+    "cap_drop": "onBossPhaseChanged to phase 2 at hpRatio <= 0.25, LostProp.HAT; cosmetic particle",
+    "temporary_throw": "boneOut hides only held weapon; return restores it unless boss has broken",
+    "throw_cancellation": "onBossBreak kills active ThrownBone and clears boneOut; do not show returning weapon after permanent disarm"
+  },
+  "existing_world_anchors": {
+    "bone_origin_relative_to_boss": [
+      168,
+      129
+    ],
+    "laser_origins_relative_to_boss": [
+      [
+        -40,
+        20
+      ],
+      [
+        40,
+        20
+      ]
+    ],
+    "idle_weapon_length": 190,
+    "idle_weapon_width": 28,
+    "melee_width": 54
+  },
+  "existing_timing": {
+    "sweep": {
+      "warning_seconds": 0.8,
+      "active_seconds": 1.3,
+      "extend_seconds": 0.18,
+      "start_degrees": 20,
+      "sweep_degrees": 110,
+      "length_world_units": 760
+    },
+    "thrust": {
+      "warning_seconds": 0.65,
+      "times_in_attack_seconds": [
+        0.01,
+        1.2
+      ],
+      "reach": "player distance + 140; clamped to 520..1500"
+    },
+    "thrown_bone": {
+      "flight_seconds": 2.4,
+      "spin_degrees_per_second": 900,
+      "collision_radius": 52
+    },
+    "eye_beams": {
+      "warning_seconds": 1,
+      "active_seconds": 2.8,
+      "length_world_units": 2400,
+      "width_world_units": 26,
+      "start_away_from_vertical_degrees": 14,
+      "outward_sweep_degrees": 12
+    }
+  },
+  "integration_notes": [
+    "atlas windows are layout references; alpha fringes, pivots, and world scale need playback alignment",
+    "warning sectors, active melee lengths, laser collision and central safe corridor must remain code-driven",
+    "howl rings are cosmetic reference; retain individual NOTE bullet collision",
+    "no additional armor, turrets, hitboxes, pickups, or weak-point mechanics are introduced"
+  ]
+}
