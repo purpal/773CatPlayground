@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/purpal/773CatPlayground/compare/v0.23.0...v0.24.0) (2026-10-29)
+
+
+### Features
+
+* 完善喵航旋轉展示、航路介面與古代核心演出 ([4b98dad](https://github.com/purpal/773CatPlayground/commit/4b98dad9bfd096eb4f87d7b35a4da1679c412af3))
+
 ## [0.23.0](https://github.com/purpal/773CatPlayground/compare/v0.22.0...v0.23.0) (2026-10-28)
 
 
