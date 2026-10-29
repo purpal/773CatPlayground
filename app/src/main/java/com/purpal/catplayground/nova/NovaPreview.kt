@@ -20,6 +20,6 @@ object NovaPreview {
         world.enemies.removeAll { it !== boss }
         world.bullets.clear(); world.items.clear(); world.particles.clear()
         boss.hp = boss.maxHp * hpRatio.coerceIn(.01f,1f)
-        repeat(90) { world.update(STEP) }
+        repeat(120) { world.update(STEP) }
     }
 }

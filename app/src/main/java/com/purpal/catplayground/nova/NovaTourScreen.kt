@@ -32,7 +32,7 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
     val flight=remember(key) { Animatable(if(tour.nextRevealed || tour.finished) 1f else 0f) }
     LaunchedEffect(key) {
         if(tour.nextRevealed || tour.finished) return@LaunchedEffect
-        val remaining=(tour.cleared until minOf(Tour.RANDOM_BOUTS,tour.order.size)).map { tour.order[it] }
+        val remaining=(tour.cleared until (tour.order.size-1)).map { tour.order[it] }
         if(remaining.size>1) repeat(12) { i ->
             rolling=remaining[i%remaining.size];sound.play(Sfx.SELECT);delay(70L+i*15)
         }
@@ -57,7 +57,7 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
         Column(Modifier.fillMaxWidth().background(NovaPanel,RoundedCornerShape(12.dp)).border(1.dp,NovaCyan.copy(alpha=.3f),RoundedCornerShape(12.dp)).padding(10.dp)) {
             Text(when(step){0->"敵方訊號掃描";1->"航路已鎖定";2->"躍遷航行中";else->if(tour.finished)"全球遠征完成" else "已抵達戰區"},color=NovaGold,fontSize=12.sp)
             if(!tour.finished && opponent!=null) Row(verticalAlignment=Alignment.CenterVertically) {
-                if(opponent.number==2) NovaAsset("boss",Modifier.size(64.dp),"柴犬隊長巡航艦")
+                if(NovaSector.preview(opponent.number)!=null) NovaAsset(NovaSector.preview(opponent.number)!!,Modifier.size(64.dp),"${opponent.bossName}旗艦")
                 else ArtImage("${opponent.bossArt}_m0_0",Modifier.size(64.dp),opponent.bossName)
                 Column(Modifier.weight(1f).padding(start=12.dp)) {
                     Text(opponent.bossName,color=Color.White,fontSize=18.sp,fontWeight=FontWeight.Bold)

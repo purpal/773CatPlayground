@@ -20,12 +20,12 @@ class NovaAssets private constructor(private val assets: AssetManager) {
     private val images = ConcurrentHashMap<String, ImageBitmap>()
     private val sprites = ConcurrentHashMap<String, Sprite>()
     init {
-        for (manifest in listOf("manifest.json", "boss-actions/manifest.json")) {
+        for (manifest in listOf("manifest.json", "boss-actions/manifest.json", "sectors/manifest.json")) {
             val root = JSONObject(assets.open("nova/$manifest").bufferedReader().use { it.readText() })
             val list = root.getJSONArray("atlases")
             for (i in 0 until list.length()) {
                 val sheet = list.getJSONObject(i)
-                val file = (if (manifest.startsWith("boss-actions/")) "boss-actions/" else "") + sheet.getString("file")
+                val file = manifest.substringBeforeLast('/', "").let { if(it.isEmpty()) "" else "$it/" } + sheet.getString("file")
                 val frames = sheet.getJSONArray("frames")
                 for (j in 0 until frames.length()) {
                     val f = frames.getJSONObject(j)
@@ -56,6 +56,8 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             "ship_orange", "ship_black" -> "approved-top-view.png"
             "pilot_orange", "pilot_black" -> "pilots.png"
             "background" -> "sakura-park-background.png"
+            "background_bear" -> "sectors/bear-background.png"
+            "background_capy" -> "sectors/capy-background.png"
             "carrier" -> "supply-carrier.png"
             "boss" -> "boss-reference.png"
             "pilot_dog" -> "pilot-dog.png"
@@ -71,10 +73,11 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             }
             else -> raw
         }
-        val bitmap = if (id == "background" || id.startsWith("turn_")) section else trim(section)
-        val limit = if (id == "background") 1024 else 640
+        val fixedBody = id.startsWith("BEAR_") || (id.startsWith("CAPY_") && id != "CAPY_BUOY_DROP")
+        val bitmap = if (id.startsWith("background") || id.startsWith("turn_") || fixedBody) section else trim(section)
+        val limit = if (id.startsWith("background")) 1024 else 640
         val scaled = if (bitmap.width > limit) Bitmap.createScaledBitmap(bitmap, limit, (bitmap.height.toLong() * limit / bitmap.width).toInt().coerceAtLeast(1), true) else bitmap
-        if (id == "background") {
+        if (id.startsWith("background")) {
             // Blend matching edge rows once to avoid a hard scrolling wrap.
             val editable = scaled.copy(Bitmap.Config.ARGB_8888, true)
             val n = minOf(80, editable.height / 8)
@@ -103,12 +106,14 @@ class NovaAssets private constructor(private val assets: AssetManager) {
     fun ship(cat: CatType, width: Float, ppu: Float) = sprite(if (cat == CatType.ORANGE) "ship_orange" else "ship_black", width, ppu)
     fun prewarmHangar() {
         for (cat in listOf("orange", "black")) {
-            for (frame in 0 until 16) image("turn_${cat}_$frame").asAndroidBitmap().prepareToDraw()
+            image("turn_${cat}_2").asAndroidBitmap().prepareToDraw()
             image("pilot_$cat").asAndroidBitmap().prepareToDraw()
         }
         turnSheets.clear()
     }
-    fun prewarm() {
+    fun prewarm(stage: Int = 2) {
+        NovaSector.background(stage)?.let { image(it) }
+        for(id in NovaSector.assets(stage)) image(id)
         for (id in regions.keys) if (id.startsWith("EnemyKind.") || id.startsWith("BulletStyle.") || id.startsWith("ItemType.") || id.startsWith("BODY_") || id.startsWith("BONE_") || id == "COMMAND_CAP_DROP") image(id)
         for(id in listOf("SPREAD.plasma_bolt","ORANGE.SPECIAL.energy_bolt","HOMING.missile")) image(id)
         for (id in listOf("ship_orange", "ship_black", "background", "carrier", "boss")) image(id)

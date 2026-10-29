@@ -13,14 +13,16 @@ class NovaTourTest {
         assertEquals(Screen.ShooterMenu, GameRegistry.games[1].start)
         assertEquals(Screen.NovaMenu, GameRegistry.games[2].start)
     }
-    @Test fun dogStartsNewTourButAllOpponentsAndFinalOrderRemain() {
+    @Test fun newTourStartsWithCompletedArtAndKeepsEveryOpponentOnce() {
         repeat(40) { seed ->
             for(cat in CatType.entries) {
                 val tour=NovaTour.start(cat,Random(seed))
-                assertEquals(2,tour.nextStage)
+                assertEquals(listOf(2,3,4),tour.order.take(3))
                 assertEquals(13,tour.order.toSet().size)
-                assertEquals(Tour.POOL.toSet(),tour.order.take(9).toSet())
-                assertEquals(Tour.KINGS+Tour.CHAMPION,tour.order.drop(9))
+                val original=Tour.start(cat,Random(seed))
+                assertEquals(original.order.toSet(),tour.order.toSet())
+                assertEquals(original.order.filter { it !in listOf(2,3,4) },tour.order.drop(3))
+                assertEquals(Tour.CHAMPION,tour.order.last())
                 assertEquals(cat,tour.cat)
                 assertEquals(tour,TourState.decode(tour.encode()))
             }
