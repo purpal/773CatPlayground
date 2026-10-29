@@ -5,7 +5,7 @@
     "order": "row-major"
   },
   "camera": "low side-view turntable",
-  "angle_note": "Nominal 45-degree directions; generated artwork, not exact 3D renders.",
+  "angle_note": "16 nominal directions at 22.5-degree intervals; alternating approved views and generated intermediate views.",
   "sheets": [
     {
       "name": "orange",
@@ -28,6 +28,21 @@
           ]
         },
         {
+          "name": "intermediate_0",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 22.5,
+          "rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            230.0,
+            267.0
+          ]
+        },
+        {
           "name": "front_left",
           "nominal_degrees": 45,
           "rect_px": {
@@ -39,6 +54,21 @@
           "preview_anchor_px": [
             224.5,
             256.0
+          ]
+        },
+        {
+          "name": "intermediate_1",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 67.5,
+          "rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            238.0,
+            261.5
           ]
         },
         {
@@ -56,6 +86,21 @@
           ]
         },
         {
+          "name": "intermediate_2",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 112.5,
+          "rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            227.0,
+            263.5
+          ]
+        },
+        {
           "name": "rear_left",
           "nominal_degrees": 135,
           "rect_px": {
@@ -67,6 +112,21 @@
           "preview_anchor_px": [
             223.5,
             263.0
+          ]
+        },
+        {
+          "name": "intermediate_3",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 157.5,
+          "rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            228.5,
+            271.5
           ]
         },
         {
@@ -84,6 +144,21 @@
           ]
         },
         {
+          "name": "intermediate_4",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 202.5,
+          "rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            223.0,
+            214.0
+          ]
+        },
+        {
           "name": "rear_right",
           "nominal_degrees": 225,
           "rect_px": {
@@ -95,6 +170,21 @@
           "preview_anchor_px": [
             211.5,
             211.0
+          ]
+        },
+        {
+          "name": "intermediate_5",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 247.5,
+          "rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            226.5,
+            215.5
           ]
         },
         {
@@ -112,6 +202,21 @@
           ]
         },
         {
+          "name": "intermediate_6",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 292.5,
+          "rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            210.5,
+            219.0
+          ]
+        },
+        {
           "name": "front_right",
           "nominal_degrees": 315,
           "rect_px": {
@@ -123,6 +228,21 @@
           "preview_anchor_px": [
             220.5,
             202.0
+          ]
+        },
+        {
+          "name": "intermediate_7",
+          "file": "orange-intermediate.png",
+          "nominal_degrees": 337.5,
+          "rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            227.0,
+            212.5
           ]
         }
       ]
@@ -148,6 +268,21 @@
           ]
         },
         {
+          "name": "intermediate_0",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 22.5,
+          "rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            227.5,
+            268.0
+          ]
+        },
+        {
           "name": "front_left",
           "nominal_degrees": 45,
           "rect_px": {
@@ -159,6 +294,21 @@
           "preview_anchor_px": [
             232.5,
             272.5
+          ]
+        },
+        {
+          "name": "intermediate_1",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 67.5,
+          "rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            235.0,
+            275.0
           ]
         },
         {
@@ -176,6 +326,21 @@
           ]
         },
         {
+          "name": "intermediate_2",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 112.5,
+          "rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            238.0,
+            288.5
+          ]
+        },
+        {
           "name": "rear_left",
           "nominal_degrees": 135,
           "rect_px": {
@@ -187,6 +352,21 @@
           "preview_anchor_px": [
             218.5,
             284.5
+          ]
+        },
+        {
+          "name": "intermediate_3",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 157.5,
+          "rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "preview_anchor_px": [
+            230.5,
+            294.0
           ]
         },
         {
@@ -204,6 +384,21 @@
           ]
         },
         {
+          "name": "intermediate_4",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 202.5,
+          "rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            221.0,
+            251.5
+          ]
+        },
+        {
           "name": "rear_right",
           "nominal_degrees": 225,
           "rect_px": {
@@ -215,6 +410,21 @@
           "preview_anchor_px": [
             226.5,
             238.5
+          ]
+        },
+        {
+          "name": "intermediate_5",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 247.5,
+          "rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            208.0,
+            244.0
           ]
         },
         {
@@ -232,6 +442,21 @@
           ]
         },
         {
+          "name": "intermediate_6",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 292.5,
+          "rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            220.5,
+            238.5
+          ]
+        },
+        {
           "name": "front_right",
           "nominal_degrees": 315,
           "rect_px": {
@@ -242,6 +467,21 @@
           },
           "preview_anchor_px": [
             223.5,
+            231.5
+          ]
+        },
+        {
+          "name": "intermediate_7",
+          "file": "black-intermediate.png",
+          "nominal_degrees": 337.5,
+          "rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "preview_anchor_px": [
+            225.0,
             231.5
           ]
         }

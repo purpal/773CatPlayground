@@ -4,6 +4,13 @@ import com.purpal.catplayground.shooter.model.*
 
 /** Invoked only from the existing debuggable-intent gate, never by normal play. */
 object NovaPreview {
+    fun outro(world: World) {
+        boss(world, .01f)
+        world.damageEnemy(world.boss!!, world.boss!!.maxHp * 10f)
+        repeat(240) { world.update(STEP) }
+        check(world.phase == Phase.OUTRO_DIALOG)
+    }
+
     fun boss(world: World, hpRatio: Float) {
         world.godMode = true
         repeat(7200) {

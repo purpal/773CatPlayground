@@ -1,6 +1,9 @@
 package com.purpal.catplayground.nova
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import com.purpal.catplayground.ui.ArtImage
+import com.purpal.catplayground.ui.FitText
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -19,8 +22,11 @@ fun NovaHud(hud: HudState, stage: String, title: String, modifier: Modifier = Mo
         Column(Modifier.weight(1f)) {
             Text("$stage  /  $title",color=NovaCyan,fontSize=11.sp)
             Text("${hud.score.toString().padStart(8,'0')}  CR",color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
-            Text("喵甲 ${hud.armor}%   ${hud.mainWeapon.label} Lv${hud.mainLevel}",color=NovaGold,fontSize=12.sp)
-            Text(if(hud.subWeapon==SubWeapon.NONE)"副掛載待命"else"${hud.subWeapon.label} Lv${hud.subLevel}",color=NovaCyan,fontSize=11.sp)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                FitText("喵甲 ${hud.armor}%",Modifier.weight(.8f),color=NovaGold,fontSize=11.sp)
+                FitText("主武 Lv${hud.mainLevel}",Modifier.weight(1f),color=NovaGold,fontSize=11.sp)
+                FitText(if(hud.subWeapon==SubWeapon.NONE)"副武 —" else "副武 Lv${hud.subLevel}",Modifier.weight(1f),color=NovaCyan,fontSize=11.sp)
+            }
         }
         TextButton(onClick=onPause){Text("暫停",color=NovaCyan)}
     }
@@ -35,20 +41,23 @@ fun NovaPause(onResume:()->Unit,onRestart:()->Unit,onExit:()->Unit) {
 }
 
 @Composable
-fun NovaStageOverlays(world:World,phase:Phase,overdrive:Boolean,bestScore:Int,hasNext:Boolean,onNext:()->Unit,onRestart:()->Unit,onExit:()->Unit) {
+fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNext:()->Unit,onRestart:()->Unit,onExit:()->Unit) {
     var line by remember(world,phase){mutableIntStateOf(0)}
     val blocking=phase==Phase.OUTRO_DIALOG || phase==Phase.CONTINUE || phase==Phase.CLEAR
-    val visible=blocking || phase==Phase.INTRO || phase==Phase.WARNING || overdrive
+    val visible=blocking || phase==Phase.INTRO || phase==Phase.WARNING
     if(!visible)return
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=if(blocking).86f else .35f)),contentAlignment=Alignment.Center) {
+    val lines = remember(world) { novaOutro(world.stage, world.player.cat) }
+    val tapAnywhere = when(phase) {
+        Phase.OUTRO_DIALOG -> Modifier.clickable(onClickLabel="繼續通訊") {
+            if(line+1>=lines.size)world.dialogFinished()else line++
+        }
+        Phase.CLEAR -> Modifier.clickable(onClickLabel="返回航路") { if(hasNext)onNext()else onExit() }
+        else -> Modifier
+    }
+    Box(Modifier.fillMaxSize().then(tapAnywhere).background(Color.Black.copy(alpha=if(blocking).86f else .35f)),contentAlignment=Alignment.Center) {
         Column(Modifier.fillMaxWidth().padding(24.dp).background(NovaPanel,RoundedCornerShape(12.dp)).padding(20.dp),
             horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when {
-                overdrive -> {
-                    Text("核心超載",color=NovaGold,fontSize=32.sp,fontWeight=FontWeight.Black)
-                    NovaAsset(if(world.player.cat==CatType.ORANGE)"ship_orange"else"ship_black",Modifier.size(150.dp))
-                    Text(if(world.player.cat==CatType.ORANGE)"猛虎反應爐啟動"else"黑豹相位核心啟動",color=NovaCyan)
-                }
                 phase==Phase.INTRO -> {
                     Text("戰區同步",color=NovaCyan,fontSize=28.sp,fontWeight=FontWeight.Bold)
                     Text("${world.stage.country.name}｜${world.stage.title}",color=Color.White,fontSize=18.sp)
@@ -61,13 +70,15 @@ fun NovaStageOverlays(world:World,phase:Phase,overdrive:Boolean,bestScore:Int,ha
                     Text("追蹤預警線，保持中央避讓通道",color=NovaGold,fontSize=13.sp)
                 }
                 phase==Phase.OUTRO_DIALOG -> {
-                    val lines=world.stage.outro
-                    val current=lines.getOrNull(line)
-                    if(current!=null) {
-                        Text(if(current.speaker==Speaker.CAT)world.player.cat.shortName else world.stage.bossName,color=NovaGold,fontWeight=FontWeight.Bold)
-                        Text(current.text,color=Color.White,fontSize=16.sp)
-                    }
-                    NovaButton("繼續通訊") { if(line+1>=lines.size)world.dialogFinished()else line++ }
+                    val current=lines[line]
+                    val catSpeaking=current.speaker==Speaker.CAT
+                    Text("戰後通訊  /  ${line+1}・${lines.size}",color=NovaCyan,fontSize=12.sp)
+                    if(catSpeaking) NovaAsset(if(world.player.cat==CatType.ORANGE)"pilot_orange"else"pilot_black",Modifier.height(150.dp))
+                    else if(world.stage.number==2) NovaAsset("pilot_dog",Modifier.size(160.dp),"柴犬隊長駕駛員")
+                    else ArtImage("${world.stage.bossArt}_m0_0",Modifier.size(150.dp),world.stage.bossName)
+                    Text(if(catSpeaking)world.player.cat.shortName else world.stage.bossName,color=NovaGold,fontWeight=FontWeight.Bold)
+                    Text(current.text + if(line<lines.lastIndex) " ▼" else "",color=Color.White,fontSize=17.sp,lineHeight=27.sp)
+                    Text("輕觸任意處繼續",color=NovaCyan.copy(alpha=.65f),fontSize=11.sp)
                 }
                 phase==Phase.CONTINUE -> {
                     Text("機體失聯",color=NovaGold,fontSize=28.sp)
@@ -80,8 +91,7 @@ fun NovaStageOverlays(world:World,phase:Phase,overdrive:Boolean,bestScore:Int,ha
                     Text("戰區解除",color=NovaCyan,fontSize=30.sp,fontWeight=FontWeight.Black)
                     Text("戰果 ${world.score} CR",color=NovaGold,fontSize=22.sp)
                     if(world.score>bestScore)Text("航誌最高紀錄更新",color=NovaCyan)
-                    NovaButton(if(hasNext)"返回地球儀・下一站"else"完成遠征",onClick=if(hasNext)onNext else onExit)
-                    NovaButton("返回航路",onClick=onExit)
+                    Text(if(hasNext)"輕觸任意處返回航線選擇"else"遠征完成・輕觸任意處返回航線選擇",color=NovaCyan,fontSize=14.sp)
                 }
             }
         }

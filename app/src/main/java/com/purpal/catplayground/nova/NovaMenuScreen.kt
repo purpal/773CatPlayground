@@ -22,6 +22,8 @@ import com.purpal.catplayground.audio.Sfx
 import com.purpal.catplayground.data.AppPrefs
 import com.purpal.catplayground.shooter.model.*
 import com.purpal.catplayground.ui.FitText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 val NovaInk = Color(0xFF07121F)
 val NovaPanel = Color(0xFF102737)
@@ -74,7 +76,12 @@ fun NovaMenuScreen(prefs: AppPrefs, tour: TourState?, onBack: () -> Unit, onNewT
     val sound = LocalSound.current
     val assets = NovaAssets.get(LocalContext.current.assets)
     val loop = rememberInfiniteTransition(label = "hangar")
-    val turn by loop.animateFloat(0f, 8f, infiniteRepeatable(tween(6400, easing = LinearEasing)), label = "turntable")
+    var ready by remember { mutableStateOf(false) }
+    LaunchedEffect(assets) {
+        withContext(Dispatchers.Default) { assets.prewarmHangar() }
+        ready = true
+    }
+    val turn by loop.animateFloat(0f, 16f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "turntable")
     NovaBackdrop {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("返回大廳", color = NovaCyan) }
@@ -94,11 +101,12 @@ fun NovaMenuScreen(prefs: AppPrefs, tour: TourState?, onBack: () -> Unit, onNewT
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Canvas(Modifier.fillMaxWidth().height(222.dp)) {
                         drawOval(accent.copy(alpha = .12f), Offset(0f,size.height*.36f), Size(size.width,size.height*.18f))
-                        val frame = turn.toInt() % 8
-                        val blend = ((turn - turn.toInt() - .78f) / .22f).coerceIn(0f,1f)
-                        // Fade only at the end of each angle; avoid a permanently doubled silhouette.
+                        if (!ready) return@Canvas
+                        val frame = turn.toInt() % 16
+                        val blend = ((turn - turn.toInt() - .35f) / .65f).coerceIn(0f,1f)
+                        // Preloaded 22.5° views with a short overlap to soften frame boundaries.
                         novaTurn(assets,"turn_${key}_$frame", Offset(size.width*.5f,size.height*.25f),size.width*1.15f,1f-blend)
-                        if (blend > 0) novaTurn(assets,"turn_${key}_${(frame+1)%8}",Offset(size.width*.5f,size.height*.25f),size.width*1.15f,blend)
+                        if (blend > 0) novaTurn(assets,"turn_${key}_${(frame+1)%16}",Offset(size.width*.5f,size.height*.25f),size.width*1.15f,blend)
                         novaImage(assets.image("pilot_$key"),Offset(size.width*.5f,size.height*.70f),size.width*.38f)
                         drawLine(accent.copy(alpha=.5f), Offset(8f,size.height-4), Offset(size.width-8f,size.height-4),2f)
                     }

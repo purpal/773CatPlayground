@@ -43,21 +43,24 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
     }
     val destination=if(tour.finished) Countries.HOME else tour.stageAt(tour.cleared)?.country ?: Countries.HOME
     val opponent=Stages.get(if(step==0)rolling else tour.nextStage ?: 2)
-    NovaBackdrop {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF142F42), NovaInk))).systemBarsPadding().padding(horizontal=16.dp,vertical=8.dp),
+        verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        // The action stays outside the scrollable content, including on short displays.
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             TextButton(onClick=onBack){Text("返回機庫",color=NovaCyan)}
             Spacer(Modifier.weight(1f));Text("${minOf(tour.cleared+1,Tour.SIZE)} / ${Tour.SIZE}",color=NovaGold)
         }
-        Text("軌道航路指揮台",fontSize=27.sp,color=Color.White,fontWeight=FontWeight.Black)
+        Text("軌道航路指揮台",fontSize=23.sp,color=Color.White,fontWeight=FontWeight.Black)
         Text("${tour.departure().name}  →  ${if(step==0)"目標辨識中" else destination.name}",color=NovaCyan,fontSize=14.sp)
         Globe(tour.departure(),destination,flight.value,step>0,tour.cat)
-        Column(Modifier.fillMaxWidth().background(NovaPanel,RoundedCornerShape(12.dp)).border(1.dp,NovaCyan.copy(alpha=.3f),RoundedCornerShape(12.dp)).padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().background(NovaPanel,RoundedCornerShape(12.dp)).border(1.dp,NovaCyan.copy(alpha=.3f),RoundedCornerShape(12.dp)).padding(10.dp)) {
             Text(when(step){0->"敵方訊號掃描";1->"航路已鎖定";2->"躍遷航行中";else->if(tour.finished)"全球遠征完成" else "已抵達戰區"},color=NovaGold,fontSize=12.sp)
             if(!tour.finished && opponent!=null) Row(verticalAlignment=Alignment.CenterVertically) {
-                if(opponent.number==2) NovaAsset("boss",Modifier.size(92.dp),"柴犬隊長巡航艦")
-                else ArtImage("${opponent.bossArt}_m0_0",Modifier.size(92.dp),opponent.bossName)
+                if(opponent.number==2) NovaAsset("boss",Modifier.size(64.dp),"柴犬隊長巡航艦")
+                else ArtImage("${opponent.bossArt}_m0_0",Modifier.size(64.dp),opponent.bossName)
                 Column(Modifier.weight(1f).padding(start=12.dp)) {
-                    Text(opponent.bossName,color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
+                    Text(opponent.bossName,color=Color.White,fontSize=18.sp,fontWeight=FontWeight.Bold)
                     Text("${opponent.country.name}｜${opponent.title}",color=NovaCyan,fontSize=13.sp)
                     Text("駕駛員 ${tour.cat.shortName}  ·  累計 ${tour.totalScore}",color=Color(0xFFB0C8D8),fontSize=12.sp)
                 }
@@ -66,9 +69,15 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
         Text("遠征航誌",color=NovaCyan,fontWeight=FontWeight.Bold)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             for(i in tour.order.indices) Column(Modifier.width(88.dp).background(if(i==tour.cleared)Color(0xFF204456)else NovaPanel,RoundedCornerShape(8.dp)).padding(10.dp)) {
-                Text("${i+1}".padStart(2,'0'),color=if(i<tour.cleared)NovaGold else NovaCyan,fontWeight=FontWeight.Bold)
-                Text(if(i<tour.revealed || i<tour.cleared) tour.stageAt(i)?.country?.name ?: "未知" else "未辨識",color=Color.White,fontSize=12.sp)
+                val known = i < tour.revealed || i < tour.cleared || (i == tour.cleared && step > 0)
+                val country = tour.stageAt(i)?.country
+                Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text("${i+1}".padStart(2,'0'),color=if(i<tour.cleared)NovaGold else NovaCyan,fontWeight=FontWeight.Bold)
+                    if(known && country!=null) ArtImage(country.flag,Modifier.size(24.dp,16.dp),"${country.name}國旗")
+                }
+                Text(if(known) country?.name ?: "未知" else "未辨識",color=Color.White,fontSize=12.sp)
             }
+        }
         }
         if(tour.finished) NovaButton("重新展開遠征",onClick=onNewTour)
         else NovaButton(when(step){0->"掃描中…";1,2->"航行中…";else->"進入戰區"},step==3,onFight)
@@ -95,7 +104,7 @@ private fun Globe(from:Country,to:Country,flight:Float,revealed:Boolean,cat:CatT
     val b=remember(to){GlobeMath.point(to.lon.toDouble(),to.lat.toDouble())}
     val loop=rememberInfiniteTransition(label="globe")
     val pulse by loop.animateFloat(0f,1f,infiniteRepeatable(tween(1600,easing=LinearEasing)),label="pulse")
-    Canvas(Modifier.fillMaxWidth().heightIn(min=240.dp,max=330.dp).aspectRatio(1.2f).background(NovaInk,RoundedCornerShape(16.dp))) {
+    Canvas(Modifier.fillMaxWidth().heightIn(max=260.dp).aspectRatio(1.45f).background(NovaInk,RoundedCornerShape(16.dp))) {
         val center=Offset(size.width/2,size.height/2)
         val r=min(size.width,size.height)*.425f
         val camera=GlobeMath.route(a,b,if(revealed)flight*.85 else 0.0)
