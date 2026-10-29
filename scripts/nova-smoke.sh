@@ -126,7 +126,11 @@ scroll_to '喵航特攻隊'
 click_text '喵航特攻隊'
 wait_text '機庫連線中'
 click_text '玄影'
+adb shell screenrecord --time-limit 6 /sdcard/nova-hangar.mp4 > "$OUT/hangar-recording.txt" 2>&1 &
+record_pid=$!
 for frame in 1 2 3; do shot "01_hangar_$frame"; sleep 1; done
+wait "$record_pid"
+adb pull /sdcard/nova-hangar.mp4 "$OUT/01_hangar_rotation.mp4" >/dev/null 2>&1
 
 step 'Taiwan to Japan flight'
 scroll_to '啟動全球遠征'
@@ -136,7 +140,9 @@ for frame in 1 2 3 4 5 6; do shot "02_globe_$frame"; sleep 1; done
 wait_text '已抵達戰區'
 node '日本' >/dev/null
 shot 03_globe_arrival
-scroll_to '進入戰區'
+# No scrolling: departure must be immediately reachable.
+node '進入戰區' >/dev/null
+node '日本國旗' >/dev/null
 click_text '進入戰區'
 
 step 'Dog stage controls and pause / resume'
@@ -155,6 +161,44 @@ for ratio in 0.8 0.3 0.2; do
     ready_game
     shot "05_boss_$ratio"
 done
+
+step 'Compact route layout'
+adb shell wm size 720x1280
+open nova_tour
+wait_text '進入戰區'
+shot 05_compact_route
+# The pinned button is checked without any swipe.
+node '進入戰區' >/dev/null
+adb shell wm size 720x1600
+
+step 'Overdrive seals for both pilots'
+for cat in ORANGE BLACK; do
+    open nova_boss --es cat "$cat" --ef hp_ratio 0.8
+    ready_game
+    # The retained roar control is bottom-right by default. Capture the whole 1.6s sequence.
+    adb shell input tap 628 1435
+    for frame in 1 2 3 4 5 6; do shot "08_overdrive_${cat}_$frame"; sleep 0.12; done
+done
+
+step 'Tap-anywhere dialogue and clear'
+open nova_outro --es cat BLACK
+wait_text '戰後通訊'
+node '柴犬隊長駕駛員' >/dev/null
+node '▼' >/dev/null
+shot 09_dialogue_boss
+# Tap outside the panel as well as inside it; every sentence must advance exactly once.
+for line in 2 3 4 5 6; do
+    adb shell input tap 50 250
+    wait_text "$line・6"
+    shot "09_dialogue_$line"
+done
+if node '▼' >/dev/null; then echo 'Last sentence must not show a continuation marker' >&2; exit 1; fi
+adb shell input tap 360 800
+wait_text '戰區解除'
+shot 10_clear
+adb shell input tap 50 250
+wait_text '軌道航路指揮台'
+shot 11_return_route
 
 step 'Original shooter regression'
 open shooter_menu

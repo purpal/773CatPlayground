@@ -16,6 +16,7 @@ class NovaAssets private constructor(private val assets: AssetManager) {
     private data class Region(val file: String, val x: Int, val y: Int, val w: Int, val h: Int)
     private val regions = HashMap<String, Region>()
     private val anchors = HashMap<String, Pair<Float,Float>>()
+    private val turnSheets = HashMap<String, Bitmap>()
     private val images = ConcurrentHashMap<String, ImageBitmap>()
     private val sprites = ConcurrentHashMap<String, Sprite>()
     init {
@@ -42,7 +43,7 @@ class NovaAssets private constructor(private val assets: AssetManager) {
                 val r = frame.getJSONObject("rect_px")
                 val a=frame.getJSONArray("preview_anchor_px")
                 anchors["turn_${sheet.getString("name")}_$j"] = a.getDouble(0).toFloat() to a.getDouble(1).toFloat()
-                regions["turn_${sheet.getString("name")}_$j"] = Region(sheet.getString("file"), r.getInt("x"), r.getInt("y"), r.getInt("width"), r.getInt("height"))
+                regions["turn_${sheet.getString("name")}_$j"] = Region(frame.optString("file", sheet.getString("file")), r.getInt("x"), r.getInt("y"), r.getInt("width"), r.getInt("height"))
             }
         }
     }
@@ -57,12 +58,14 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             "background" -> "sakura-park-background.png"
             "carrier" -> "supply-carrier.png"
             "boss" -> "boss-reference.png"
+            "pilot_dog" -> "pilot-dog.png"
             else -> error("Unknown Nova asset: $id")
         }
-        val raw = assets.open("nova/$file").use { BitmapFactory.decodeStream(it) } ?: error("Invalid image $file")
+        fun decode() = assets.open("nova/$file").use { BitmapFactory.decodeStream(it) } ?: error("Invalid image $file")
+        val raw = if(id.startsWith("turn_")) turnSheets.getOrPut(file) { decode() } else decode()
         val section = when {
             region != null -> Bitmap.createBitmap(raw, region.x, region.y, region.w, region.h)
-            id.startsWith("ship_") || id.startsWith("pilot_") -> {
+            id.startsWith("ship_") || id == "pilot_orange" || id == "pilot_black" -> {
                 val left = id.endsWith("orange")
                 Bitmap.createBitmap(raw, if (left) 0 else raw.width / 2, 0, raw.width / 2, raw.height)
             }
@@ -98,6 +101,13 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             Sprite(resized.asImageBitmap(), resized.width / worldWidth)
         }
     fun ship(cat: CatType, width: Float, ppu: Float) = sprite(if (cat == CatType.ORANGE) "ship_orange" else "ship_black", width, ppu)
+    fun prewarmHangar() {
+        for (cat in listOf("orange", "black")) {
+            for (frame in 0 until 16) image("turn_${cat}_$frame").asAndroidBitmap().prepareToDraw()
+            image("pilot_$cat").asAndroidBitmap().prepareToDraw()
+        }
+        turnSheets.clear()
+    }
     fun prewarm() {
         for (id in regions.keys) if (id.startsWith("EnemyKind.") || id.startsWith("BulletStyle.") || id.startsWith("ItemType.") || id.startsWith("BODY_") || id.startsWith("BONE_") || id == "COMMAND_CAP_DROP") image(id)
         for(id in listOf("SPREAD.plasma_bolt","ORANGE.SPECIAL.energy_bolt","HOMING.missile")) image(id)

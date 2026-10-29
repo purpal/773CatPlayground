@@ -228,7 +228,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                 FxSettings.damageNumbers = novaPrefs.shooterDamageNumbers
                 FxSettings.high = novaPrefs.shooterFxHigh
                 ShooterGameScreen(
-                    stageNumber=screen.stage, cat=screen.cat, nova=true, novaBossHp=debug?.bossHp, autotest=debug?.autotest==true,
+                    stageNumber=screen.stage, cat=screen.cat, nova=true, novaBossHp=debug?.bossHp, novaOutro=debug?.novaOutro==true, autotest=debug?.autotest==true,
                     ultimateOnLeft=novaPrefs.shooterUltimateOnLeft, bestScore=novaPrefs.shooterBest(screen.stage),
                     loadout=screen.loadout, bout=screen.bout,
                     onCleared={stage,score,loadout ->

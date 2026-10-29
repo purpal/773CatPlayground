@@ -90,6 +90,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     /** 大絕道具：和大絕按鈕同一個圖示。 */
     fun ultButton(cat: CatType): Sprite = nova?.sprite("ItemType.BOMB", ITEM_WIDTH, pxPerUnit) ?: art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ITEM_WIDTH)
 
+    fun novaTotem(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ULT_WIDTH)
+
     fun ultimate(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_tiger" else "ult_panther", ULT_WIDTH)
 
     // ── 敵人 ──
@@ -332,6 +334,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     /** 先在背景執行緒把這一關會用到的圖都載入好，避免開打時卡頓。 */
     fun prewarm(cat: CatType, kinds: Collection<EnemyKind>) {
+        if (nova != null) novaTotem(cat)
         nova?.prewarm()
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {

@@ -1,6 +1,7 @@
 package com.purpal.catplayground.shooter.ui
 
 import androidx.activity.compose.BackHandler
+import com.purpal.catplayground.nova.drawNovaOverdrive
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -139,6 +140,7 @@ fun ShooterGameScreen(
     autotest: Boolean = false,
     nova: Boolean = false,
     novaBossHp: Float? = null,
+    novaOutro: Boolean = false,
     ultimateOnLeft: Boolean,
     bestScore: Int,
     loadout: Loadout? = null,
@@ -149,7 +151,6 @@ fun ShooterGameScreen(
     onExit: () -> Unit,
 ) {
     var novaReady by remember { mutableStateOf(!nova) }
-    var novaOverdrive by remember { mutableStateOf(false) }
     val stage = remember(stageNumber) { Stages.get(stageNumber)!! }
     val difficulty = remember(bout) { bout?.let { Difficulty.forBout(it) } ?: Difficulty.NEUTRAL }
     val boutLabel = if (bout != null) boutTitle(bout) else "STAGE ${stage.number}"
@@ -193,6 +194,7 @@ fun ShooterGameScreen(
                 difficulty = difficulty, bout = if (bout != null) bout + 1 else stage.number,
             )
                 .also {
+                    if(nova && novaOutro) com.purpal.catplayground.nova.NovaPreview.outro(it)
                     if(nova && novaBossHp!=null) com.purpal.catplayground.nova.NovaPreview.boss(it,novaBossHp)
                     it.godMode = autotest || (nova && novaBossHp!=null)
                     // 自動測試直接拿專武，好在截圖裡看到專武特效
@@ -239,7 +241,6 @@ fun ShooterGameScreen(
                 sound.playMusic(musicFor(world))
                 val next = HudState.of(world)
                 if (next != hud) hud = next
-                if (nova) novaOverdrive = world.ultimateCinematic > 0f
                 if (world.phase != lastPhase) {
                     if (world.phase == Phase.CLEAR) {
                         sound.play(Sfx.WIN)
@@ -264,7 +265,7 @@ fun ShooterGameScreen(
                 drawCircle(Color.White.copy(alpha = 0.5f), 46.dp.toPx(), Offset(touch.x, touch.y), style = Stroke(3.dp.toPx()))
                 drawCircle(Color(0xFFFFD54F).copy(alpha = 0.8f), 10.dp.toPx(), Offset(touch.x, touch.y))
             }
-            if (!nova) drawUltimateCinematic(world, sprites, textMeasurer)
+            if (nova) drawNovaOverdrive(world, sprites) else drawUltimateCinematic(world, sprites, textMeasurer)
         }
 
         // 觸控板：按住下半部任何地方開始射擊，手指移動多少，貓咪就跟著移動多少。
@@ -302,9 +303,7 @@ fun ShooterGameScreen(
         if (nova) com.purpal.catplayground.nova.NovaHud(hud,boutLabel,stage.title,onPause={paused=true})
         else ShooterHud(hud, boutLabel, stage.title, onPause = { paused = true })
         BossBar(hud, Modifier.padding(top = hudHeight))
-        if (nova) Box(Modifier.align(if(ultimateOnLeft)Alignment.BottomStart else Alignment.BottomEnd).systemBarsPadding().padding(16.dp).width(120.dp)) {
-            com.purpal.catplayground.nova.NovaButton("核心超載 ${hud.bombs}",hud.bombs>0) { world.requestUltimate() }
-        } else UltimateButton(
+        UltimateButton(
             cat = cat,
             bombs = hud.bombs,
             onPress = { world.requestUltimate() },
@@ -316,7 +315,7 @@ fun ShooterGameScreen(
 
         if (nova) {
             if (!novaReady) Box(Modifier.fillMaxSize().background(Color(0xFF07121F)),contentAlignment=Alignment.Center) { Text("艦載系統同步中…",color=Color(0xFF68E5F5)) }
-            else com.purpal.catplayground.nova.NovaStageOverlays(world,hud.phase,novaOverdrive,bestScore,if(bout!=null)bout+1<Tour.SIZE else Stages.get(stageNumber+1)!=null,onNextStage,{attempt++;paused=false},onExit)
+            else com.purpal.catplayground.nova.NovaStageOverlays(world,hud.phase,bestScore,if(bout!=null)bout+1<Tour.SIZE else Stages.get(stageNumber+1)!=null,onNextStage,{attempt++;paused=false},onExit)
         } else StageOverlays(
             world = world,
             phase = hud.phase,
