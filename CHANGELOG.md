@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/purpal/773CatPlayground/compare/v0.24.0...v0.25.0) (2026-10-29)
+
+
+### Features
+
+* 新增熊熊與卡皮巴拉戰區並重製科技機庫介面 ([6ac2a8b](https://github.com/purpal/773CatPlayground/commit/6ac2a8becaa182e81c4ac05468836b22c00219d9))
+
 ## [0.24.0](https://github.com/purpal/773CatPlayground/compare/v0.23.0...v0.24.0) (2026-10-29)
 
 
