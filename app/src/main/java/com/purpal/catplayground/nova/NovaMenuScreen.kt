@@ -81,52 +81,50 @@ fun NovaMenuScreen(prefs: AppPrefs, tour: TourState?, onBack: () -> Unit, onNewT
         withContext(Dispatchers.Default) { assets.prewarmHangar() }
         ready = true
     }
-    val turn by loop.animateFloat(0f, 16f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "turntable")
-    NovaBackdrop {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("返回大廳", color = NovaCyan) }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { settings = true }) { Text("艦載設定", color = NovaCyan) }
-        }
-        Text("喵航特攻隊", fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color.White)
-        Text("FELINE FLIGHT COMMAND  /  機庫連線中", color = NovaCyan, fontSize = 11.sp)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            for (type in CatType.entries) {
-                val orange = type == CatType.ORANGE
-                val key = if (orange) "orange" else "black"
-                val accent = if (orange) NovaGold else NovaCyan
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(NovaPanel)
-                    .border(if (cat == type) 2.dp else 1.dp, if (cat == type) accent else Color(0xFF284656), RoundedCornerShape(12.dp))
-                    .clickable { cat = type; prefs.shooterCat = type.name; confirm = false; sound.play(Sfx.SELECT) }.padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Canvas(Modifier.fillMaxWidth().height(222.dp)) {
-                        drawOval(accent.copy(alpha = .12f), Offset(0f,size.height*.36f), Size(size.width,size.height*.18f))
-                        if (!ready) return@Canvas
-                        val frame = turn.toInt() % 16
-                        val blend = ((turn - turn.toInt() - .35f) / .65f).coerceIn(0f,1f)
-                        // Preloaded 22.5° views with a short overlap to soften frame boundaries.
-                        novaTurn(assets,"turn_${key}_$frame", Offset(size.width*.5f,size.height*.25f),size.width*1.15f,1f-blend)
-                        if (blend > 0) novaTurn(assets,"turn_${key}_${(frame+1)%16}",Offset(size.width*.5f,size.height*.25f),size.width*1.15f,blend)
-                        novaImage(assets.image("pilot_$key"),Offset(size.width*.5f,size.height*.70f),size.width*.38f)
-                        drawLine(accent.copy(alpha=.5f), Offset(8f,size.height-4), Offset(size.width-8f,size.height-4),2f)
+    val breath by loop.animateFloat(.35f, 1f, infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "engine breathing")
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF142F42),NovaInk))).systemBarsPadding()) {
+        val compact=maxHeight<720.dp
+        Column(Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(if(compact)6.dp else 10.dp)) {
+            Row(Modifier.fillMaxWidth().height(36.dp),verticalAlignment=Alignment.CenterVertically) {
+                TextButton(onClick=onBack){Text("返回大廳",color=NovaCyan)}
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick={settings=true}){Text("艦載設定",color=NovaCyan)}
+            }
+            Text("喵航特攻隊",fontSize=if(compact)24.sp else 28.sp,fontWeight=FontWeight.Black,color=Color.White)
+            Text(if(ready)"FELINE FLIGHT COMMAND / 機庫連線中"else"機庫素材同步中…",color=NovaCyan,fontSize=10.sp)
+            Row(Modifier.weight(1f).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                for(type in CatType.entries) {
+                    val orange=type==CatType.ORANGE
+                    val key=if(orange)"orange"else"black"
+                    val accent=if(orange)NovaGold else NovaCyan
+                    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).background(NovaPanel)
+                        .border(if(cat==type)2.dp else 1.dp,if(cat==type)accent else Color(0xFF284656),RoundedCornerShape(12.dp))
+                        .clickable {cat=type;prefs.shooterCat=type.name;confirm=false;sound.play(Sfx.SELECT)}.padding(8.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                        Canvas(Modifier.weight(1f).fillMaxWidth()) {
+                            drawOval(accent.copy(alpha=.08f+.05f*breath),Offset(0f,size.height*.35f),Size(size.width,size.height*.15f))
+                            if(!ready)return@Canvas
+                            novaHangarShip(assets,key,Offset(size.width*.46f,size.height*.23f),minOf(size.width*1.02f,size.height*1.35f),breath)
+                            val pilot=assets.image("pilot_$key")
+                            val pilotHeight=size.height*.58f
+                            novaImage(pilot,Offset(size.width*.5f,size.height*.70f),pilotHeight*pilot.width/pilot.height)
+                            drawLine(accent.copy(alpha=.5f),Offset(8f,size.height-2f),Offset(size.width-8f,size.height-2f),2f)
+                        }
+                        FitText(novaName(type),color=accent,fontSize=13.sp,fontWeight=FontWeight.Bold)
+                        Text("駕駛員・${type.shortName}",color=Color.White.copy(alpha=.65f),fontSize=11.sp)
                     }
-                    FitText(novaName(type),color = accent,fontSize = 14.sp,fontWeight = FontWeight.Bold)
-                    Text(if (orange) "駕駛員・小橘" else "駕駛員・小黑", color = Color.White.copy(alpha=.65f), fontSize=12.sp)
                 }
             }
-        }
-        Column(Modifier.fillMaxWidth().background(NovaPanel,RoundedCornerShape(10.dp)).padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            Text(novaName(cat),color=if(cat==CatType.ORANGE) NovaGold else NovaCyan,fontWeight=FontWeight.Bold,fontSize=20.sp)
-            Text(if(cat==CatType.ORANGE) "鈦纖厚甲・正面壓制\n喵盾增幅：甩動啟動短暫附加護甲\n重力肉球軌砲：貫穿目標的重型能量彈\n猛虎核心超載：全域消彈與火力增幅"
-                else "輕量匿蹤甲・高速迴避\n幽爪相位步：甩動啟動短暫無敵位移\n高周波喵爪場：以震動輪廓持續壓制\n黑豹核心超載：全域消彈與火力增幅",color=Color(0xFFD0E2EE),fontSize=14.sp,lineHeight=23.sp)
-            Text("護甲 ${cat.maxArmor.toInt()}   /   推進 ${cat.baseSpeed.toInt()}   /   判定半徑 ${if(cat==CatType.ORANGE)12 else 9}",color=NovaCyan,fontSize=12.sp)
-        }
-        Text("世界遠征  /  台灣基地出發",color=NovaCyan,fontWeight=FontWeight.Bold)
-        if (tour != null && !tour.finished) {
-            NovaButton("繼續遠征｜第 ${tour.cleared+1} 站・${tour.cat.shortName}", onClick=onContinue)
-        }
-        NovaButton(if(confirm) "確定重啟遠征？目前進度將被取代" else "${cat.shortName}，啟動全球遠征") {
-            if(tour!=null && !tour.finished && !confirm) confirm=true else { confirm=false;onNewTour(cat) }
+            Column(Modifier.fillMaxWidth().background(NovaPanel,RoundedCornerShape(10.dp)).padding(if(compact)10.dp else 14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                Text(novaName(cat),color=if(cat==CatType.ORANGE)NovaGold else NovaCyan,fontWeight=FontWeight.Bold,fontSize=16.sp)
+                Text(if(cat==CatType.ORANGE)"鈦纖厚甲・喵盾增幅：甩動獲得護甲\n重力肉球軌砲：重型貫穿能量彈\n猛虎核心：全域消彈、火力增幅"
+                    else "匿蹤輕甲・幽爪相位：甩動無敵位移\n高周波喵爪場：持續震盪壓制\n黑豹核心：全域消彈、火力增幅",color=Color(0xFFD0E2EE),fontSize=if(compact)12.sp else 14.sp,lineHeight=if(compact)19.sp else 22.sp)
+                FitText("護甲 ${cat.maxArmor.toInt()}  /  推進 ${cat.baseSpeed.toInt()}  /  判定 ${if(cat==CatType.ORANGE)12 else 9}",color=NovaCyan,fontSize=11.sp)
+            }
+            Text("世界遠征 / 台灣基地出發",color=NovaCyan,fontSize=12.sp)
+            if(tour!=null && !tour.finished) NovaButton("繼續遠征｜第 ${tour.cleared+1} 站・${tour.cat.shortName}",onClick=onContinue)
+            NovaButton(if(confirm)"確定重啟遠征？目前進度將被取代"else"${cat.shortName}，啟動全球遠征") {
+                if(tour!=null && !tour.finished && !confirm)confirm=true else {confirm=false;onNewTour(cat)}
+            }
         }
     }
     if(settings) NovaSettings(prefs) { settings=false }

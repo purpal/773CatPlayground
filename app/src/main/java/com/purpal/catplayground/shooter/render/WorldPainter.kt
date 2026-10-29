@@ -111,8 +111,8 @@ fun DrawScope.drawWorld(w: World, view: Viewport, sprites: SpriteCache) {
         scale(view.scale, view.scale, Offset.Zero)
     }) {
         clipRect(0f, 0f, WORLD_WIDTH, w.height) {
-            if (sprites.nova != null && w.stage.number == 2) {
-                val bg = sprites.nova.image("background")
+            if (sprites.nova != null && com.purpal.catplayground.nova.NovaSector.background(w.stage.number)!=null) {
+                val bg = sprites.nova.image(com.purpal.catplayground.nova.NovaSector.background(w.stage.number)!!)
                 val tileH = WORLD_WIDTH * bg.height / bg.width
                 var top = w.scroll % tileH - tileH
                 while (top < w.height) {
@@ -198,8 +198,8 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
     if (e is Diver) drawDiverWarning(e, w, sprites)
     when (e.kind) {
         EnemyKind.CHEESE_DRONE -> {
-            sprite(sprites.cheeseWheel(), rotation = (e as CheeseDrone).spin * RAD)
-            sprite(sprites.enemy(e.kind, 0))
+            if(sprites.nova!=null) sprite(sprites.enemy(e.kind,0),rotation=(e as CheeseDrone).spin*RAD)
+            else { sprite(sprites.cheeseWheel(), rotation = (e as CheeseDrone).spin * RAD); sprite(sprites.enemy(e.kind, 0)) }
         }
         EnemyKind.FRISBEE -> sprite(sprites.enemy(e.kind, 0), rotation = (e as Frisbee).spin * RAD)
         EnemyKind.YUZU -> sprite(sprites.enemy(e.kind, 0), rotation = (e as YuzuDrone).spin * RAD * 0.4f)
@@ -330,7 +330,7 @@ private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash
     }
     val held = boss.heldProp()
     val busy = held != null && w.lasers.any { it.owner === boss && it.style == held }
-    val sprite = sprites.boss(boss.kind, mood, frame, boss.broken)
+    val sprite = sprites.boss(boss.kind, mood, frame, boss.broken, boss.phase)
     val scale = bossScale(boss.kind)
     val rotation = wobble * 0.5f + boss.tilt
     drawSprite(sprite, x, boss.y, scale, rotationDegrees = rotation, stretch = squash)
@@ -1428,6 +1428,7 @@ private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     val sprite = sprites.bullet(b.style, b.radius)
     val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.06f)
     val rotation = when {
+        sprites.nova != null && sprites.novaStage in 3..4 && b.style in listOf(BulletStyle.HONEY,BulletStyle.RICE,BulletStyle.SEED) -> atan2(b.vy,b.vx)*RAD-90f
         b.style == BulletStyle.RICE || b.style == BulletStyle.ICE || b.style == BulletStyle.LEAF || b.style == BulletStyle.FISH ||
             b.style == BulletStyle.BAMBOO || b.style == BulletStyle.LETTER || b.style == BulletStyle.PARCEL -> atan2(b.vy, b.vx) * RAD
         b.spin -> b.age * 300f
@@ -1685,6 +1686,16 @@ private fun DrawScope.drawProp(
     hitWidth: Float = width,
     active: Boolean,
 ) {
+    if(sprites.nova!=null && active && (style==HazardStyle.CLAW || style==HazardStyle.WATER)) {
+        val image=sprites.nova.image(if(style==HazardStyle.CLAW)"CLAW_ACTIVE"else"WATER_ACTIVE")
+        // Preserve the engine's telegraph angle, reach and collision width.
+        val beamWidth=hitWidth*1.7f
+        withTransform({rotate(angle*RAD,Offset(x0,y0))}) {
+            drawImage(image,dstOffset=androidx.compose.ui.unit.IntOffset(x0.toInt(),(y0-beamWidth/2).toInt()),dstSize=androidx.compose.ui.unit.IntSize(length.toInt().coerceAtLeast(1),beamWidth.toInt().coerceAtLeast(1)))
+        }
+        if(style==HazardStyle.WATER) sprites.propHead(style)?.let { drawSprite(it,x0+cos(angle)*62f,y0+sin(angle)*62f,1f,angle*RAD) }
+        return
+    }
     if (sprites.nova != null && style == HazardStyle.BONE) {
         val image = sprites.nova.image(if (active) "BONE_ACTIVE" else "BONE_IDLE")
         withTransform({ rotate(angle * RAD, Offset(x0, y0)) }) {

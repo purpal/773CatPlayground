@@ -153,7 +153,7 @@ fun ShooterGameScreen(
     var novaReady by remember { mutableStateOf(!nova) }
     val stage = remember(stageNumber) { Stages.get(stageNumber)!! }
     val difficulty = remember(bout) { bout?.let { Difficulty.forBout(it) } ?: Difficulty.NEUTRAL }
-    val boutLabel = if (bout != null) boutTitle(bout) else "STAGE ${stage.number}"
+    val boutLabel = if (bout != null) { if(nova) "第 ${bout+1} 站" else boutTitle(bout) } else "STAGE ${stage.number}"
     val sound = LocalSound.current
     var attempt by remember { mutableIntStateOf(0) }
     var paused by remember { mutableStateOf(false) }
@@ -186,7 +186,7 @@ fun ShooterGameScreen(
         val worldHeight = (WORLD_WIDTH * gameHeightPx / constraints.maxWidth.toFloat()).coerceIn(1400f, 2300f)
         val pxPerUnit = minOf(constraints.maxWidth / WORLD_WIDTH, gameHeightPx / worldHeight)
         val context = LocalContext.current
-        val sprites = remember(pxPerUnit) { SpriteCache(pxPerUnit, context.assets, if(nova)com.purpal.catplayground.nova.NovaAssets.get(context.assets) else null) }
+        val sprites = remember(pxPerUnit,nova,stageNumber) { SpriteCache(pxPerUnit, context.assets, if(nova)com.purpal.catplayground.nova.NovaAssets.get(context.assets) else null, stageNumber) }
         val world = remember(attempt, stageNumber, worldHeight) {
             // 巡迴中重新開始這一站時，一樣從打完上一站時的機體狀態開始。
             World(

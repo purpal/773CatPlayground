@@ -1,0 +1,377 @@
+{
+  "atlases": [
+    {
+      "file": "ui-frames.png",
+      "width": 1536,
+      "height": 1024,
+      "frames": [
+        {
+          "id": "UI_HUD",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 1536,
+            "height": 375
+          }
+        },
+        {
+          "id": "UI_DIALOG",
+          "source_rect_px": {
+            "x": 0,
+            "y": 375,
+            "width": 1536,
+            "height": 649
+          }
+        }
+      ]
+    },
+    {
+      "file": "bear-boss.png",
+      "width": 1254,
+      "height": 1254,
+      "frames": [
+        {
+          "id": "BEAR_HEALTHY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BEAR_ALERT",
+          "source_rect_px": {
+            "x": 627,
+            "y": 0,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BEAR_CRITICAL",
+          "source_rect_px": {
+            "x": 0,
+            "y": 627,
+            "width": 627,
+            "height": 627
+          }
+        },
+        {
+          "id": "BEAR_DISARMED",
+          "source_rect_px": {
+            "x": 627,
+            "y": 627,
+            "width": 627,
+            "height": 627
+          }
+        }
+      ]
+    },
+    {
+      "file": "capy-boss.png",
+      "width": 1374,
+      "height": 1145,
+      "frames": [
+        {
+          "id": "CAPY_HEALTHY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 687,
+            "height": 572
+          }
+        },
+        {
+          "id": "CAPY_ARMORED",
+          "source_rect_px": {
+            "x": 687,
+            "y": 0,
+            "width": 687,
+            "height": 572
+          }
+        },
+        {
+          "id": "CAPY_CRITICAL",
+          "source_rect_px": {
+            "x": 0,
+            "y": 572,
+            "width": 687,
+            "height": 573
+          }
+        },
+        {
+          "id": "CAPY_BUOY_DROP",
+          "source_rect_px": {
+            "x": 687,
+            "y": 572,
+            "width": 687,
+            "height": 573
+          }
+        }
+      ]
+    },
+    {
+      "file": "bear-enemies.png",
+      "width": 1536,
+      "height": 1024,
+      "frames": [
+        {
+          "id": "EnemyKind.BEE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 560,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.HONEY_POT",
+          "source_rect_px": {
+            "x": 560,
+            "y": 0,
+            "width": 464,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.BEAR_CUB",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_BEE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 560,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.BEEHIVE",
+          "source_rect_px": {
+            "x": 560,
+            "y": 512,
+            "width": 464,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.CHEESE_DRONE",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "capy-enemies.png",
+      "width": 1536,
+      "height": 1024,
+      "frames": [
+        {
+          "id": "EnemyKind.DUCKLING",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.YUZU",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.BUCKET",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.BABY_CAPY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_MONKEY",
+          "source_rect_px": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "WATER_CANNON",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "width": 1448,
+      "height": 1086,
+      "frames": [
+        {
+          "id": "BEAR.BulletStyle.HONEY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 395
+          }
+        },
+        {
+          "id": "BEAR.BulletStyle.RICE",
+          "source_rect_px": {
+            "x": 390,
+            "y": 0,
+            "width": 345,
+            "height": 395
+          }
+        },
+        {
+          "id": "BEAR.BulletStyle.ORB",
+          "source_rect_px": {
+            "x": 735,
+            "y": 0,
+            "width": 355,
+            "height": 395
+          }
+        },
+        {
+          "id": "BEAR.BulletStyle.STAR",
+          "source_rect_px": {
+            "x": 1090,
+            "y": 0,
+            "width": 358,
+            "height": 395
+          }
+        },
+        {
+          "id": "CAPY.BulletStyle.BUBBLE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 395,
+            "width": 390,
+            "height": 385
+          }
+        },
+        {
+          "id": "CAPY.BulletStyle.SEED",
+          "source_rect_px": {
+            "x": 390,
+            "y": 395,
+            "width": 345,
+            "height": 385
+          }
+        },
+        {
+          "id": "CAPY.BulletStyle.BIG_ORB",
+          "source_rect_px": {
+            "x": 735,
+            "y": 395,
+            "width": 355,
+            "height": 385
+          }
+        },
+        {
+          "id": "CAPY.BulletStyle.HONEY",
+          "source_rect_px": {
+            "x": 1090,
+            "y": 395,
+            "width": 358,
+            "height": 385
+          }
+        },
+        {
+          "id": "DIPPER_HEAD",
+          "source_rect_px": {
+            "x": 0,
+            "y": 780,
+            "width": 390,
+            "height": 306
+          }
+        },
+        {
+          "id": "HONEY_TANK_DROP",
+          "source_rect_px": {
+            "x": 390,
+            "y": 780,
+            "width": 345,
+            "height": 306
+          }
+        },
+        {
+          "id": "CLAW_ACTIVE",
+          "source_rect_px": {
+            "x": 735,
+            "y": 780,
+            "width": 355,
+            "height": 306
+          }
+        },
+        {
+          "id": "WATER_ACTIVE",
+          "source_rect_px": {
+            "x": 1090,
+            "y": 780,
+            "width": 358,
+            "height": 306
+          }
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "width": 1774,
+      "height": 887,
+      "frames": [
+        {
+          "id": "pilot_bear",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 960,
+            "height": 887
+          }
+        },
+        {
+          "id": "pilot_capy",
+          "source_rect_px": {
+            "x": 960,
+            "y": 0,
+            "width": 814,
+            "height": 887
+          }
+        }
+      ]
+    }
+  ]
+}

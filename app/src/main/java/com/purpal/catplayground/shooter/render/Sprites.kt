@@ -38,7 +38,7 @@ class Sprite(val image: ImageBitmap, val pxPerUnit: Float)
  * 載入時依螢幕解析度縮放好；子彈與光暈這類簡單的圖則用程式先畫成圖片。
  * 每幀只要貼圖，名稱都事先組好，不會每幀產生字串。
  */
-class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager, val nova: com.purpal.catplayground.nova.NovaAssets? = null) {
+class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager, val nova: com.purpal.catplayground.nova.NovaAssets? = null, val novaStage: Int = 2) {
     private val drawn = AtomicReferenceArray<Sprite?>(512)
     private val art = ConcurrentHashMap<String, Sprite>()
 
@@ -96,10 +96,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     // ── 敵人 ──
 
-    fun boss(kind: EnemyKind, mood: Int, frame: Int, broken: Boolean = false): Sprite {
-        if (kind == EnemyKind.BOSS_DOG && nova != null) {
-            val state = com.purpal.catplayground.nova.NovaBossArt.body(mood,broken)
-            return nova.sprite(state, BOSS_WIDTH, pxPerUnit)
+    fun boss(kind: EnemyKind, mood: Int, frame: Int, broken: Boolean = false, phase: Int = mood): Sprite {
+        if(nova!=null) com.purpal.catplayground.nova.NovaSector.body(kind,mood,broken,phase)?.let {
+            return nova.sprite(it,BOSS_WIDTH,pxPerUnit)
         }
         val index = when (kind) {
             EnemyKind.BOSS_DOG -> 1
@@ -126,7 +125,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             if (kind == EnemyKind.THROWN_BONE) return nova.sprite("BONE_THROWN_RETURNING", 200f, pxPerUnit)
             val id = "EnemyKind.${kind.name}"
             if (nova.contains(id)) return nova.sprite(id, when (kind) {
-                EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE -> ELITE_WIDTH
+                EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> ELITE_WIDTH
                 EnemyKind.MOUSE_RUNNER -> 105f
                 EnemyKind.FRISBEE -> 104f
                 else -> 120f
@@ -196,7 +195,11 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     fun barrel() = art("min_barrel", 140f)
 
     /** 科技道具的頭（電漿叉頭、硬光骨頭的一端、熱熔鑽頭、橘子砲），朝 +x，寬度即世界長度。 */
-    fun propHead(style: HazardStyle): Sprite? = when (style) {
+    fun propHead(style: HazardStyle): Sprite? = (if(nova!=null) when(style) {
+        HazardStyle.DIPPER -> nova.sprite("DIPPER_HEAD",125f,pxPerUnit)
+        HazardStyle.WATER -> nova.sprite("WATER_CANNON",135f,pxPerUnit)
+        else -> null
+    } else null) ?: when (style) {
         HazardStyle.SWISSKNIFE -> art("prop_swissknife_head", 150f)
         HazardStyle.BONE -> art("prop_bone_end", 75f)
         HazardStyle.DIPPER -> art("prop_dipper_head", 125f)
@@ -216,6 +219,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     fun lostProp(id: Int): Sprite = (if (nova != null) when (id) {
         LostProp.BONE -> nova.sprite("BONE_DISABLED_DROP", 200f, pxPerUnit)
         LostProp.HAT -> nova.sprite("COMMAND_CAP_DROP", 100f, pxPerUnit)
+        LostProp.DIPPER -> nova.sprite("DIPPER_HEAD",200f,pxPerUnit)
+        LostProp.POT -> nova.sprite("HONEY_TANK_DROP",170f,pxPerUnit)
+        LostProp.YUZU -> nova.sprite("CAPY_BUOY_DROP",70f,pxPerUnit)
         else -> null
     } else null) ?: when (id) {
         LostProp.CROWN -> art("lost_crown", 100f)
@@ -275,6 +281,9 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     /** 敵人子彈：統一的糖果粉色系（深梅色描邊＋白色核心），在任何背景上都一眼看得出來。 */
     fun bullet(style: BulletStyle, radius: Float): Sprite {
+        if(nova!=null) com.purpal.catplayground.nova.NovaSector.projectile(novaStage,style)?.let {
+            return nova.sprite(it,bulletReference(radius)*2.7f,pxPerUnit)
+        }
         val key = "BulletStyle.${style.name}"
         if (nova != null && nova.contains(key)) return nova.sprite(key, bulletReference(radius) * 2.7f, pxPerUnit)
         val reference = bulletReference(radius)
@@ -335,7 +344,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
     /** 先在背景執行緒把這一關會用到的圖都載入好，避免開打時卡頓。 */
     fun prewarm(cat: CatType, kinds: Collection<EnemyKind>) {
         if (nova != null) novaTotem(cat)
-        nova?.prewarm()
+        nova?.prewarm(novaStage)
         for (beast in listOf(false, true)) for (pose in 0..2) for (f in 0..3) cat(cat, pose, f, beast)
         for (kind in kinds) {
             for (f in 0..1) {

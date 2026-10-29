@@ -18,7 +18,9 @@ import com.purpal.catplayground.shooter.ui.HudState
 
 @Composable
 fun NovaHud(hud: HudState, stage: String, title: String, modifier: Modifier = Modifier, onPause: ()->Unit) {
-    Row(modifier.fillMaxWidth().background(NovaInk).statusBarsPadding().padding(horizontal=12.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
+    Box(modifier.fillMaxWidth().background(NovaInk).statusBarsPadding()) {
+    NovaPanelArt("UI_HUD",Modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=16.dp),verticalAlignment=Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("$stage  /  $title",color=NovaCyan,fontSize=11.sp)
             Text("${hud.score.toString().padStart(8,'0')}  CR",color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
@@ -29,6 +31,8 @@ fun NovaHud(hud: HudState, stage: String, title: String, modifier: Modifier = Mo
             }
         }
         TextButton(onClick=onPause){Text("暫停",color=NovaCyan)}
+    }
+    }
     }
 }
 
@@ -55,7 +59,8 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
         else -> Modifier
     }
     Box(Modifier.fillMaxSize().then(tapAnywhere).background(Color.Black.copy(alpha=if(blocking).86f else .35f)),contentAlignment=Alignment.Center) {
-        Column(Modifier.fillMaxWidth().padding(24.dp).background(NovaPanel,RoundedCornerShape(12.dp)).padding(20.dp),
+        NovaPanelArt("UI_DIALOG",Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal=28.dp,vertical=32.dp),
             horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when {
                 phase==Phase.INTRO -> {
@@ -65,7 +70,7 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                 }
                 phase==Phase.WARNING -> {
                     Text("敵方旗艦接近",color=Color(0xFFFF6378),fontSize=30.sp,fontWeight=FontWeight.Black)
-                    if(world.stage.number==2)NovaAsset("boss",Modifier.size(160.dp))
+                    NovaSector.preview(world.stage.number)?.let { NovaAsset(it,Modifier.size(160.dp)) }
                     Text(world.stage.bossName,color=Color.White,fontSize=24.sp)
                     Text("追蹤預警線，保持中央避讓通道",color=NovaGold,fontSize=13.sp)
                 }
@@ -74,7 +79,7 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                     val catSpeaking=current.speaker==Speaker.CAT
                     Text("戰後通訊  /  ${line+1}・${lines.size}",color=NovaCyan,fontSize=12.sp)
                     if(catSpeaking) NovaAsset(if(world.player.cat==CatType.ORANGE)"pilot_orange"else"pilot_black",Modifier.height(150.dp))
-                    else if(world.stage.number==2) NovaAsset("pilot_dog",Modifier.size(160.dp),"柴犬隊長駕駛員")
+                    else if(NovaSector.pilot(world.stage.number)!=null) NovaAsset(NovaSector.pilot(world.stage.number)!!,Modifier.size(160.dp),"${world.stage.bossName}駕駛員")
                     else ArtImage("${world.stage.bossArt}_m0_0",Modifier.size(150.dp),world.stage.bossName)
                     Text(if(catSpeaking)world.player.cat.shortName else world.stage.bossName,color=NovaGold,fontWeight=FontWeight.Bold)
                     Text(current.text + if(line<lines.lastIndex) " ▼" else "",color=Color.White,fontSize=17.sp,lineHeight=27.sp)
@@ -95,5 +100,6 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                 }
             }
         }
+    }
     }
 }

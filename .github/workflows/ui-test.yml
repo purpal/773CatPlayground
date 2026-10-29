@@ -10,7 +10,6 @@ on:
       - '*.gradle.kts'
       - 'gradle.properties'
       - 'gradlew*'
-      - '.release-please-manifest.json'
       - 'scripts/nova-smoke.sh'
       - '.github/workflows/ui-test.yml'
   push:

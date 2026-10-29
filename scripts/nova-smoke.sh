@@ -126,14 +126,12 @@ scroll_to '喵航特攻隊'
 click_text '喵航特攻隊'
 wait_text '機庫連線中'
 click_text '玄影'
-adb shell screenrecord --time-limit 6 /sdcard/nova-hangar.mp4 > "$OUT/hangar-recording.txt" 2>&1 &
-record_pid=$!
-for frame in 1 2 3; do shot "01_hangar_$frame"; sleep 1; done
-wait "$record_pid"
-adb pull /sdcard/nova-hangar.mp4 "$OUT/01_hangar_rotation.mp4" >/dev/null 2>&1
+for frame in 1 2 3; do shot "01_hangar_breathing_$frame"; sleep 1; done
+# The hangar has no vertical scroll: both actions must fit on compact displays.
+node '啟動全球遠征' >/dev/null
 
 step 'Taiwan to Japan flight'
-scroll_to '啟動全球遠征'
+node '啟動全球遠征' >/dev/null
 click_text '啟動全球遠征'
 if dump && node '確定重啟遠征' >/dev/null; then click_text '確定重啟遠征'; fi
 for frame in 1 2 3 4 5 6; do shot "02_globe_$frame"; sleep 1; done
@@ -164,6 +162,11 @@ done
 
 step 'Compact route layout'
 adb shell wm size 720x1280
+open nova_menu
+wait_text '機庫連線中'
+node '繼續遠征' >/dev/null
+node '啟動全球遠征' >/dev/null
+shot 05_compact_hangar
 open nova_tour
 wait_text '進入戰區'
 shot 05_compact_route
@@ -199,6 +202,35 @@ shot 10_clear
 adb shell input tap 50 250
 wait_text '軌道航路指揮台'
 shot 11_return_route
+
+for sector in 3 4; do
+    step "Sector $sector stage art"
+    open nova_play --ei stage "$sector" --ez autotest true
+    ready_game
+    sleep 4
+    drag_and_fire
+    shot "12_sector_${sector}_combat"
+    for ratio in 0.8 0.4 0.2; do
+        step "Sector $sector boss hp $ratio"
+        open nova_boss --ei stage "$sector" --ef hp_ratio "$ratio"
+        ready_game
+        shot "13_sector_${sector}_boss_$ratio"
+        sleep 1
+        shot "13_sector_${sector}_attack_$ratio"
+    done
+    step "Sector $sector pilot dialogue"
+    open nova_outro --ei stage "$sector"
+    wait_text '戰後通訊'
+    node '駕駛員' >/dev/null
+    shot "14_sector_${sector}_pilot"
+    for line in 2 3 4 5 6; do
+        adb shell input tap 50 250
+        wait_text "$line・6"
+    done
+    adb shell input tap 360 800
+    wait_text '戰區解除'
+    shot "14_sector_${sector}_clear"
+done
 
 step 'Original shooter regression'
 open shooter_menu
