@@ -1,0 +1,8 @@
+Stopping: com.purpal.catplayground
+Starting: Intent { cmp=com.purpal.catplayground/.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: com.purpal.catplayground/.MainActivity
+TotalTime: 3135
+WaitTime: 3147
+Complete
