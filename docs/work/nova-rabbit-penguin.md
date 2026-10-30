@@ -26,4 +26,11 @@
 
 本地驗證命令：`./gradlew testDebugUnitTest assembleDebug assembleRelease --offline --no-daemon --max-workers=2 --console=plain -Pkotlin.compiler.execution.strategy=in-process`。合併後由既有 release-please workflow 再跑測試並產出簽署 APK。
 
+## 發布阻塞與接續
+
+- 功能提交：`3a708bd`。已通過測試，準備合併並推送。
+- 遠端推送失敗：環境未設定預設 credential helper；改用既有 GitHub CLI 認證後，GitHub 回覆 `Invalid username or token`。
+- `gh auth status --hostname github.com` 確認環境的 `GH_TOKEN` 無效。未變更或輸出 token，也沒有另行要求使用者貼出秘密。
+- 將完成本地 main 合併；認證恢復後，推送 `feat/nova-rabbit-penguin` 與 `main`，再確認 release-please 的測試、版本建立與簽署 APK 工作成功。尚未觸發遠端 build，不能把本地 APK 當成已發布的正式版。
+
 設計依據：[十關差異化規劃](nova-boss-diversity-plan.md)。素材與參數：[月躍／霜脊美術說明](../art/nova-frontiers/README.md)。
