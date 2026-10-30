@@ -17,6 +17,14 @@
 - 合併 main 後由 GitHub Actions runner 實測，`emulator-results-ui/RUN.txt` 記錄對應 commit 與執行網址，`summary.md` 記錄結果。
 - 由 release-please 自動建立新版 release 與 APK。
 
+## 驗收完成（2026-10-30）
+
+- 已合併 main：`bbce8749787fbdf1017799d60643af3bb25befb8`。
+- [GitHub runner 畫面測試](https://github.com/purpal/773CatPlayground/actions/runs/40890985613)成功，報告為 `PASS / complete`，`crashes.txt` 為空。
+- 已人工檢視 runner 截圖：一般／短螢幕機庫、短螢幕航線頁、兩個新戰區、熊熊卸甲、卡皮巴拉增裝及配件掉落後狀態、兩位 Boss 駕駛員通訊框。選機與出發按鈕可直接操作，文字與美術正常顯示。
+- [v0.25.0 發布流程](https://github.com/purpal/773CatPlayground/actions/runs/40890985643)成功，[APK 下載](https://github.com/purpal/773CatPlayground/releases/download/v0.25.0/773CatPlayground-v0.25.0.apk)。
+- 新開遠征才使用狗狗 → 熊熊 → 卡皮巴拉順序；既有存檔保留原有航線。
+
 素材規格見 `docs/art/nova-sectors/README.md`。圖片位於 `app/src/main/assets/nova/sectors/`。
 本機建置：`source /workspace/.setup/android-env.sh`，再執行 Gradle（需允許本機 socket）。
 GitHub API 目前不可用；git push/fetch 與公開 github.com Actions 頁面可用。
