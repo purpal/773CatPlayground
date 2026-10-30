@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.0](https://github.com/purpal/773CatPlayground/compare/v0.26.0...v0.27.0) (2026-10-30)
+
+
+### Features
+
+* 新增眠巢能源平台與雙潮合體戰艦並優先排列已改版關卡 ([6453623](https://github.com/purpal/773CatPlayground/commit/6453623e83dd8d6d4c2b5849f495663c591fbc06))
+
 ## [0.26.0](https://github.com/purpal/773CatPlayground/compare/v0.25.0...v0.26.0) (2026-10-30)
 
 
