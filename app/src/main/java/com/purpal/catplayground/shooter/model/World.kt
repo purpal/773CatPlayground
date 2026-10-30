@@ -486,9 +486,9 @@ class World(
         for (b in blastCleared) b.alive = false
         lasers.forEach { it.alive = false }
         for (e in enemies) {
-            if (e.alive && !e.invulnerable && e.id !in blastHit && dist2(e.x, e.y, px, py) < (blastRadius + e.radius).let { it * it }) {
-                blastHit += e.id
-                damageEnemy(e, if (e.isBoss) 700f else 400f, crit = true)
+            if (e.alive && !e.invulnerable && e.damageIdentity.id !in blastHit && dist2(e.x, e.y, px, py) < (blastRadius + e.radius).let { it * it }) {
+                blastHit += e.damageIdentity.id
+                damageEnemy(e, if (e.damageIdentity.isBoss) 700f else 400f, crit = true)
             }
         }
         if (blastRadius > height * 1.6f) blastRadius = -1f
@@ -836,7 +836,7 @@ class World(
         for (s in playerShots) {
             if (!s.alive || s.style == ShotStyle.SONIC) continue
             for (e in enemies) {
-                if (!e.alive || e.invulnerable || e.id in s.hits) continue
+                if (!e.alive || e.invulnerable || e.damageIdentity.id in s.hits) continue
                 val r = e.radius + s.radius
                 if (dist2(s.x, s.y, e.x, e.y) > r * r) continue
                 val crit = random.nextFloat() < CRIT_CHANCE
@@ -854,9 +854,9 @@ class World(
                     sfx(s.x + jitter(60f), s.y - 40f, SfxText.HIT)
                 }
                 if (s.style == ShotStyle.MISSILE) explode(s.x, s.y, big = false, quiet = true)
-                if (s.pierce > 0 && !e.isBoss) {
+                if (s.pierce > 0 && !e.damageIdentity.isBoss) {
                     s.pierce--
-                    s.hits += e.id
+                    s.hits += e.damageIdentity.id
                 } else {
                     s.alive = false
                     break
@@ -870,7 +870,7 @@ class World(
         if (target != null) {
             // 共用血量：打在妹妹身上的傷害算在姊姊頭上（被打的那隻一樣閃白）
             e.hitFlash = 0.08f
-            damageEnemy(target, hit, crit)
+            damageEnemy(target, hit * e.damageScale, crit)
             return
         }
         if (phase == Phase.BOSS_DEFEATED && e.isBoss) return
