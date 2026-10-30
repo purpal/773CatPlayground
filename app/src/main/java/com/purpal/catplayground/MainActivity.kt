@@ -99,7 +99,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     var shooterCleared by remember { mutableIntStateOf(prefs.shooterCleared) }
     var tour by remember { mutableStateOf(TourState.decode(prefs.shooterTour)) }
     val novaPrefs = remember { AppPrefs(context, "cat_playground_nova") }
-    var novaTour by remember { mutableStateOf(if(debug?.open == "nova_tour") com.purpal.catplayground.nova.NovaTour.start(debug.cat) else TourState.decode(novaPrefs.shooterTour)) }
+    var novaTour by remember { mutableStateOf(if(debug?.open == "nova_tour") com.purpal.catplayground.nova.NovaTour.start(debug.cat) else TourState.decode(novaPrefs.shooterTour)?.let(com.purpal.catplayground.nova.NovaTour::resume)) }
     fun saveNovaTour(next: TourState?) {
         novaTour = next
         novaPrefs.shooterTour = next?.encode()

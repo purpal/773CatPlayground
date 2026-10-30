@@ -75,6 +75,8 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                     Text(when(world.stage.number) {
                         5 -> "落點鎖定後離開警示圈\n落地散熱時集中攻擊"
                         6 -> "沿冰障缺口移動・投射器可擊破\n結冰解除後留意左右舷砲"
+                        7 -> "開艙時打擊核心・或先拆蓄能電容\n展足後弱點左右交替，留意放電預告"
+                        8 -> "魚雷與浮標分側攻擊・浮標可擊破\n潛航有航跡提示，合體後追打亮起的舷門"
                         else -> "追蹤預警線，保持中央避讓通道"
                     },color=NovaGold,fontSize=13.sp)
                 }

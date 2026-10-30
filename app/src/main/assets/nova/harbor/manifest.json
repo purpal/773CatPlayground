@@ -1,0 +1,362 @@
+{
+  "atlases": [
+    {
+      "file": "bosses.png",
+      "frames": [
+        {
+          "id": "KOALA_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 490
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "KOALA_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 490
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "KOALA_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 490
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 490,
+            "width": 512,
+            "height": 534
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 490,
+            "width": 512,
+            "height": 534
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 490,
+            "width": 512,
+            "height": 534
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_PORT",
+          "source_rect_px": {
+            "x": 0,
+            "y": 490,
+            "width": 256,
+            "height": 534
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_STARBOARD",
+          "source_rect_px": {
+            "x": 256,
+            "y": 490,
+            "width": 256,
+            "height": 534
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "enemies.png",
+      "frames": [
+        {
+          "id": "EnemyKind.LEAF_STAR",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.OWL",
+          "source_rect_px": {
+            "x": 444,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.ELITE_KANGAROO",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.NOVA_CAPACITOR",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.LEAP_FISH",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.CLAM",
+          "source_rect_px": {
+            "x": 444,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.ELITE_BEAVER",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "EnemyKind.NOVA_SONAR_BUOY",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "frames": [
+        {
+          "id": "KOALA_BOLT",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "KOALA_ORB",
+          "source_rect_px": {
+            "x": 444,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "KOALA_HATCH",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "KOALA_PULSE",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_TORPEDO",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_ORB",
+          "source_rect_px": {
+            "x": 444,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_HATCH",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "OTTER_WAKE",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "frames": [
+        {
+          "id": "pilot_koala",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "id": "pilot_otter",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          },
+          "pivot": [
+            0.5,
+            0.5
+          ]
+        }
+      ]
+    }
+  ]
+}

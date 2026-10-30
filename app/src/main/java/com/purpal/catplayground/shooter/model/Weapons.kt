@@ -102,8 +102,9 @@ object Weapons {
         }
         val damage = vibroDamage[level] * power(p)
         var hit: Enemy? = null
+        val struck = mutableSetOf<Int>()
         for (e in w.enemies) {
-            if (!e.alive || e.invulnerable) continue
+            if (!e.alive || e.invulnerable || e.damageIdentity.id in struck) continue
             val dx = e.x - p.x
             val dy = e.y - p.y
             val d = kotlin.math.sqrt(dx * dx + dy * dy)
@@ -112,11 +113,13 @@ object Weapons {
             val band = vibroBand[level]
             if (pulse && gap < band * 2.5f) {
                 val crit = w.random.nextFloat() < World.CRIT_CHANCE
+                struck += e.damageIdentity.id
                 w.damageEnemy(e, if (crit) damage * 3f else damage * 1.5f, crit)
                 e.vibrate = 0.25f
                 hit = e
-            } else if (gap < band && w.time - e.pawHitTime >= VIBRO_TICK) {
-                e.pawHitTime = w.time
+            } else if (gap < band && w.time - e.damageIdentity.pawHitTime >= VIBRO_TICK) {
+                struck += e.damageIdentity.id
+                e.damageIdentity.pawHitTime = w.time
                 val crit = w.random.nextFloat() < World.CRIT_CHANCE
                 w.damageEnemy(e, if (crit) damage * 2f else damage, crit)
                 e.vibrate = 0.15f

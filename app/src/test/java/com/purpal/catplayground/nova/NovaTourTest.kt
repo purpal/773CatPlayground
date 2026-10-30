@@ -17,15 +17,37 @@ class NovaTourTest {
         repeat(40) { seed ->
             for(cat in CatType.entries) {
                 val tour=NovaTour.start(cat,Random(seed))
-                assertEquals(listOf(2,3,4),tour.order.take(3))
+                assertEquals(NovaTour.COMPLETED,tour.order.take(7))
                 assertEquals(13,tour.order.toSet().size)
                 val original=Tour.start(cat,Random(seed))
                 assertEquals(original.order.toSet(),tour.order.toSet())
-                assertEquals(original.order.filter { it !in listOf(2,3,4) },tour.order.drop(3))
+                assertEquals(setOf(9,10,11,12,13),tour.order.drop(7).dropLast(1).toSet())
                 assertEquals(Tour.CHAMPION,tour.order.last())
                 assertEquals(cat,tour.cat)
                 assertEquals(tour,TourState.decode(tour.encode()))
             }
+        }
+    }
+    @Test fun unfinishedPoolIncludingSlothIsRandomized() {
+        val suffixes=(0..40).map { NovaTour.start(CatType.ORANGE,Random(it)).order.drop(7).dropLast(1) }
+        assertTrue(suffixes.toSet().size>20)
+        assertTrue(suffixes.map { it.indexOf(10) }.toSet().size>1)
+    }
+    @Test fun existingSaveKeepsClearsRevealedFlightAndEquipment() {
+        val original=Tour.start(CatType.BLACK,Random(2))
+        for(cleared in 0..13) for(revealed in cleared..minOf(13,cleared+1)) {
+            val old=original.copy(cleared=cleared,revealed=revealed,totalScore=12345,loadout=Loadout(MainWeapon.FOCUS,3,SubWeapon.HOMING,2,1,.55f))
+            val next=NovaTour.resume(old)
+            assertEquals(old.order.take(revealed),next.order.take(revealed))
+            assertEquals(old.order.toSet(),next.order.toSet())
+            assertEquals(13,next.order.size)
+            assertEquals(old.copy(order=next.order),next)
+            val pending=old.order.drop(revealed)
+            assertEquals(NovaTour.COMPLETED.filter { it in pending },next.order.drop(revealed).filter { it in NovaTour.COMPLETED })
+            val left=next.order.drop(revealed)
+            assertEquals(left.filter { it in NovaTour.COMPLETED },left.takeWhile { it in NovaTour.COMPLETED })
+            assertEquals(next,NovaTour.resume(next))
+            assertEquals(next,TourState.decode(next.encode()))
         }
     }
     @Test fun originalGameKeepsItsRandomFirstOpponent() {
