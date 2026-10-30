@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.0](https://github.com/purpal/773CatPlayground/compare/v0.27.0...v0.28.0) (2026-10-30)
+
+
+### Features
+
+* 新增玄竹球形戰車與時差環艦並修正黑貓裁切 ([f9e06e8](https://github.com/purpal/773CatPlayground/commit/f9e06e872abcbcad2afbd24bb4788aed288ef351))
+
 ## [0.27.0](https://github.com/purpal/773CatPlayground/compare/v0.26.0...v0.27.0) (2026-10-30)
 
 
