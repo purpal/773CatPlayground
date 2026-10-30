@@ -4,9 +4,9 @@ import com.purpal.catplayground.shooter.model.*
 
 /** Art routing for Nova; encounter behavior is isolated by NovaEncounters. */
 object NovaSector {
-    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; 5 -> "background_rabbit"; 6 -> "background_penguin"; 7 -> "background_koala"; 8 -> "background_otter"; else -> null }
-    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; 5 -> "pilot_rabbit"; 6 -> "pilot_penguin"; 7 -> "pilot_koala"; 8 -> "pilot_otter"; else -> null }
-    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; 5 -> "RABBIT_BASE"; 6 -> "PENGUIN_BASE"; 7 -> "KOALA_BASE"; 8 -> "OTTER_BASE"; else -> null }
+    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; 5 -> "background_rabbit"; 6 -> "background_penguin"; 7 -> "background_koala"; 8 -> "background_otter"; 9 -> "background_panda"; 10 -> "background_sloth"; else -> null }
+    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; 5 -> "pilot_rabbit"; 6 -> "pilot_penguin"; 7 -> "pilot_koala"; 8 -> "pilot_otter"; 9 -> "pilot_panda"; 10 -> "pilot_sloth"; else -> null }
+    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; 5 -> "RABBIT_BASE"; 6 -> "PENGUIN_BASE"; 7 -> "KOALA_BASE"; 8 -> "OTTER_BASE"; 9 -> "PANDA_BASE"; 10 -> "SLOTH_BASE"; else -> null }
     fun body(kind: EnemyKind, mood: Int, broken: Boolean, phase: Int = mood): String? = when(kind) {
         EnemyKind.BOSS_DOG -> NovaBossArt.body(mood,broken)
         EnemyKind.BOSS_BEAR -> when { broken -> "BEAR_DISARMED"; mood==2 -> "BEAR_CRITICAL"; mood==1 -> "BEAR_ALERT"; else -> "BEAR_HEALTHY" }
@@ -37,6 +37,8 @@ object NovaSector {
         }
         7 -> when(style) { BulletStyle.SEED, BulletStyle.RICE -> "KOALA_BOLT"; else -> "KOALA_ORB" }
         8 -> when(style) { BulletStyle.FISH, BulletStyle.RICE -> "OTTER_TORPEDO"; else -> "OTTER_ORB" }
+        9 -> when(style) { BulletStyle.BAMBOO, BulletStyle.RICE -> "PANDA_DART"; else -> "PANDA_ORB" }
+        10 -> when(style) { BulletStyle.LETTER, BulletStyle.RICE -> "SLOTH_DART"; else -> "SLOTH_ORB" }
         else -> null
     }
     fun assets(stage: Int): List<String> = when(stage) {
@@ -46,6 +48,8 @@ object NovaSector {
         6 -> listOf("PENGUIN_BASE", "PENGUIN_TRANSITION", "PENGUIN_DEPLOYED", "PENGUIN_THAW", "pilot_penguin")
         7 -> listOf("KOALA_BASE", "KOALA_TRANSITION", "KOALA_DEPLOYED", "KOALA_HATCH", "KOALA_PULSE", "pilot_koala")
         8 -> listOf("OTTER_BASE", "OTTER_TRANSITION", "OTTER_DEPLOYED", "OTTER_PORT", "OTTER_STARBOARD", "OTTER_HATCH", "OTTER_WAKE", "pilot_otter")
+        9 -> listOf("PANDA_BASE", "PANDA_TRANSITION", "PANDA_DEPLOYED", "PANDA_CORE", "PANDA_SHOCK", "pilot_panda")
+        10 -> listOf("SLOTH_BASE", "SLOTH_TRANSITION", "SLOTH_DEPLOYED", "SLOTH_CORE", "SLOTH_FIELD", "pilot_sloth")
         else -> emptyList()
     } + BulletStyle.entries.mapNotNull { projectile(stage,it) }.distinct()
 }

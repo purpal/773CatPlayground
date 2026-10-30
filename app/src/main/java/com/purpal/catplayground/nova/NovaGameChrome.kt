@@ -77,6 +77,8 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                         6 -> "沿冰障缺口移動・投射器可擊破\n結冰解除後留意左右舷砲"
                         7 -> "開艙時打擊核心・或先拆蓄能電容\n展足後弱點左右交替，留意放電預告"
                         8 -> "魚雷與浮標分側攻擊・浮標可擊破\n潛航有航跡提示，合體後追打亮起的舷門"
+                        9 -> "拆供能柱可阻止修復並斷開電網\n球形態沿預告路線反彈，停轉時核心開啟"
+                        10 -> "觀察時序閘門的順序與倒數\n只改變敵彈速度，展環後依序加速放行"
                         else -> "追蹤預警線，保持中央避讓通道"
                     },color=NovaGold,fontSize=13.sp)
                 }

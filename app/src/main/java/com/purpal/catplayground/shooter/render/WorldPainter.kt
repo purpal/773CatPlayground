@@ -188,6 +188,7 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         return
     }
     if (sprites.nova != null && drawNovaHarborPart(e, w, sprites)) return
+    if (sprites.nova != null && drawNovaForestPart(e, w, sprites)) return
     val slow = ((w.time * 4f).toInt() + e.id) and 1
     val fast = ((w.time * 14f).toInt() + e.id) and 1
     // 被打中時壓扁一下並閃白；持續被光束照射時改成閃爍，避免整隻一直泛白。
@@ -1437,7 +1438,7 @@ private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     val sprite = sprites.bullet(b.style, b.radius)
     val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.06f)
     val rotation = when {
-        sprites.nova != null && sprites.novaStage in 3..8 && b.style in listOf(BulletStyle.HONEY,BulletStyle.RICE,BulletStyle.SEED,BulletStyle.ICE,BulletStyle.FISH) -> atan2(b.vy,b.vx)*RAD-90f
+        sprites.nova != null && sprites.novaStage in 3..10 && b.style in listOf(BulletStyle.HONEY,BulletStyle.RICE,BulletStyle.SEED,BulletStyle.ICE,BulletStyle.FISH,BulletStyle.BAMBOO,BulletStyle.LETTER) -> atan2(b.vy,b.vx)*RAD-90f
         b.style == BulletStyle.RICE || b.style == BulletStyle.ICE || b.style == BulletStyle.LEAF || b.style == BulletStyle.FISH ||
             b.style == BulletStyle.BAMBOO || b.style == BulletStyle.LETTER || b.style == BulletStyle.PARCEL -> atan2(b.vy, b.vx) * RAD
         b.spin -> b.age * 300f

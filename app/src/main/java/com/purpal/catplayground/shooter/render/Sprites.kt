@@ -128,7 +128,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             val id = "EnemyKind.${kind.name}"
             if (nova.contains(id)) return nova.sprite(id, when (kind) {
                 EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY,
-                EnemyKind.ELITE_HARE, EnemyKind.ELITE_SEAL, EnemyKind.ELITE_KANGAROO, EnemyKind.ELITE_BEAVER -> ELITE_WIDTH
+                EnemyKind.ELITE_HARE, EnemyKind.ELITE_SEAL, EnemyKind.ELITE_KANGAROO, EnemyKind.ELITE_BEAVER, EnemyKind.ELITE_RED_PANDA, EnemyKind.ELITE_TOUCAN -> ELITE_WIDTH
                 EnemyKind.MOUSE_RUNNER -> 105f
                 EnemyKind.FRISBEE -> 104f
                 else -> 120f
