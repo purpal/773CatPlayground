@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/purpal/773CatPlayground/compare/v0.25.0...v0.26.0) (2026-10-30)
+
+
+### Features
+
+* 新增月躍變形戰車與霜脊雙體破冰艦 ([3a708bd](https://github.com/purpal/773CatPlayground/commit/3a708bd0080b01b8718aeaf4dc8cf0dfa5078931))
+
 ## [0.25.0](https://github.com/purpal/773CatPlayground/compare/v0.24.0...v0.25.0) (2026-10-29)
 
 
