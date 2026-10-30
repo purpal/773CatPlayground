@@ -54,6 +54,8 @@ enum class EnemyKind {
     OTTER_TWIN,
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
     THROWN_BONE,
+    /** Nova-only destructible anti-air ice projector. */
+    NOVA_ICE_PYLON,
 }
 
 abstract class Enemy(

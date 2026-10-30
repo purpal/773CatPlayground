@@ -92,6 +92,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
 
     fun novaTotem(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_btn_orange" else "ult_btn_black", ULT_WIDTH)
 
+    fun novaSprite(id: String, width: Float): Sprite = checkNotNull(nova).sprite(id, width, pxPerUnit)
+
     fun ultimate(cat: CatType): Sprite = art(if (cat == CatType.ORANGE) "ult_tiger" else "ult_panther", ULT_WIDTH)
 
     // ── 敵人 ──
@@ -125,7 +127,8 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
             if (kind == EnemyKind.THROWN_BONE) return nova.sprite("BONE_THROWN_RETURNING", 200f, pxPerUnit)
             val id = "EnemyKind.${kind.name}"
             if (nova.contains(id)) return nova.sprite(id, when (kind) {
-                EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY -> ELITE_WIDTH
+                EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY,
+                EnemyKind.ELITE_HARE, EnemyKind.ELITE_SEAL -> ELITE_WIDTH
                 EnemyKind.MOUSE_RUNNER -> 105f
                 EnemyKind.FRISBEE -> 104f
                 else -> 120f

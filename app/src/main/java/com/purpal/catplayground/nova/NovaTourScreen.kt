@@ -42,7 +42,7 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
         step=3;onRevealed(tour.reveal())
     }
     val destination=if(tour.finished) Countries.HOME else tour.stageAt(tour.cleared)?.country ?: Countries.HOME
-    val opponent=Stages.get(if(step==0)rolling else tour.nextStage ?: 2)
+    val opponent=Stages.get(if(step==0)rolling else tour.nextStage ?: 2)?.let(NovaEncounters::stage)
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF142F42), NovaInk))).systemBarsPadding().padding(horizontal=16.dp,vertical=8.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)) {
         // The action stays outside the scrollable content, including on short displays.

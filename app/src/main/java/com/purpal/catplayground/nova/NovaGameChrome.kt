@@ -72,7 +72,11 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                     Text("敵方旗艦接近",color=Color(0xFFFF6378),fontSize=30.sp,fontWeight=FontWeight.Black)
                     NovaSector.preview(world.stage.number)?.let { NovaAsset(it,Modifier.size(160.dp)) }
                     Text(world.stage.bossName,color=Color.White,fontSize=24.sp)
-                    Text("追蹤預警線，保持中央避讓通道",color=NovaGold,fontSize=13.sp)
+                    Text(when(world.stage.number) {
+                        5 -> "落點鎖定後離開警示圈\n落地散熱時集中攻擊"
+                        6 -> "沿冰障缺口移動・投射器可擊破\n結冰解除後留意左右舷砲"
+                        else -> "追蹤預警線，保持中央避讓通道"
+                    },color=NovaGold,fontSize=13.sp)
                 }
                 phase==Phase.OUTRO_DIALOG -> {
                     val current=lines[line]

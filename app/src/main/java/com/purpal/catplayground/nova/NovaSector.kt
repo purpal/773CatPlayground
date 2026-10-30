@@ -4,9 +4,9 @@ import com.purpal.catplayground.shooter.model.*
 
 /** Art routing only: original encounter timing, collision and damage stay in World. */
 object NovaSector {
-    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; else -> null }
-    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; else -> null }
-    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; else -> null }
+    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; 5 -> "background_rabbit"; 6 -> "background_penguin"; else -> null }
+    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; 5 -> "pilot_rabbit"; 6 -> "pilot_penguin"; else -> null }
+    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; 5 -> "RABBIT_BASE"; 6 -> "PENGUIN_BASE"; else -> null }
     fun body(kind: EnemyKind, mood: Int, broken: Boolean, phase: Int = mood): String? = when(kind) {
         EnemyKind.BOSS_DOG -> NovaBossArt.body(mood,broken)
         EnemyKind.BOSS_BEAR -> when { broken -> "BEAR_DISARMED"; mood==2 -> "BEAR_CRITICAL"; mood==1 -> "BEAR_ALERT"; else -> "BEAR_HEALTHY" }
@@ -25,11 +25,23 @@ object NovaSector {
             BulletStyle.STAR -> "BEAR.BulletStyle.STAR" // visiting bee escort
             else -> null
         }
+        5 -> when(style) {
+            BulletStyle.RICE, BulletStyle.SEED, BulletStyle.HONEY -> "RABBIT_BOLT"
+            BulletStyle.STAR -> "RABBIT_STAR"
+            else -> "RABBIT_ORB"
+        }
+        6 -> when(style) {
+            BulletStyle.ICE, BulletStyle.RICE -> "PENGUIN_ICE"
+            BulletStyle.FISH, BulletStyle.SEED -> "PENGUIN_TORPEDO"
+            else -> "PENGUIN_ORB"
+        }
         else -> null
     }
     fun assets(stage: Int): List<String> = when(stage) {
         3 -> listOf("BEAR_HEALTHY","BEAR_ALERT","BEAR_CRITICAL","BEAR_DISARMED","DIPPER_HEAD","HONEY_TANK_DROP","CLAW_ACTIVE","pilot_bear")
         4 -> listOf("CAPY_HEALTHY","CAPY_ARMORED","CAPY_CRITICAL","CAPY_BUOY_DROP","WATER_CANNON","WATER_ACTIVE","pilot_capy")
+        5 -> listOf("RABBIT_BASE", "RABBIT_TRANSITION", "RABBIT_DEPLOYED", "RABBIT_EMITTER", "RABBIT_SHOCK", "pilot_rabbit")
+        6 -> listOf("PENGUIN_BASE", "PENGUIN_TRANSITION", "PENGUIN_DEPLOYED", "PENGUIN_THAW", "pilot_penguin")
         else -> emptyList()
     } + BulletStyle.entries.mapNotNull { projectile(stage,it) }.distinct()
 }

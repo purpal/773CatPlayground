@@ -183,6 +183,10 @@ private fun DrawScope.drawPlayer(w: World, sprites: SpriteCache) {
 }
 
 private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
+    if (sprites.nova != null && e is com.purpal.catplayground.nova.NovaIcePylon) {
+        drawNovaIcePylon(e, w, sprites)
+        return
+    }
     val slow = ((w.time * 4f).toInt() + e.id) and 1
     val fast = ((w.time * 14f).toInt() + e.id) and 1
     // 被打中時壓扁一下並閃白；持續被光束照射時改成閃爍，避免整隻一直泛白。
@@ -302,6 +306,10 @@ private fun DrawScope.drawDiverWarning(e: Diver, w: World, sprites: SpriteCache)
  * 裝甲中（拿出新武器的那 1.6 秒）會發出珊瑚色的光。
  */
 private fun DrawScope.drawBoss(boss: Boss, w: World, sprites: SpriteCache, flash: Boolean, squash: Float) {
+    if (sprites.nova != null && boss is com.purpal.catplayground.nova.NovaVehicleBoss) {
+        drawNovaVehicle(boss, w, sprites, flash)
+        return
+    }
     val defeated = w.phase == Phase.BOSS_DEFEATED
     val mood = if (defeated) 2 else boss.mood()
     val frame = ((w.time * (if (mood == 2) 6f else 3f)).toInt()) and 1
@@ -1428,7 +1436,7 @@ private fun DrawScope.drawBullet(b: EnemyBullet, sprites: SpriteCache) {
     val sprite = sprites.bullet(b.style, b.radius)
     val scale = b.radius / SpriteCache.bulletReference(b.radius) * (1f + sin(b.age * 16f) * 0.06f)
     val rotation = when {
-        sprites.nova != null && sprites.novaStage in 3..4 && b.style in listOf(BulletStyle.HONEY,BulletStyle.RICE,BulletStyle.SEED) -> atan2(b.vy,b.vx)*RAD-90f
+        sprites.nova != null && sprites.novaStage in 3..6 && b.style in listOf(BulletStyle.HONEY,BulletStyle.RICE,BulletStyle.SEED,BulletStyle.ICE,BulletStyle.FISH) -> atan2(b.vy,b.vx)*RAD-90f
         b.style == BulletStyle.RICE || b.style == BulletStyle.ICE || b.style == BulletStyle.LEAF || b.style == BulletStyle.FISH ||
             b.style == BulletStyle.BAMBOO || b.style == BulletStyle.LETTER || b.style == BulletStyle.PARCEL -> atan2(b.vy, b.vx) * RAD
         b.spin -> b.age * 300f
