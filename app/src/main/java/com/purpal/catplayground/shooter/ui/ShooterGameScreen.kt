@@ -151,7 +151,10 @@ fun ShooterGameScreen(
     onExit: () -> Unit,
 ) {
     var novaReady by remember { mutableStateOf(!nova) }
-    val stage = remember(stageNumber) { Stages.get(stageNumber)!! }
+    val stage = remember(stageNumber, nova) {
+        val original = Stages.get(stageNumber)!!
+        if (nova) com.purpal.catplayground.nova.NovaEncounters.stage(original) else original
+    }
     val difficulty = remember(bout) { bout?.let { Difficulty.forBout(it) } ?: Difficulty.NEUTRAL }
     val boutLabel = if (bout != null) { if(nova) "第 ${bout+1} 站" else boutTitle(bout) } else "STAGE ${stage.number}"
     val sound = LocalSound.current

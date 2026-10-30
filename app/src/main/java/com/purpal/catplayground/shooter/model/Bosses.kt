@@ -109,6 +109,9 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
 
     protected abstract fun attacks(phase: Int): List<Attack>
 
+    /** Nova encounters own their forms; the original game keeps its exact HP phase rules. */
+    protected open val usesLegacyPhases: Boolean = true
+
     /** 移動。用 [moveTime]（只在真的移動時才前進）而不是 age，暫停後才不會跳到別的位置。 */
     protected abstract fun move(w: World, dt: Float)
 
@@ -153,7 +156,7 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
             x = fromX + (x - fromX).coerceIn(-limit, limit)
             y = fromY + (y - fromY).coerceIn(-limit, limit)
         }
-        if (!broken && hpRatio <= breakAt) {
+        if (usesLegacyPhases && !broken && hpRatio <= breakAt) {
             broken = true
             attackIndex = 0
             attackTime = 0f
@@ -169,7 +172,7 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
             hpRatio > 0.25f -> 1
             else -> 2
         }
-        if (newPhase != phase) {
+        if (usesLegacyPhases && newPhase != phase) {
             phase = newPhase
             attackIndex = 0
             attackTime = 0f

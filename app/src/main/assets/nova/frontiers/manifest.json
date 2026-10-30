@@ -1,0 +1,240 @@
+{
+  "atlases": [
+    {
+      "file": "bosses.png",
+      "frames": [
+        {
+          "id": "RABBIT_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 466
+          }
+        },
+        {
+          "id": "RABBIT_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 480
+          }
+        },
+        {
+          "id": "RABBIT_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 485
+          }
+        },
+        {
+          "id": "PENGUIN_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 470,
+            "width": 512,
+            "height": 554
+          }
+        },
+        {
+          "id": "PENGUIN_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 486,
+            "width": 512,
+            "height": 538
+          }
+        },
+        {
+          "id": "PENGUIN_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 490,
+            "width": 512,
+            "height": 534
+          }
+        }
+      ]
+    },
+    {
+      "file": "enemies.png",
+      "frames": [
+        {
+          "id": "EnemyKind.BUNNY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.CARROT_TURRET",
+          "source_rect_px": {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_HARE",
+          "source_rect_px": {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 500
+          }
+        },
+        {
+          "id": "RABBIT_EMITTER",
+          "source_rect_px": {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.PENGUIN_SLIDER",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.SNOWMAN",
+          "source_rect_px": {
+            "x": 384,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_SEAL",
+          "source_rect_px": {
+            "x": 768,
+            "y": 506,
+            "width": 384,
+            "height": 518
+          }
+        },
+        {
+          "id": "EnemyKind.NOVA_ICE_PYLON",
+          "source_rect_px": {
+            "x": 1152,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "frames": [
+        {
+          "id": "RABBIT_BOLT",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 375,
+            "height": 500
+          }
+        },
+        {
+          "id": "RABBIT_STAR",
+          "source_rect_px": {
+            "x": 375,
+            "y": 0,
+            "width": 375,
+            "height": 500
+          }
+        },
+        {
+          "id": "RABBIT_ORB",
+          "source_rect_px": {
+            "x": 750,
+            "y": 0,
+            "width": 340,
+            "height": 500
+          }
+        },
+        {
+          "id": "RABBIT_SHOCK",
+          "source_rect_px": {
+            "x": 1090,
+            "y": 0,
+            "width": 446,
+            "height": 500
+          }
+        },
+        {
+          "id": "PENGUIN_ICE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 500,
+            "width": 375,
+            "height": 524
+          }
+        },
+        {
+          "id": "PENGUIN_ORB",
+          "source_rect_px": {
+            "x": 375,
+            "y": 500,
+            "width": 375,
+            "height": 524
+          }
+        },
+        {
+          "id": "PENGUIN_TORPEDO",
+          "source_rect_px": {
+            "x": 750,
+            "y": 500,
+            "width": 340,
+            "height": 524
+          }
+        },
+        {
+          "id": "PENGUIN_THAW",
+          "source_rect_px": {
+            "x": 1090,
+            "y": 500,
+            "width": 446,
+            "height": 524
+          }
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "frames": [
+        {
+          "id": "pilot_rabbit",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 768,
+            "height": 1024
+          }
+        },
+        {
+          "id": "pilot_penguin",
+          "source_rect_px": {
+            "x": 768,
+            "y": 0,
+            "width": 768,
+            "height": 1024
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -20,7 +20,7 @@ class NovaAssets private constructor(private val assets: AssetManager) {
     private val images = ConcurrentHashMap<String, ImageBitmap>()
     private val sprites = ConcurrentHashMap<String, Sprite>()
     init {
-        for (manifest in listOf("manifest.json", "boss-actions/manifest.json", "sectors/manifest.json")) {
+        for (manifest in listOf("manifest.json", "boss-actions/manifest.json", "sectors/manifest.json", "frontiers/manifest.json")) {
             val root = JSONObject(assets.open("nova/$manifest").bufferedReader().use { it.readText() })
             val list = root.getJSONArray("atlases")
             for (i in 0 until list.length()) {
@@ -58,6 +58,8 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             "background" -> "sakura-park-background.png"
             "background_bear" -> "sectors/bear-background.png"
             "background_capy" -> "sectors/capy-background.png"
+            "background_rabbit" -> "frontiers/rabbit-background.png"
+            "background_penguin" -> "frontiers/penguin-background.png"
             "carrier" -> "supply-carrier.png"
             "boss" -> "boss-reference.png"
             "pilot_dog" -> "pilot-dog.png"
@@ -73,7 +75,8 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             }
             else -> raw
         }
-        val fixedBody = id.startsWith("BEAR_") || (id.startsWith("CAPY_") && id != "CAPY_BUOY_DROP")
+        val fixedBody = id.startsWith("BEAR_") || (id.startsWith("CAPY_") && id != "CAPY_BUOY_DROP") ||
+            id in listOf("RABBIT_BASE", "RABBIT_TRANSITION", "RABBIT_DEPLOYED", "PENGUIN_BASE", "PENGUIN_TRANSITION", "PENGUIN_DEPLOYED")
         val bitmap = if (id.startsWith("background") || id.startsWith("turn_") || fixedBody) section else trim(section)
         val limit = if (id.startsWith("background")) 1024 else 640
         val scaled = if (bitmap.width > limit) Bitmap.createScaledBitmap(bitmap, limit, (bitmap.height.toLong() * limit / bitmap.width).toInt().coerceAtLeast(1), true) else bitmap
