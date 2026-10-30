@@ -44,6 +44,7 @@ private fun DrawScope.landingMark(x:Float,y:Float,r:Float,number:Int,progress:Fl
 
 internal fun DrawScope.drawNovaVehicle(b: NovaVehicleBoss,w:World,sprites:SpriteCache,flash:Boolean) {
     if (b is NovaKoalaBoss || b is NovaOtterBoss) { drawNovaHarborBoss(b,w,sprites,flash); return }
+    if (b is NovaPandaBoss || b is NovaSlothBoss) { drawNovaForestBoss(b,w,sprites,flash); return }
     val defeated=w.phase==Phase.BOSS_DEFEATED
     val rabbit=b as? NovaRabbitBoss
     val penguin=b as? NovaPenguinBoss

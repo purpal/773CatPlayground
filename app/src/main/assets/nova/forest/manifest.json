@@ -1,0 +1,240 @@
+{
+  "atlases": [
+    {
+      "file": "bosses.png",
+      "frames": [
+        {
+          "id": "PANDA_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "PANDA_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "PANDA_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "SLOTH_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "SLOTH_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "SLOTH_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "enemies.png",
+      "frames": [
+        {
+          "id": "EnemyKind.PANDA_CUB",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "EnemyKind.STEAMER",
+          "source_rect_px": {
+            "x": 444,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_RED_PANDA",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "EnemyKind.NOVA_SUPPLY_CELL",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "EnemyKind.TREE_FROG",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "EnemyKind.PITCHER",
+          "source_rect_px": {
+            "x": 444,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_TOUCAN",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "EnemyKind.NOVA_TIME_BEACON",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "frames": [
+        {
+          "id": "PANDA_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 444,
+            "height": 430
+          }
+        },
+        {
+          "id": "PANDA_ORB",
+          "source_rect_px": {
+            "x": 444,
+            "y": 0,
+            "width": 443,
+            "height": 430
+          }
+        },
+        {
+          "id": "PANDA_CORE",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 444,
+            "height": 430
+          }
+        },
+        {
+          "id": "PANDA_SHOCK",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 0,
+            "width": 443,
+            "height": 430
+          }
+        },
+        {
+          "id": "SLOTH_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 430,
+            "width": 444,
+            "height": 457
+          }
+        },
+        {
+          "id": "SLOTH_ORB",
+          "source_rect_px": {
+            "x": 444,
+            "y": 430,
+            "width": 443,
+            "height": 457
+          }
+        },
+        {
+          "id": "SLOTH_FIELD",
+          "source_rect_px": {
+            "x": 887,
+            "y": 430,
+            "width": 444,
+            "height": 457
+          }
+        },
+        {
+          "id": "SLOTH_CORE",
+          "source_rect_px": {
+            "x": 1331,
+            "y": 430,
+            "width": 443,
+            "height": 457
+          }
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "frames": [
+        {
+          "id": "pilot_panda",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          }
+        },
+        {
+          "id": "pilot_sloth",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          }
+        }
+      ]
+    }
+  ]
+}
