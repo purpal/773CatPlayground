@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/purpal/773CatPlayground/compare/v0.28.0...v0.29.0) (2026-10-31)
+
+
+### Features
+
+* **nova:** add raccoon and monkey encounters and contain HUD text ([7e438d7](https://github.com/purpal/773CatPlayground/commit/7e438d7b7c0327fc964104d9dbfabd37c41eac24))
+
 ## [0.28.0](https://github.com/purpal/773CatPlayground/compare/v0.27.0...v0.28.0) (2026-10-30)
 
 
