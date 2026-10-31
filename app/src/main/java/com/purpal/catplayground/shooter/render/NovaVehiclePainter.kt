@@ -46,6 +46,7 @@ internal fun DrawScope.drawNovaVehicle(b: NovaVehicleBoss,w:World,sprites:Sprite
     if (b is NovaKoalaBoss || b is NovaOtterBoss) { drawNovaHarborBoss(b,w,sprites,flash); return }
     if (b is NovaPandaBoss || b is NovaSlothBoss) { drawNovaForestBoss(b,w,sprites,flash); return }
     if (b is NovaRaccoonBoss || b is NovaMonkeyBoss) { drawNovaEchoBoss(b,w,sprites,flash); return }
+    if (b is NovaPigBoss || b is NovaMouseBoss) { drawNovaFinalBoss(b,w,sprites,flash); return }
     val defeated=w.phase==Phase.BOSS_DEFEATED
     val rabbit=b as? NovaRabbitBoss
     val penguin=b as? NovaPenguinBoss

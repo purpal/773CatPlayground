@@ -7,7 +7,7 @@ import kotlin.random.Random
 
 object NovaTour {
     /** Released sectors first; remaining opponents are shuffled, with the champion last. */
-    val COMPLETED = listOf(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+    val COMPLETED = listOf(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
     fun start(cat: CatType, random: Random = Random.Default): TourState {
         val original = Tour.start(cat, random)
         val remaining = original.order.filter { it !in COMPLETED && it != Tour.CHAMPION }.shuffled(random)

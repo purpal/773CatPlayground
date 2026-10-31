@@ -194,7 +194,7 @@ fun ShooterGameScreen(
             // 巡迴中重新開始這一站時，一樣從打完上一站時的機體狀態開始。
             World(
                 stage, cat, worldHeight, seed = stageNumber * 31 + attempt, loadout = if (attempt == 0 || bout != null) loadout else null,
-                difficulty = difficulty, bout = if (bout != null) bout + 1 else stage.number,
+                difficulty = difficulty, bout = if (bout != null) bout + 1 else stage.number, novaBalance = nova,
             )
                 .also {
                     if(nova && novaOutro) com.purpal.catplayground.nova.NovaPreview.outro(it)
