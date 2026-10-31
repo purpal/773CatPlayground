@@ -22,6 +22,7 @@ class World(
     val difficulty: Difficulty = Difficulty.NEUTRAL,
     /** 畫面上顯示的「第幾站」。 */
     val bout: Int = stage.number,
+    val novaBalance: Boolean = false,
 ) {
     val random = Random(seed)
     val player = Player(cat)
@@ -508,7 +509,7 @@ class World(
             if (s.style == ShotStyle.SONIC && s.age >= s.burstAt) {
                 s.alive = false
                 val level = s.wallLevel
-                val wall = SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG, maxHp = WALL_HP + level * WALL_HP_PER_LEVEL)
+                val wall = SonicWall(s.x, s.y, radius = 120f + level * 40f, halfAngle = (36f + level * 10f) * DEG, maxHp = (WALL_HP + level * WALL_HP_PER_LEVEL) * if(novaBalance) 1.2f else 1f)
                 walls += wall
                 // 下一道的時間在展開時就排好：就算提前碎掉也一樣要等到原本的時間
                 wallReadyAt = time + wall.life + WALL_GAP

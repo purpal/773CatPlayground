@@ -4,6 +4,8 @@ import android.graphics.BitmapFactory
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +28,9 @@ import kotlin.math.*
 @Composable
 fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->Unit, onNewTour: ()->Unit, onBack: ()->Unit) {
     val sound=LocalSound.current
+    val currentStop=tour.cleared.coerceIn(0,tour.order.lastIndex)
+    val routeList=rememberLazyListState(initialFirstVisibleItemIndex=currentStop)
+    LaunchedEffect(tour.order,currentStop) { routeList.animateScrollToItem(currentStop) }
     val key=tour.order to tour.cleared
     var step by remember(key) { mutableIntStateOf(if(tour.nextRevealed || tour.finished) 3 else 0) }
     var rolling by remember(key) { mutableIntStateOf(tour.nextStage ?: 2) }
@@ -67,8 +72,8 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
             }
         }
         Text("遠征航誌",color=NovaCyan,fontWeight=FontWeight.Bold)
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            for(i in tour.order.indices) Column(Modifier.width(88.dp).background(if(i==tour.cleared)Color(0xFF204456)else NovaPanel,RoundedCornerShape(8.dp)).padding(10.dp)) {
+        LazyRow(Modifier.fillMaxWidth(),state=routeList,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            items(tour.order.size) { i -> Column(Modifier.width(88.dp).background(if(i==tour.cleared)Color(0xFF204456)else NovaPanel,RoundedCornerShape(8.dp)).padding(10.dp)) {
                 val known = i < tour.revealed || i < tour.cleared || (i == tour.cleared && step > 0)
                 val country = tour.stageAt(i)?.country
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -77,6 +82,7 @@ fun NovaTourScreen(tour: TourState, onRevealed: (TourState)->Unit, onFight: ()->
                 }
                 Text(if(known) country?.name ?: "未知" else "未辨識",color=Color.White,fontSize=12.sp)
             }
+        }
         }
         }
         if(tour.finished) NovaButton("重新展開遠征",onClick=onNewTour)
