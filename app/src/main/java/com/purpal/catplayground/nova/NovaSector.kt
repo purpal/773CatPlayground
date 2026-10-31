@@ -4,9 +4,9 @@ import com.purpal.catplayground.shooter.model.*
 
 /** Art routing for Nova; encounter behavior is isolated by NovaEncounters. */
 object NovaSector {
-    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; 5 -> "background_rabbit"; 6 -> "background_penguin"; 7 -> "background_koala"; 8 -> "background_otter"; 9 -> "background_panda"; 10 -> "background_sloth"; 11 -> "background_raccoon"; 12 -> "background_monkey"; else -> null }
-    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; 5 -> "pilot_rabbit"; 6 -> "pilot_penguin"; 7 -> "pilot_koala"; 8 -> "pilot_otter"; 9 -> "pilot_panda"; 10 -> "pilot_sloth"; 11 -> "pilot_raccoon"; 12 -> "pilot_monkey"; else -> null }
-    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; 5 -> "RABBIT_BASE"; 6 -> "PENGUIN_BASE"; 7 -> "KOALA_BASE"; 8 -> "OTTER_BASE"; 9 -> "PANDA_BASE"; 10 -> "SLOTH_BASE"; 11 -> "RACCOON_BASE"; 12 -> "MONKEY_BASE"; else -> null }
+    fun background(stage: Int) = when(stage) { 2 -> "background"; 3 -> "background_bear"; 4 -> "background_capy"; 5 -> "background_rabbit"; 6 -> "background_penguin"; 7 -> "background_koala"; 8 -> "background_otter"; 9 -> "background_panda"; 1 -> "background_mouse"; 13 -> "background_pig"; 10 -> "background_sloth"; 11 -> "background_raccoon"; 12 -> "background_monkey"; else -> null }
+    fun pilot(stage: Int) = when(stage) { 2 -> "pilot_dog"; 3 -> "pilot_bear"; 4 -> "pilot_capy"; 5 -> "pilot_rabbit"; 6 -> "pilot_penguin"; 7 -> "pilot_koala"; 8 -> "pilot_otter"; 9 -> "pilot_panda"; 1 -> "pilot_mouse"; 13 -> "pilot_pig"; 10 -> "pilot_sloth"; 11 -> "pilot_raccoon"; 12 -> "pilot_monkey"; else -> null }
+    fun preview(stage: Int) = when(stage) { 2 -> "boss"; 3 -> "BEAR_HEALTHY"; 4 -> "CAPY_HEALTHY"; 5 -> "RABBIT_BASE"; 6 -> "PENGUIN_BASE"; 7 -> "KOALA_BASE"; 8 -> "OTTER_BASE"; 9 -> "PANDA_BASE"; 1 -> "MOUSE_BASE"; 13 -> "PIG_BASE"; 10 -> "SLOTH_BASE"; 11 -> "RACCOON_BASE"; 12 -> "MONKEY_BASE"; else -> null }
     fun body(kind: EnemyKind, mood: Int, broken: Boolean, phase: Int = mood): String? = when(kind) {
         EnemyKind.BOSS_DOG -> NovaBossArt.body(mood,broken)
         EnemyKind.BOSS_BEAR -> when { broken -> "BEAR_DISARMED"; mood==2 -> "BEAR_CRITICAL"; mood==1 -> "BEAR_ALERT"; else -> "BEAR_HEALTHY" }
@@ -14,6 +14,8 @@ object NovaSector {
         else -> null
     }
     fun projectile(stage: Int, style: BulletStyle): String? = when(stage) {
+        1 -> if(style==BulletStyle.RICE)"MOUSE_DART"else"MOUSE_ORB"
+        13 -> if(style==BulletStyle.RICE)"PIG_DART"else"PIG_ORB"
         3 -> when(style) {
             BulletStyle.HONEY, BulletStyle.RICE, BulletStyle.STAR -> "BEAR.BulletStyle.${style.name}"
             BulletStyle.ORB, BulletStyle.BIG_ORB -> "BEAR.BulletStyle.ORB"
@@ -44,6 +46,8 @@ object NovaSector {
         else -> null
     }
     fun assets(stage: Int): List<String> = when(stage) {
+        1 -> listOf("MOUSE_BASE","MOUSE_TRANSITION","MOUSE_DEPLOYED","MOUSE_BATTERY","MOUSE_TOTEM","pilot_mouse")
+        13 -> listOf("PIG_BASE","PIG_TRANSITION","PIG_DEPLOYED","PIG_ARM","PIG_BORE","PIG_FIELD","pilot_pig")
         3 -> listOf("BEAR_HEALTHY","BEAR_ALERT","BEAR_CRITICAL","BEAR_DISARMED","DIPPER_HEAD","HONEY_TANK_DROP","CLAW_ACTIVE","pilot_bear")
         4 -> listOf("CAPY_HEALTHY","CAPY_ARMORED","CAPY_CRITICAL","CAPY_BUOY_DROP","WATER_CANNON","WATER_ACTIVE","pilot_capy")
         5 -> listOf("RABBIT_BASE", "RABBIT_TRANSITION", "RABBIT_DEPLOYED", "RABBIT_EMITTER", "RABBIT_SHOCK", "pilot_rabbit")

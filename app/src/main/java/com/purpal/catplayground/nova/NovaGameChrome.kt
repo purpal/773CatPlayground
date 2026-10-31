@@ -82,6 +82,8 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                     NovaSector.preview(world.stage.number)?.let { NovaAsset(it,Modifier.size(160.dp)) }
                     Text(world.stage.bossName,color=Color.White,fontSize=24.sp)
                     Text(when(world.stage.number) {
+                        1 -> "沿閘門缺口前進・拆砲台可擴大通道\n核心覺醒後換位，等散熱時集中攻擊"
+                        13 -> "鑽孔鎖定後離開預告圈・避開牽引場\n展足後拆鑽臂，可取消該側爆破"
                         5 -> "落點鎖定後離開警示圈\n落地散熱時集中攻擊"
                         6 -> "沿冰障缺口移動・投射器可擊破\n結冰解除後留意左右舷砲"
                         7 -> "開艙時打擊核心・或先拆蓄能電容\n展足後弱點左右交替，留意放電預告"

@@ -1,0 +1,258 @@
+{
+  "atlases": [
+    {
+      "file": "bosses.png",
+      "frames": [
+        {
+          "id": "PIG_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "PIG_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "PIG_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MOUSE_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MOUSE_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MOUSE_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "enemies.png",
+      "frames": [
+        {
+          "id": "FINALE.EnemyKind.CHICK",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.COW",
+          "source_rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.ELITE_WOLF",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "PIG_ARM",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.MOUSE_RUNNER",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.MOUSE_PLANE",
+          "source_rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.CHEESE_DRONE",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.ELITE_MOUSE",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.DUCKLING",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "FINALE.EnemyKind.CARROT_TURRET",
+          "source_rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "frames": [
+        {
+          "id": "PIG_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "PIG_ORB",
+          "source_rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "PIG_BORE",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "PIG_FIELD",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "MOUSE_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "MOUSE_ORB",
+          "source_rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "MOUSE_BATTERY",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "MOUSE_TOTEM",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "frames": [
+        {
+          "id": "pilot_pig",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          }
+        },
+        {
+          "id": "pilot_mouse",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 887,
+            "height": 887
+          }
+        }
+      ]
+    }
+  ]
+}

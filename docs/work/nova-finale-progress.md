@@ -1,9 +1,29 @@
-# Remaining Nova work
+# Nova 豬豬／老鼠終局與航誌、武器調整
 
-Branch: feat/nova-final-sectors. Not merged or published yet.
+本批完成最後 ID 13 豬豬及 ID 1 老鼠的獨立 Nova 工廠、三形態 Boss、部件、背景、小怪／精英、彈體、駕駛員與六段過關對話。來源見 [美術說明](../art/nova-finale/README.md)。原版第二款的 Boss 與巡迴保持原樣。
 
-Implemented: Nova route LazyRow initializes and scrolls to cleared/current opponent, clamped to last item for completed tours. Nova-only World.novaBalance flag supplied by ShooterGameScreen reduces homing damage 16→12.8 and increases all sonic wall HP by 20%; original game defaults unchanged. Two new tests verify all levels and isolation. 123 tests and assembleDebug passed; log /workspace/.setup/nova-final-sectors.log.
+## 行為
 
-Generated preliminary boss art: docs/art/nova-finale/boss-concepts.png (OpenAI image generation, source exec-bf97058b-bb72-47b5-82a1-4c5617bdb24c.png). NOT integrated. Needs transparent gutter correction before any 3x2 slicing: objects crowd/cross middle horizontal boundary. Rows: pig tracked drill / unfolding / six-leg platform; mouse fortress / split train / awakened core.
+- 豬豬 45% 展成六足鑽地平台；每輪一個舊位置鎖定孔，第一形態再加一個側孔，平台形態改為左右兩孔。半徑 90、至少 1.8 秒預告，額外孔依序延後 0.7／1.4 秒。爆破僅造成一次範圍傷害，碎片向上飛；之後短期牽引場移速 ×0.7，不疊乘。舊位置上限同時依畫面 72% 及玩家實際可達下界計算，扣除爆破半徑、機體半徑與 40 單位安全距離，保留下方退路；同時最多三孔。鑽臂擊破取消該側現有及後續鑽孔。每輪 7–10 秒散熱承傷 ×1.6。
+- 老鼠 60% 分節、30% 覺醒；第一形態一列閘門，後續兩列相隔 2 秒，使用相同固定缺口，閘門速度 140，不受巡迴彈速加成。缺口半寬 200，預告 1.6 秒，閘門及砲台可擊破；拆砲台取消該側現有及後續閘門。覺醒清除舊部件，核心只在閘門發射後的散熱期間換位；每輪至少 12 秒，依畫面高度延長以待舊閘門離場。跨兩門檻傷害合併轉形演出，覺醒只觸發一次。
+- 教學事件各加一個，不改原小怪出場表。小怪圖以 FINALE 前綴及 stage 1／13 限定路由，避免替換其他已完成關卡的小怪。
 
-Remaining: implement NovaPigBoss (45% transform; telegraphed player-position area blasts with bounded persistent areas and escape lanes) and NovaMouseBoss (60% split fortress; 30% ancient core awakening; destructible gate components and fixed safe routes). Follow docs/work/nova-boss-diversity-plan.md sections 13 and 1. Generate backgrounds, enemies, effects, pilots; finish artwork manifest, rendering, sector routing, outro and completed tour list. Preserve original shooter. Add mechanics tests, run full unit/debug/release checks, merge main and push to trigger release per existing authorization. No emulator/device testing.
+## 航誌與武器
+
+航誌使用 LazyRow，初始與 cleared 更新均定位目前站，完成全部後定位最後一站。出發按鈕仍位於捲動內容之外。
+
+Nova 專用 `World.novaBalance` 由遊戲畫面傳入；追蹤彈傷害 16 → 12.8、波弧護盾所有等級最大耐久 ×1.2。原遊戲預設 false。新遠征順序為 2–13，最後 1；續玩保留已清除與已揭曉的對手、分數及裝備。
+
+## 驗證
+
+新增工廠隔離、鑽孔位置鎖定／短螢幕退路、預告不傷害、牽引場過期、鑽臂取消、區域數量上限、閘門缺口、拆砲台、分次及合併門檻、變形中擊破，以及兩貓初始武器通關測試。數值調整另有每級與原遊戲隔離測試。
+
+自動通關使用固定種子及無敵模式，驗證戰鬥能結束，不代表實機手感或人工閃避驗收。依使用者要求不跑模擬器或實機試玩。
+
+## 最終檢查結果
+
+- 133 項單元測試通過，0 失敗／錯誤／跳過。
+- `testDebugUnitTest assembleDebug assembleRelease` 全部成功；日誌 `/workspace/.setup/nova-finale-final.log`。
+- 新增六張 PNG、一份 manifest，共 13,501,592 bytes。24 個獨立切圖與 2 個別名通過邊界及內容檢查；全部 209 個 atlas ID 無重複。
+- Debug 與 Release APK 內七個新增資產的 SHA-256 均與來源相符。
+- 未啟動模擬器或實機試玩。
