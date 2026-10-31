@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,17 +22,24 @@ import com.purpal.catplayground.shooter.ui.HudState
 fun NovaHud(hud: HudState, stage: String, title: String, modifier: Modifier = Modifier, onPause: ()->Unit) {
     Box(modifier.fillMaxWidth().background(NovaInk).statusBarsPadding()) {
     NovaPanelArt("UI_HUD",Modifier.fillMaxWidth()) {
-    Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=16.dp),verticalAlignment=Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text("$stage  /  $title",color=NovaCyan,fontSize=11.sp)
-            Text("${hud.score.toString().padStart(8,'0')}  CR",color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                FitText("喵甲 ${hud.armor}%",Modifier.weight(.8f),color=NovaGold,fontSize=11.sp)
-                FitText("主武 Lv${hud.mainLevel}",Modifier.weight(1f),color=NovaGold,fontSize=11.sp)
-                FitText(if(hud.subWeapon==SubWeapon.NONE)"副武 —" else "副武 Lv${hud.subLevel}",Modifier.weight(1f),color=NovaCyan,fontSize=11.sp)
+    Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.weight(1f).clipToBounds()) {
+                Text("$stage  /  $title",Modifier.fillMaxWidth(),color=NovaCyan,fontSize=11.sp,
+                    maxLines=1,softWrap=false,overflow=TextOverflow.Ellipsis)
+                FitText("${hud.score.toString().padStart(8,'0')}  CR",Modifier.fillMaxWidth().clipToBounds(),
+                    color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
+            }
+            TextButton(onClick=onPause,modifier=Modifier.size(48.dp),contentPadding=PaddingValues(0.dp)) {
+                FitText("暫停",Modifier.fillMaxWidth().clipToBounds(),color=NovaCyan,fontSize=12.sp)
             }
         }
-        TextButton(onClick=onPause){Text("暫停",color=NovaCyan)}
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+            FitText("喵甲 ${hud.armor}%",Modifier.weight(1f).clipToBounds(),color=NovaGold,fontSize=11.sp)
+            FitText("主武 Lv${hud.mainLevel}",Modifier.weight(1f).clipToBounds(),color=NovaGold,fontSize=11.sp)
+            FitText(if(hud.subWeapon==SubWeapon.NONE)"副武 —" else "副武 Lv${hud.subLevel}",
+                Modifier.weight(1f).clipToBounds(),color=NovaCyan,fontSize=11.sp)
+        }
     }
     }
     }
@@ -79,6 +88,8 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                         8 -> "魚雷與浮標分側攻擊・浮標可擊破\n潛航有航跡提示，合體後追打亮起的舷門"
                         9 -> "拆供能柱可阻止修復並斷開電網\n球形態沿預告路線反彈，停轉時核心開啟"
                         10 -> "觀察時序閘門的順序與倒數\n只改變敵彈速度，展環後依序加速放行"
+                        11 -> "離開磁索鎖定圈・擊破貨艙取回補給\n真車有貨艙信標與車轍，全息假體可擊破"
+                        12 -> "掃描後不再改招・沿攻擊預告避讓\n圖騰覺醒後，先拆回放節點阻止第二次攻擊"
                         else -> "追蹤預警線，保持中央避讓通道"
                     },color=NovaGold,fontSize=13.sp)
                 }

@@ -20,7 +20,7 @@ class NovaAssets private constructor(private val assets: AssetManager) {
     private val images = ConcurrentHashMap<String, ImageBitmap>()
     private val sprites = ConcurrentHashMap<String, Sprite>()
     init {
-        for (manifest in listOf("manifest.json", "boss-actions/manifest.json", "sectors/manifest.json", "frontiers/manifest.json", "harbor/manifest.json", "forest/manifest.json")) {
+        for (manifest in listOf("manifest.json", "boss-actions/manifest.json", "sectors/manifest.json", "frontiers/manifest.json", "harbor/manifest.json", "forest/manifest.json", "echoes/manifest.json")) {
             val root = JSONObject(assets.open("nova/$manifest").bufferedReader().use { it.readText() })
             val list = root.getJSONArray("atlases")
             for (i in 0 until list.length()) {
@@ -64,6 +64,8 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             "background_otter" -> "harbor/otter-background.png"
             "background_panda" -> "forest/panda-background.png"
             "background_sloth" -> "forest/sloth-background.png"
+            "background_raccoon" -> "echoes/raccoon-background.png"
+            "background_monkey" -> "echoes/monkey-background.png"
             "carrier" -> "supply-carrier.png"
             "boss" -> "boss-reference.png"
             "pilot_dog" -> "pilot-dog.png"
@@ -83,7 +85,7 @@ class NovaAssets private constructor(private val assets: AssetManager) {
             }
             else -> raw
         }
-        val fixedBody = id in listOf("PANDA_BASE", "PANDA_TRANSITION", "PANDA_DEPLOYED", "SLOTH_BASE", "SLOTH_TRANSITION", "SLOTH_DEPLOYED", "KOALA_BASE", "KOALA_TRANSITION", "KOALA_DEPLOYED", "OTTER_BASE", "OTTER_TRANSITION", "OTTER_DEPLOYED", "OTTER_PORT", "OTTER_STARBOARD") || id.startsWith("BEAR_") || (id.startsWith("CAPY_") && id != "CAPY_BUOY_DROP") ||
+        val fixedBody = id in listOf("RACCOON_BASE", "RACCOON_TRANSITION", "RACCOON_DEPLOYED", "MONKEY_BASE", "MONKEY_TRANSITION", "MONKEY_DEPLOYED", "PANDA_BASE", "PANDA_TRANSITION", "PANDA_DEPLOYED", "SLOTH_BASE", "SLOTH_TRANSITION", "SLOTH_DEPLOYED", "KOALA_BASE", "KOALA_TRANSITION", "KOALA_DEPLOYED", "OTTER_BASE", "OTTER_TRANSITION", "OTTER_DEPLOYED", "OTTER_PORT", "OTTER_STARBOARD") || id.startsWith("BEAR_") || (id.startsWith("CAPY_") && id != "CAPY_BUOY_DROP") ||
             id in listOf("RABBIT_BASE", "RABBIT_TRANSITION", "RABBIT_DEPLOYED", "PENGUIN_BASE", "PENGUIN_TRANSITION", "PENGUIN_DEPLOYED")
         val bitmap = if (id.startsWith("background") || id.startsWith("turn_") || fixedBody) section else trim(section)
         val limit = if (id.startsWith("background")) 1024 else 640

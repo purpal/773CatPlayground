@@ -1,0 +1,240 @@
+{
+  "atlases": [
+    {
+      "file": "bosses.png",
+      "frames": [
+        {
+          "id": "RACCOON_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "RACCOON_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "RACCOON_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MONKEY_BASE",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MONKEY_TRANSITION",
+          "source_rect_px": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "id": "MONKEY_DEPLOYED",
+          "source_rect_px": {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "enemies.png",
+      "frames": [
+        {
+          "id": "EnemyKind.OPOSSUM",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.TRASH_CAN",
+          "source_rect_px": {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_SKUNK",
+          "source_rect_px": {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.NOVA_CARGO_VAULT",
+          "source_rect_px": {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.SWING_MONKEY",
+          "source_rect_px": {
+            "x": 0,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.TOTEM",
+          "source_rect_px": {
+            "x": 384,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.ELITE_GORILLA",
+          "source_rect_px": {
+            "x": 768,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        },
+        {
+          "id": "EnemyKind.NOVA_REPLAY_NODE",
+          "source_rect_px": {
+            "x": 1152,
+            "y": 512,
+            "width": 384,
+            "height": 512
+          }
+        }
+      ]
+    },
+    {
+      "file": "effects.png",
+      "frames": [
+        {
+          "id": "RACCOON_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "RACCOON_ORB",
+          "source_rect_px": {
+            "x": 443,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "RACCOON_HOLOGRAM",
+          "source_rect_px": {
+            "x": 887,
+            "y": 0,
+            "width": 443,
+            "height": 443
+          }
+        },
+        {
+          "id": "RACCOON_SNARE",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 0,
+            "width": 444,
+            "height": 443
+          }
+        },
+        {
+          "id": "MONKEY_DART",
+          "source_rect_px": {
+            "x": 0,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "MONKEY_ORB",
+          "source_rect_px": {
+            "x": 443,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        },
+        {
+          "id": "MONKEY_CORE",
+          "source_rect_px": {
+            "x": 887,
+            "y": 443,
+            "width": 443,
+            "height": 444
+          }
+        },
+        {
+          "id": "MONKEY_TOTEM",
+          "source_rect_px": {
+            "x": 1330,
+            "y": 443,
+            "width": 444,
+            "height": 444
+          }
+        }
+      ]
+    },
+    {
+      "file": "pilots.png",
+      "frames": [
+        {
+          "id": "pilot_raccoon",
+          "source_rect_px": {
+            "x": 0,
+            "y": 0,
+            "width": 768,
+            "height": 1024
+          }
+        },
+        {
+          "id": "pilot_monkey",
+          "source_rect_px": {
+            "x": 768,
+            "y": 0,
+            "width": 768,
+            "height": 1024
+          }
+        }
+      ]
+    }
+  ]
+}

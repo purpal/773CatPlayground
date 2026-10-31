@@ -884,6 +884,7 @@ class World(
             lastHitCue = time
         }
         if (e.hp > 0f) return
+        e.onDefeated(this)
         if (e.isBoss) {
             e.hp = 0f
             onBossDefeated()

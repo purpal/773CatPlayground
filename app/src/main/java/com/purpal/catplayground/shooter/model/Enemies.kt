@@ -55,7 +55,7 @@ enum class EnemyKind {
     /** 柴犬隊長丟出去的迴力骨頭（打不壞的道具）。 */
     THROWN_BONE,
     /** Nova-only destructible anti-air ice projector. */
-    NOVA_ICE_PYLON, NOVA_CAPACITOR, NOVA_KOALA_HATCH, NOVA_OTTER_HULL, NOVA_SONAR_BUOY, NOVA_SUPPLY_CELL, NOVA_TIME_BEACON,
+    NOVA_ICE_PYLON, NOVA_CAPACITOR, NOVA_KOALA_HATCH, NOVA_OTTER_HULL, NOVA_SONAR_BUOY, NOVA_SUPPLY_CELL, NOVA_TIME_BEACON, NOVA_CARGO_VAULT, NOVA_HOLOGRAM, NOVA_REPLAY_NODE,
 }
 
 abstract class Enemy(
@@ -101,6 +101,9 @@ abstract class Enemy(
     var pawHitTime = -1f
     /** 被震動掌打中後抖動的剩餘秒數（畫面用）。 */
     var vibrate = 0f
+
+    /** Optional encounter cleanup/rewards, before the world removes a defeated entity. */
+    open fun onDefeated(w: World) = Unit
 
     abstract fun update(w: World, dt: Float)
 
