@@ -17,21 +17,20 @@ class NovaTourTest {
         repeat(40) { seed ->
             for(cat in CatType.entries) {
                 val tour=NovaTour.start(cat,Random(seed))
-                assertEquals(NovaTour.COMPLETED,tour.order.take(9))
+                assertEquals(NovaTour.COMPLETED,tour.order.take(11))
                 assertEquals(13,tour.order.toSet().size)
                 val original=Tour.start(cat,Random(seed))
                 assertEquals(original.order.toSet(),tour.order.toSet())
-                assertEquals(setOf(11,12,13),tour.order.drop(9).dropLast(1).toSet())
+                assertEquals(setOf(13),tour.order.drop(11).dropLast(1).toSet())
                 assertEquals(Tour.CHAMPION,tour.order.last())
                 assertEquals(cat,tour.cat)
                 assertEquals(tour,TourState.decode(tour.encode()))
             }
         }
     }
-    @Test fun unfinishedPoolIsRandomized() {
-        val suffixes=(0..40).map { NovaTour.start(CatType.ORANGE,Random(it)).order.drop(9).dropLast(1) }
-        assertTrue(suffixes.toSet().size==6)
-        assertTrue(suffixes.map { it.indexOf(11) }.toSet().size>1)
+    @Test fun lastUnfinishedStagePrecedesChampion() {
+        val suffixes=(0..40).map { NovaTour.start(CatType.ORANGE,Random(it)).order.drop(11).dropLast(1) }
+        assertEquals(setOf(listOf(13)),suffixes.toSet())
     }
     @Test fun existingSaveKeepsClearsRevealedFlightAndEquipment() {
         val original=Tour.start(CatType.BLACK,Random(2))
