@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.30.0](https://github.com/purpal/773CatPlayground/compare/v0.29.0...v0.30.0) (2026-10-31)
+
+
+### Features
+
+* **nova:** complete pig excavation and mouse fortress finale ([d43513f](https://github.com/purpal/773CatPlayground/commit/d43513fc32b3c191b357b0ab748a558305323fc6))
+* **nova:** follow current route stop and rebalance secondary weapons ([3e6dd31](https://github.com/purpal/773CatPlayground/commit/3e6dd314460a2590fe68c01f275b32a800756e2b))
+
 ## [0.29.0](https://github.com/purpal/773CatPlayground/compare/v0.28.0...v0.29.0) (2026-10-31)
 
 
