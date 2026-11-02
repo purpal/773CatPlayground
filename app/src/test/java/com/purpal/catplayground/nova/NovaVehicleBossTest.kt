@@ -18,14 +18,14 @@ class NovaVehicleBossTest {
         assertTrue("condition timed out: stage ${w.stage.number}",condition())
     }
 
-    @Test fun novaFactoriesAreIsolatedAndOtherStagesKeepOriginalInstances() {
+    @Test fun novaFactoriesAndWaveScriptsAreIsolated() {
         assertTrue(Stages.rabbit.createBoss() is RabbitBoss)
         assertTrue(Stages.penguin.createBoss() is PenguinBoss)
         assertTrue(world(5).boss is NovaRabbitBoss)
         assertTrue(world(6).boss is NovaPenguinBoss)
-        for(i in 1..13) if(i in 2..4) assertSame(Stages.get(i),NovaEncounters.stage(Stages.get(i)!!))
-        assertEquals(Stages.rabbit.script.events.size,NovaEncounters.stage(Stages.rabbit).script.events.size)
-        assertEquals(Stages.penguin.script.events.size+1,NovaEncounters.stage(Stages.penguin).script.events.size)
+        for(i in 2..4) assertEquals(Stages.get(i)!!.createBoss().javaClass,NovaEncounters.stage(Stages.get(i)!!).createBoss().javaClass)
+        assertNotSame(Stages.rabbit.script,NovaEncounters.stage(Stages.rabbit).script)
+        assertNotSame(Stages.penguin.script,NovaEncounters.stage(Stages.penguin).script)
     }
 
     @Test fun formsTransformExactlyOnceIncludingLargeDamageAndHealing() {

@@ -306,7 +306,9 @@ fun ShooterGameScreen(
         if (nova) com.purpal.catplayground.nova.NovaHud(hud,boutLabel,stage.title,onPause={paused=true})
         else ShooterHud(hud, boutLabel, stage.title, onPause = { paused = true })
         BossBar(hud, Modifier.padding(top = hudHeight))
-        UltimateButton(
+        if(nova) com.purpal.catplayground.nova.NovaOverdriveButton(cat,hud.bombs,{world.requestUltimate()},
+            Modifier.align(if(ultimateOnLeft) Alignment.BottomStart else Alignment.BottomEnd).systemBarsPadding().padding(20.dp))
+        else UltimateButton(
             cat = cat,
             bombs = hud.bombs,
             onPress = { world.requestUltimate() },
@@ -431,7 +433,7 @@ private fun playCues(world: World, sound: SoundManager) {
     world.cues.clear()
 }
 
-private fun musicFor(world: World): Music = when (world.phase) {
+private fun musicFor(world: World): Music = if(world.novaBalance) com.purpal.catplayground.audio.NovaMetal.track(world.phase,world.boss!=null) else when (world.phase) {
     Phase.WARNING, Phase.BOSS, Phase.BOSS_DEFEATED -> Music.BOSS
     Phase.PLAYER_DOWN, Phase.CONTINUE -> if (world.boss != null) Music.BOSS else stageMusic(world)
     else -> stageMusic(world)

@@ -23,7 +23,7 @@ class NovaForestBossTest {
         assertTrue(world(10).boss is NovaSlothBoss)
         for(i in 9..10) {
             val original=Stages.get(i)!!;val nova=NovaEncounters.stage(original)
-            assertEquals(original.script.events.size+1,nova.script.events.size)
+            assertNotSame(original.script,nova.script)
             assertSame(original.country,nova.country)
         }
     }

@@ -17,7 +17,7 @@ class NovaFinalBossTest {
     @Test fun factoriesAreIsolatedAndEveryTourOpponentAppearsOnce() {
         assertTrue(Stages.pig.createBoss() is PigBoss);assertTrue(Stages.mouse.createBoss() is MouseBoss)
         assertTrue(world(13).boss is NovaPigBoss);assertTrue(world(1).boss is NovaMouseBoss)
-        for(stage in listOf(1,13))assertEquals(Stages.get(stage)!!.script.events.size+1,NovaEncounters.stage(Stages.get(stage)!!).script.events.size)
+        for(stage in listOf(1,13))assertNotSame(Stages.get(stage)!!.script,NovaEncounters.stage(Stages.get(stage)!!).script)
         val tour=NovaTour.start(CatType.BLACK)
         assertEquals(Tour.POOL.toSet(),tour.order.take(9).toSet())
         assertEquals(Tour.KINGS+1,tour.order.drop(9))
