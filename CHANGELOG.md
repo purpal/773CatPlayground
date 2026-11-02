@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.0](https://github.com/purpal/773CatPlayground/compare/v0.30.0...v0.31.0) (2026-11-02)
+
+
+### Features
+
+* **nova:** restore random tours and rebalance boss threats ([d0971f1](https://github.com/purpal/773CatPlayground/commit/d0971f180e22d4d4a879f28c5b42df790d3cc99d))
+
 ## [0.30.0](https://github.com/purpal/773CatPlayground/compare/v0.29.0...v0.30.0) (2026-10-31)
 
 
