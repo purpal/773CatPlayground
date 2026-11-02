@@ -13,6 +13,7 @@ class NovaSlothBoss : NovaVehicleBoss(33000f,165f,100000) {
     override val artPrefix="SLOTH"
     var clock=0f
         private set
+    private var nextVolley=.15f
     var cycle=0
         private set
     val fieldX get() = 500f
@@ -20,17 +21,19 @@ class NovaSlothBoss : NovaVehicleBoss(33000f,165f,100000) {
     val cooling get() = !transforming && clock>=10f
     override val damageScale get() = if(cooling)1.6f else 1f
     override fun bulletTimeScale(bx:Float,by:Float)=1f
-    override fun cancelAttack(w:World) { clock=0f }
-    override fun beginForm(w:World) { clock=0f }
+    override fun cancelAttack(w:World) { clock=0f;nextVolley=.15f }
+    override fun beginForm(w:World) { clock=0f;nextVolley=.15f }
     override fun combat(w:World,dt:Float) {
         clock+=dt
         // Slow horizontal drift keeps the firing source readable.
         x=approach(x,500f+sin(age*.22f)*55f,2f,dt)
-        if(every(clock,dt,2f,offset=.15f)) {
-            val row=(clock/2f).toInt()+cycle*6
+        if(clock>=nextVolley) {
+            nextVolley+=3f
+            val row=(clock/3f).toInt()+cycle*4
             val startY=minOf(w.player.y-110f,y+120f)
-            for(i in 0..19) {
-                val bx=25f+i*50f+if(row%2==0)0f else 25f
+            for(i in 0 until 15) {
+                // 66.7 spacing: separated artwork, but even the smaller player cannot cross a row.
+                val bx=(i+.5f)*WORLD_WIDTH/15f+if(row%2==0)-6f else 6f
                 w.shoot(bx,startY,HALF_PI,26f/w.difficulty.bulletSpeed,BulletStyle.LETTER,Tint.PURPLE,24f).also{it.wallDamageScale=.25f}
             }
             if(form==1) for(side in listOf(-1f,1f)) {
@@ -38,7 +41,7 @@ class NovaSlothBoss : NovaVehicleBoss(33000f,165f,100000) {
             }
             w.cue(SoundCue.SHOT_HEAVY)
         }
-        if(clock>=12f){clock=0f;cycle++}
+        if(clock>=12f){clock=0f;nextVolley=.15f;cycle++}
     }
 
 }

@@ -82,7 +82,7 @@ fun NovaStageOverlays(world:World,phase:Phase,bestScore:Int,hasNext:Boolean,onNe
                     NovaSector.preview(world.stage.number)?.let { NovaAsset(it,Modifier.size(160.dp)) }
                     Text(world.stage.bossName,color=Color.White,fontSize=24.sp)
                     Text(when(world.stage.number) {
-                        1 -> "鼠群以多排縱深進攻・貫穿武器可清後排\n沿閘門缺口換位，核心散熱時集中攻擊"
+                        1 -> "左右鼠群持續追蹤・貫穿武器清出通路\n沿閘門缺口換位，核心散熱時集中攻擊"
                         13 -> "鑽孔鎖定後離開預告圈・避開牽引場\n展足後拆鑽臂，可取消該側爆破"
                         5 -> "落點鎖定後離開警示圈\n落地散熱時集中攻擊"
                         6 -> "沿冰障缺口移動・投射器可擊破\n結冰解除後留意左右舷砲"

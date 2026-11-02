@@ -14,7 +14,7 @@ class NovaThreatBalanceTest {
     @Test fun slothBulletsAccumulateRemainSlowAndSurviveTransition() {
         val w=world(10);val b=w.boss as NovaSlothBoss
         repeat(600){w.update(STEP)}
-        val old=w.bullets.filter{it.alive}.toList();assertTrue(old.size>=100)
+        val old=w.bullets.filter{it.alive}.toList();assertTrue("reduced density: ${old.size}",old.size in 45..75)
         assertTrue(old.all{hypot(it.vx,it.vy)<30f})
         b.hp=b.maxHp*.3f;w.update(STEP)
         assertTrue(b.transforming);assertTrue(old.all{it in w.bullets&&it.alive})
@@ -34,15 +34,16 @@ class NovaThreatBalanceTest {
             val w=World(Stages.mouse,CatType.ORANGE,1800f,novaBalance=nova)
             val owner=NovaMouseBoss();val front=NovaSwarmMouse(owner,500f,900f,0f);val rear=NovaSwarmMouse(owner,500f,700f,0f)
             w.enemies+=front;w.enemies+=rear;w.player.x=500f;w.player.y=1200f;w.player.mainLevel=5
+            val hp=front.hp
             Weapons.updateBeam(w,w.player,.01f)
-            assertTrue(front.hp<100f);assertEquals(nova,rear.hp<100f)
+            assertTrue(front.hp<hp);assertEquals(nova,rear.hp<hp)
         }
     }
     @Test fun saturatedWaveHasDeepRanksAndTransformsCleanThemUp() {
         val w=world(1);val b=w.boss as NovaMouseBoss
         repeat(180){w.update(STEP)}
         val mice=w.enemies.filterIsInstance<NovaSwarmMouse>();assertEquals(96,mice.size)
-        assertEquals(6,mice.map{it.y.toInt()}.toSet().size)
+        assertEquals(48,mice.count{it.x<500f});assertEquals(48,mice.count{it.x>500f})
         b.hp=b.maxHp*.5f;w.update(STEP)
         assertTrue(mice.none{it.alive})
     }

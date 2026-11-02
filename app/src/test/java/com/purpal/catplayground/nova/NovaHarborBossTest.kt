@@ -25,7 +25,7 @@ class NovaHarborBossTest {
         assertTrue(world(8).boss is NovaOtterBoss)
         for(stage in listOf(Stages.koala,Stages.otter)) {
             val nova=NovaEncounters.stage(stage)
-            assertEquals(stage.script.events.size+1,nova.script.events.size)
+            assertNotSame(stage.script,nova.script)
             assertSame(stage.country,nova.country)
             assertSame(stage.outro,nova.outro)
         }

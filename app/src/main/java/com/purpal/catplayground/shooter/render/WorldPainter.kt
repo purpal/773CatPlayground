@@ -203,6 +203,10 @@ private fun DrawScope.drawEnemy(e: Enemy, w: World, sprites: SpriteCache) {
         drawSprite(s, e.x + jx, e.y + dy, scale, rotation, flipX = flipX, stretch = squash)
         if (flash) drawSprite(s, e.x + jx, e.y + dy, scale, rotation, alpha = 0.45f, flipX = flipX, colorFilter = WhiteFlash, stretch = squash)
     }
+    if(e is com.purpal.catplayground.nova.NovaRaider) {
+        sprite(sprites.enemy(e.kind,fast),rotation=e.facingDegrees)
+        return
+    }
     if (e is Diver) drawDiverWarning(e, w, sprites)
     when (e.kind) {
         EnemyKind.CHEESE_DRONE -> {

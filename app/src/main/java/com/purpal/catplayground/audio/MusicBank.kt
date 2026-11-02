@@ -6,7 +6,7 @@ import com.purpal.catplayground.audio.Synth.addTone
 import com.purpal.catplayground.audio.Synth.midiToFreq
 
 enum class Music { LOBBY, STAGE_MOUSE, STAGE_DOG, STAGE_BEAR, STAGE_CAPY, STAGE_RABBIT, STAGE_PENGUIN, STAGE_KOALA, STAGE_OTTER, STAGE_PANDA,
-    STAGE_SLOTH, STAGE_RACCOON, STAGE_MONKEY, STAGE_PIG, BOSS,
+    STAGE_SLOTH, STAGE_RACCOON, STAGE_MONKEY, STAGE_PIG, BOSS, NOVA_STAGE, NOVA_BOSS,
 }
 
 /** 背景音樂：8 小節循環，用簡單的音序器即時合成。 */
@@ -28,6 +28,8 @@ internal object MusicBank {
         Music.STAGE_MONKEY -> monkeyStage()
         Music.STAGE_PIG -> pigStage()
         Music.BOSS -> boss()
+        Music.NOVA_STAGE -> NovaMetal.render(false)
+        Music.NOVA_BOSS -> NovaMetal.render(true)
     }
 
     /** 以八分音符為單位的簡單音序器。 */

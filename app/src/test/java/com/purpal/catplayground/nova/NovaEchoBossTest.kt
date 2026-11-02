@@ -21,7 +21,7 @@ class NovaEchoBossTest {
         for(stage in 11..12) {
             val original=Stages.get(stage)!!;val nova=NovaEncounters.stage(original)
             assertSame(original.country,nova.country)
-            assertEquals(original.script.events.size+1,nova.script.events.size)
+            assertNotSame(original.script,nova.script)
         }
     }
     @Test fun cargoReturnsStolenPickupExactlyOnceEvenAcrossTransformation() {

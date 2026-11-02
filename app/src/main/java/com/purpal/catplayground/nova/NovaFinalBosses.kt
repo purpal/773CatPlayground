@@ -99,7 +99,8 @@ class NovaMouseBoss : NovaVehicleBoss(46000f,160f,300000) {
             w.cue(SoundCue.WARNING)
         }
         if(crossed(clock,dt,3f)) {
-            for(row in 0..5)for(col in 0..15) w.spawn(NovaSwarmMouse(this,45f+col*60f,-70f-row*65f,if(awakened)300f else 250f,w.player.x+(col%3-1)*48f))
+            for(side in listOf(-1,1))for(row in 0..5)for(col in 0..7)
+                w.spawn(NovaSwarmMouse(this,if(side<0)-60f-col*36f else 1060f+col*36f,120f+row*65f,if(awakened)260f else 220f,(col%3-1)*22f))
             w.cue(SoundCue.WARNING)
         }
         if(crossed(clock,dt,5.2f)) {
@@ -142,11 +143,23 @@ class NovaRailGate(val owner:NovaMouseBoss?,x:Float,val delay:Float):Enemy(x,500
     }
 }
 
-/** Dense columns reward penetrating shots; no loot farm or invulnerable body blocking. */
-class NovaSwarmMouse(val owner:NovaMouseBoss,x:Float,y:Float,val speed:Float,val targetX:Float=x):Enemy(x,y,100f,22f,0) {
+/** Two pursuing wings; bounded turning and lifetime allow repositioning without trivial sidestepping. */
+class NovaSwarmMouse(val owner:NovaMouseBoss,x:Float,y:Float,val speed:Float,val laneOffset:Float=0f):Enemy(x,y,65f,22f,0) {
     override val randomCoinDrop=false
     override val kind=EnemyKind.MINI_MOUSE
     override val contactDamage=18f
     override val kamikaze=true
-    override fun update(w:World,dt:Float){age+=dt;x=approach(x,targetX,1.2f,dt);y+=speed*dt;if(y>w.height+80f||owner.hp<=0f||owner.transforming||owner.awakeningTime>0f)alive=false}
+    private var heading=HALF_PI
+    override fun update(w:World,dt:Float) {
+        age+=dt
+        if(owner.hp<=0f||owner.transforming||owner.awakeningTime>0f||age>14f){alive=false;return}
+        val targetY=if(abs(x-w.player.x)>80f)w.player.y-300f else w.player.y
+        val wanted=angleTo(x,y,w.player.x+laneOffset,targetY)
+        var delta=wanted-heading
+        while(delta>PI)delta-=TWO_PI
+        while(delta < -PI)delta+=TWO_PI
+        heading+=delta.coerceIn(-1.5f*dt,1.5f*dt)
+        val advance=speed*if(dist2(x,y,w.player.x,w.player.y)<450f*450f).55f else 1f
+        x+=cos(heading)*advance*dt;y+=sin(heading)*advance*dt
+    }
 }

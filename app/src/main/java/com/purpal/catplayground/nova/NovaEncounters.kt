@@ -16,10 +16,9 @@ object NovaEncounters {
             10 -> ::NovaSlothBoss
             11 -> ::NovaRaccoonBoss
             12 -> ::NovaMonkeyBoss
-            else -> return original
+            else -> original.createBoss
         }
-        val script = StageScript().apply {
-            original.script.events.forEach { at(it.time, it.action) }
+        val script = NovaWaves.script(original.number).apply {
             if(original.number==13) at(18f){w->w.spawn(NovaBore(null,0,500f,w.height*.6f,0f))}
             if(original.number==1) at(18f){w->NovaRailGate.row(w,null,500f,0f)}
             // Brief, isolated demonstrations before the first elite; no extra enemy wave.
@@ -34,7 +33,7 @@ object NovaEncounters {
             if (original.number == 12) at(18f) { w -> w.spawn(NovaReplayNode(null, NovaMimicSnapshot(MainWeapon.SPREAD,w.player.cat,w.player.x,w.player.y),500f,520f)) }
         }
         return StageDef(original.number, original.animal,
-            when(original.number) { 1 -> "王冠磁軌中樞"; 13 -> "掘金深層採掘場"; 5 -> "月躍雷達試驗場"; 6 -> "霜脊破冰航道"; 7 -> "眠巢能源樞紐"; 8 -> "雙潮聲納港灣"; 9 -> "玄竹反彈試驗場"; 10 -> "時差雨林中繼站"; 11 -> "夜匣貨運軌道"; else -> "擬神回聲遺跡" },
+            when(original.number) { 1 -> "王冠磁軌中樞"; 13 -> "掘金深層採掘場"; 5 -> "月躍雷達試驗場"; 6 -> "霜脊破冰航道"; 7 -> "眠巢能源樞紐"; 8 -> "雙潮聲納港灣"; 9 -> "玄竹反彈試驗場"; 10 -> "時差雨林中繼站"; 11 -> "夜匣貨運軌道"; 12 -> "擬神回聲遺跡"; else -> original.title },
             original.theme, original.country, when(original.number) { 1 -> "王冠司令 米米"; 13 -> "掘金工程長 哼哼"; 11 -> "夜匣指揮官 基德"; 12 -> "擬神駕駛員 吱吱"; else -> original.bossName }, original.bossArt,
             factory, original.outro, script)
     }
