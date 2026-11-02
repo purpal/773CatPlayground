@@ -38,6 +38,10 @@ class AppPrefs(context: Context, namespace: String = "cat_playground") {
         set(value) = prefs.edit().putBoolean("shooter_damage_numbers", value).apply()
 
     /** 射擊遊戲特效品質高（多一層柔光）；低階手機可以關掉。 */
+    var shooterTelegraphs: Boolean
+        get() = prefs.getBoolean("shooter_telegraphs", true)
+        set(value) = prefs.edit().putBoolean("shooter_telegraphs", value).apply()
+
     var shooterFxHigh: Boolean
         get() = prefs.getBoolean("shooter_fx_high", true)
         set(value) = prefs.edit().putBoolean("shooter_fx_high", value).apply()

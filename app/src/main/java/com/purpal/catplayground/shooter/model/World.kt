@@ -188,7 +188,7 @@ class World(
 
     private fun spawnBoss() {
         val b = stage.createBoss()
-        difficulty.bossHp?.let { b.setMaxHp(it * b.hpFactor) }
+        difficulty.bossHp?.let { b.setMaxHp(it * b.hpFactor * if(novaBalance)1.25f else 1f) }
         boss = b
         enemies += b
     }
@@ -267,7 +267,7 @@ class World(
 
     /** 最終 Boss 的第二次變身（覺醒）：金光、消彈、震動。 */
     fun onBossTransform(b: Boss) {
-        clearBullets(toScore = true)
+        if(!b.preserveBulletsOnTransform) clearBullets(toScore = true)
         hitStop = HIT_STOP * 3f
         shake(0.7f)
         flash(0.8f)
@@ -337,9 +337,9 @@ class World(
                 p.dashTime = DASH_TIME
                 p.invulnerable = maxOf(p.invulnerable, DASH_TIME)
             } else {
-                p.tempArmor = difficulty.tempArmor
+                p.tempArmor = difficulty.tempArmor * if(novaBalance)2f else 1f
                 p.tempArmorMax = p.tempArmor
-                p.tempArmorTime = DASH_TIME
+                p.tempArmorTime = if(novaBalance)1.2f else DASH_TIME
             }
             cue(SoundCue.SWING)
         }
@@ -626,7 +626,7 @@ class World(
                 b.alive = false
                 particles += Particle(b.x, b.y, 0f, 0f, 0.35f, 1f, 0, ParticleKind.HEXHIT)
                 sparks(b.x, b.y, 3, 0xFFFF3D5AL, speed = 260f)
-                wall.hp -= b.damage
+                wall.hp -= b.damage * b.wallDamageScale
                 if (wall.hp <= 0f) shatterWall(wall)
                 continue
             }
@@ -909,7 +909,7 @@ class World(
             sfx(e.x + 30f, e.y - 40f, SfxText.TERMINATED)
         }
         if (e is HoneyPot) e.burst(this)
-        val drop = e.drop ?: if (random.nextFloat() < 0.3f) ItemType.COIN else null
+        val drop = e.drop ?: if (e.randomCoinDrop && random.nextFloat() < 0.3f) ItemType.COIN else null
         if (drop != null) items += Item(e.x, e.y, drop)
     }
 
@@ -994,7 +994,7 @@ class World(
 
     fun spawn(e: Enemy) {
         // 越後面的站，小怪與菁英怪越硬（Boss 的血量另外依出場順序決定；共用血量的分身只有 1 點）
-        if (!e.isBoss && e.hp > 1f) e.hp *= difficulty.enemyHp
+        if (!e.isBoss && e.hp > 1f) e.hp *= difficulty.enemyHp * if(novaBalance)1.25f else 1f
         enemies += e
         if (e.isElite) sfx(e.x.coerceIn(150f, WORLD_WIDTH - 150f), 160f, SfxText.ELITE)
     }

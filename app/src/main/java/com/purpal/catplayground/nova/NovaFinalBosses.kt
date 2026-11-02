@@ -79,6 +79,7 @@ class NovaMouseBoss : NovaVehicleBoss(46000f,160f,300000) {
     override val invulnerable get()=super.invulnerable||awakeningTime>0f
     override val solid get()=super.solid&&awakeningTime<=0f
     private fun clearParts(w:World) {
+        w.enemies.filterIsInstance<NovaSwarmMouse>().filter{it.owner===this}.forEach{it.alive=false}
         w.enemies.filterIsInstance<NovaRailGate>().filter{it.owner===this}.forEach{it.alive=false}
         batteries.forEach{it.alive=false};batteries.clear();equipped=false
     }
@@ -95,6 +96,15 @@ class NovaMouseBoss : NovaVehicleBoss(46000f,160f,300000) {
             gapX=floatArrayOf(400f,600f,500f)[cycle%3]
             NovaRailGate.row(w,this,gapX,0f)
             if(form==1)NovaRailGate.row(w,this,gapX,2f)
+            w.cue(SoundCue.WARNING)
+        }
+        if(crossed(clock,dt,3f)) {
+            for(row in 0..5)for(col in 0..15) w.spawn(NovaSwarmMouse(this,45f+col*60f,-70f-row*65f,if(awakened)300f else 250f,w.player.x+(col%3-1)*48f))
+            w.cue(SoundCue.WARNING)
+        }
+        if(crossed(clock,dt,5.2f)) {
+            // A locked rail lance forces a position change even after piercing weapons clear the swarm.
+            w.lasers+=Laser(x,y+100f,w.aimAt(x,y+100f),w.height,44f,1.4f,1.2f,Tint.CYAN,28f)
             w.cue(SoundCue.WARNING)
         }
         // Fixed lanes remain stable during the salvo. Core changes position only after it clears.
@@ -130,4 +140,13 @@ class NovaRailGate(val owner:NovaMouseBoss?,x:Float,val delay:Float):Enemy(x,500
             }
         }
     }
+}
+
+/** Dense columns reward penetrating shots; no loot farm or invulnerable body blocking. */
+class NovaSwarmMouse(val owner:NovaMouseBoss,x:Float,y:Float,val speed:Float,val targetX:Float=x):Enemy(x,y,100f,22f,0) {
+    override val randomCoinDrop=false
+    override val kind=EnemyKind.MINI_MOUSE
+    override val contactDamage=18f
+    override val kamikaze=true
+    override fun update(w:World,dt:Float){age+=dt;x=approach(x,targetX,1.2f,dt);y+=speed*dt;if(y>w.height+80f||owner.hp<=0f||owner.transforming||owner.awakeningTime>0f)alive=false}
 }

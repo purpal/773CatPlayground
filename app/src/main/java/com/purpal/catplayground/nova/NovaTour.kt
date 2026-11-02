@@ -6,19 +6,19 @@ import com.purpal.catplayground.shooter.model.TourState
 import kotlin.random.Random
 
 object NovaTour {
-    /** Released sectors first; remaining opponents are shuffled, with the champion last. */
+    /** Art coverage metadata; challenge order follows the original nine-pool / kings / champion rules. */
     val COMPLETED = listOf(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
     fun start(cat: CatType, random: Random = Random.Default): TourState {
-        val original = Tour.start(cat, random)
-        val remaining = original.order.filter { it !in COMPLETED && it != Tour.CHAMPION }.shuffled(random)
-        return original.copy(order = COMPLETED + remaining + Tour.CHAMPION)
+        return Tour.start(cat,random)
     }
 
     /** Preserve completed and already revealed destinations, loadout and score when resuming. */
-    fun resume(tour: TourState): TourState {
+    fun resume(tour: TourState, random: Random = Random.Default): TourState {
         val keep = maxOf(tour.cleared, tour.revealed).coerceIn(0, tour.order.size)
         val remaining = tour.order.drop(keep)
-        return tour.copy(order = tour.order.take(keep) + COMPLETED.filter { it in remaining } +
-            remaining.filter { it !in COMPLETED && it != Tour.CHAMPION } + remaining.filter { it == Tour.CHAMPION })
+        val ordinary=remaining.filter{it in Tour.POOL}
+        // Shuffle only a legacy mixed order; a resumed randomized tour must stay stable.
+        val pool=if(remaining.take(ordinary.size).any{it !in Tour.POOL})ordinary.shuffled(random)else ordinary
+        return tour.copy(order=tour.order.take(keep)+pool+Tour.KINGS.filter{it in remaining}+remaining.filter{it==Tour.CHAMPION})
     }
 }

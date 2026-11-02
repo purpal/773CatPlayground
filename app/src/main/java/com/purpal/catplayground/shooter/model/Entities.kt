@@ -102,6 +102,8 @@ class EnemyBullet(
     var alive = true
     /** 可被聲波牆擋下。 */
     var erasable = true
+    /** Slow occupation rounds are inexpensive for a force wall to erase. */
+    var wallDamageScale = 1f
     val spin = style == BulletStyle.BONE || style == BulletStyle.STAR || style == BulletStyle.CHEESE || style == BulletStyle.SHELL ||
         style == BulletStyle.CARD || style == BulletStyle.LID || style == BulletStyle.MACARON || style == BulletStyle.BANANA ||
         style == BulletStyle.CROISSANT

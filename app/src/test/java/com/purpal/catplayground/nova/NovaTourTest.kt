@@ -13,24 +13,29 @@ class NovaTourTest {
         assertEquals(Screen.ShooterMenu, GameRegistry.games[1].start)
         assertEquals(Screen.NovaMenu, GameRegistry.games[2].start)
     }
-    @Test fun newTourStartsWithCompletedArtAndKeepsEveryOpponentOnce() {
+    @Test fun newTourUsesNineRandomOpponentsThenKingsAndChampion() {
         repeat(40) { seed ->
             for(cat in CatType.entries) {
                 val tour=NovaTour.start(cat,Random(seed))
-                assertEquals(NovaTour.COMPLETED,tour.order.take(12))
+                assertEquals(Tour.POOL.toSet(),tour.order.take(9).toSet())
+                assertEquals(Tour.KINGS,tour.order.drop(9).take(3))
                 assertEquals(13,tour.order.toSet().size)
                 val original=Tour.start(cat,Random(seed))
                 assertEquals(original.order.toSet(),tour.order.toSet())
-                assertEquals(emptySet<Int>(),tour.order.drop(12).dropLast(1).toSet())
                 assertEquals(Tour.CHAMPION,tour.order.last())
                 assertEquals(cat,tour.cat)
                 assertEquals(tour,TourState.decode(tour.encode()))
             }
         }
     }
-    @Test fun allOrdinaryStagesAreCompletedBeforeChampion() {
-        val suffixes=(0..40).map { NovaTour.start(CatType.ORANGE,Random(it)).order.drop(12).dropLast(1) }
-        assertEquals(setOf(emptyList<Int>()),suffixes.toSet())
+    @Test fun randomPoolActuallyShufflesAndLegacySaveMigratesOnce() {
+        assertTrue((0..40).map { NovaTour.start(CatType.ORANGE,Random(it)).order.take(9) }.toSet().size>20)
+        val legacy=Tour.start(CatType.ORANGE).copy(order=(2..13).toList()+1,cleared=1,revealed=2)
+        val migrated=NovaTour.resume(legacy,Random(7))
+        assertEquals(legacy.order.take(2),migrated.order.take(2))
+        assertEquals(Tour.POOL.toSet(),migrated.order.take(9).toSet())
+        assertEquals(Tour.KINGS+Tour.CHAMPION,migrated.order.drop(9))
+        assertEquals(migrated,NovaTour.resume(migrated,Random(99)))
     }
     @Test fun existingSaveKeepsClearsRevealedFlightAndEquipment() {
         val original=Tour.start(CatType.BLACK,Random(2))
@@ -41,10 +46,9 @@ class NovaTourTest {
             assertEquals(old.order.toSet(),next.order.toSet())
             assertEquals(13,next.order.size)
             assertEquals(old.copy(order=next.order),next)
-            val pending=old.order.drop(revealed)
-            assertEquals(NovaTour.COMPLETED.filter { it in pending },next.order.drop(revealed).filter { it in NovaTour.COMPLETED })
             val left=next.order.drop(revealed)
-            assertEquals(left.filter { it in NovaTour.COMPLETED },left.takeWhile { it in NovaTour.COMPLETED })
+            assertEquals(left.filter{it in Tour.POOL},left.takeWhile{it in Tour.POOL})
+            assertEquals(Tour.KINGS.filter{it in left},left.filter{it in Tour.KINGS})
             assertEquals(next,NovaTour.resume(next))
             assertEquals(next,TourState.decode(next.encode()))
         }

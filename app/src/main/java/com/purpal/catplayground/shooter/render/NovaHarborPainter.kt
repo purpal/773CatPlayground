@@ -29,7 +29,7 @@ internal fun DrawScope.drawNovaHarborPart(e: Enemy, w: World, sprites: SpriteCac
     val center = Offset(e.x, e.y)
     val charging = capacitor?.warning ?: buoy!!.warning
     val aim = capacitor?.aim ?: buoy!!.aim
-    if (charging) {
+    if (FxSettings.telegraphs && charging) {
         val end = center + Offset(cos(aim), sin(aim)) * 430f
         drawLine(warning.copy(alpha=.65f), center, end, 4f, pathEffect=dash)
         drawCircle(warning, e.radius + 10f, center, style=Stroke(3f, pathEffect=dash))
@@ -37,7 +37,7 @@ internal fun DrawScope.drawNovaHarborPart(e: Enemy, w: World, sprites: SpriteCac
     capacitor?.owner?.let { drawLine(mint.copy(alpha=.25f), Offset(it.x,it.y), center, 3f, pathEffect=dash) }
     val scale = if (capacitor != null && capacitor.discharged) .7f else 1f
     drawSprite(sprites.enemy(e.kind,0),e.x,e.y,scale=scale)
-    drawArc(tint,-90f,360f*(e.hp / if(capacitor!=null)180f*w.difficulty.enemyHp else 120f*w.difficulty.enemyHp).coerceIn(0f,1f),false,
+    drawArc(tint,-90f,360f*(e.hp / ((if(capacitor!=null)180f else 120f)*w.difficulty.enemyHp*(if(w.novaBalance)1.25f else 1f))).coerceIn(0f,1f),false,
         center-Offset(61f,61f),Size(122f,122f),style=Stroke(4f))
     if(e.hitFlash>0f) drawSprite(sprites.enemy(e.kind,0),e.x,e.y,alpha=.4f,colorFilter=white)
     if(capacitor?.discharged==true) drawSprite(sprites.novaSprite("KOALA_PULSE",150f),e.x,e.y,
@@ -81,7 +81,7 @@ internal fun DrawScope.drawNovaHarborBoss(b:NovaVehicleBoss,w:World,sprites:Spri
                 drawCircle(aqua,100f,Offset(b.x+side*235f,b.y),style=Stroke(3f,pathEffect=dash))
             }
         }
-        if(live && otter.clock in .2f..1.6f) {
+        if(FxSettings.telegraphs && live && otter.clock in .2f..1.6f) {
             val hx=otter.batteryX(otter.activeSide)
             for(dx in listOf(-60f,60f)) drawLine(warning.copy(alpha=.55f),Offset(hx+dx,b.y+100f),Offset(hx+dx,w.height),3f,pathEffect=dash)
         }

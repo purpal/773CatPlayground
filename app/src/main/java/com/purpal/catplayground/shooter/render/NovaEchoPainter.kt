@@ -47,7 +47,7 @@ internal fun DrawScope.drawNovaEchoPart(e:Enemy,w:World,sprites:SpriteCache):Boo
     if(e !is NovaCargoVault && e !is NovaReplayNode) return false
     val c=if(e is NovaCargoVault)echoCyan else echoGold
     drawSprite(sprites.enemy(e.kind,0),e.x,e.y)
-    val maxHp=(if(e is NovaCargoVault)220f else 60f)*w.difficulty.enemyHp
+    val maxHp=(if(e is NovaCargoVault)220f else 60f)*w.difficulty.enemyHp*(if(w.novaBalance)1.25f else 1f)
     drawArc(c,-90f,360f*(e.hp/maxHp).coerceIn(0f,1f),false,Offset(e.x-65f,e.y-65f),Size(130f,130f),style=Stroke(4f))
     if(e.hitFlash>0f)drawSprite(sprites.enemy(e.kind,0),e.x,e.y,alpha=.4f,colorFilter=echoFlash)
     if(e is NovaCargoVault) {
@@ -56,7 +56,7 @@ internal fun DrawScope.drawNovaEchoPart(e:Enemy,w:World,sprites:SpriteCache):Boo
             drawLine(echoCyan.copy(alpha=.5f),Offset(e.x,e.y),Offset(owner.x,owner.y),3f,pathEffect=echoDash)
             if(owner.stolenCount>0)drawSprite(sprites.digit(owner.stolenCount.coerceAtMost(9)),e.x,e.y+80f,scale=.7f)
         }
-    } else if(e is NovaReplayNode && !e.fired) {
+    } else if(FxSettings.telegraphs && e is NovaReplayNode && !e.fired) {
         mimicWarning(e.recorded,e.x,e.y,true)
         drawArc(c,-90f,360f*(e.age/NovaReplayNode.WARN).coerceIn(0f,1f),false,Offset(e.x-80f,e.y-80f),Size(160f,160f),style=Stroke(4f))
     }
@@ -73,7 +73,7 @@ internal fun DrawScope.drawNovaEchoBoss(b:NovaVehicleBoss,w:World,sprites:Sprite
             val y=b.y-180f-i*26f+(w.time*30f)%26f
             drawLine(echoGold.copy(alpha=.2f),Offset(b.x+side*72f-15f,y),Offset(b.x+side*72f+15f,y),6f)
         }
-        if(live && (raccoon.locking||raccoon.snaring)) {
+        if(live && ((FxSettings.telegraphs && raccoon.locking)||raccoon.snaring)) {
             val center=Offset(raccoon.lockX,raccoon.lockY)
             drawLine(echoCyan.copy(alpha=.6f),Offset(b.x,b.y+145f),center,3f,pathEffect=echoDash)
             drawCircle(echoGold.copy(alpha=.08f),NovaRaccoonBoss.SNARE_RADIUS,center)
@@ -81,7 +81,7 @@ internal fun DrawScope.drawNovaEchoBoss(b:NovaVehicleBoss,w:World,sprites:Sprite
             if(raccoon.snaring)drawSprite(sprites.novaSprite("RACCOON_SNARE",180f),center.x,center.y,alpha=.8f)
         }
     }
-    if(live && monkey?.scanning==true)monkey.snapshot?.let { mimicWarning(it,monkey.originX,monkey.originY) }
+    if(FxSettings.telegraphs && live && monkey?.scanning==true)monkey.snapshot?.let { mimicWarning(it,monkey.originX,monkey.originY) }
     val width=530f
     if(b.transforming) {
         val t=(1f-b.armorTime/Boss.ARMOR_TIME).coerceIn(0f,1f)

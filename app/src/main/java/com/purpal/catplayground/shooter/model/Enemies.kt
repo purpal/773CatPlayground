@@ -70,6 +70,7 @@ abstract class Enemy(
     var alive = true
     var hitFlash = 0f
     var drop: ItemType? = null
+    open val randomCoinDrop = true
     abstract val kind: EnemyKind
     open val isBoss: Boolean get() = false
     /** 菁英怪：比較硬、攻擊比較兇，一定會掉武器膠囊。 */

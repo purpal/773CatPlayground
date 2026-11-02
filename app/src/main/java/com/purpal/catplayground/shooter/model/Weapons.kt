@@ -33,14 +33,14 @@ object Weapons {
                 val total = spreadAngle[level] * DEG
                 for (i in 0 until count) {
                     val a = -HALF_PI - total / 2f + total * i / (count - 1)
-                    w.playerShots += PlayerShot(x, y, cos(a) * 1400f, sin(a) * 1400f, (5f + level) * power, 10f, ShotStyle.PELLET)
+                    w.playerShots += PlayerShot(x, y, cos(a) * 1400f, sin(a) * 1400f, (5f + level) * power * if(w.novaBalance).85f else 1f, 10f, ShotStyle.PELLET)
                 }
-                p.fireTimer = 0.1f
+                p.fireTimer = if(w.novaBalance).12f else .1f
             }
             MainWeapon.FOCUS -> Unit // 光束在 updateBeam 處理
             MainWeapon.SPECIAL -> if (p.cat == CatType.ORANGE) {
                 // 橘貓專武：巨大肉球砲，可以貫穿小怪。
-                w.playerShots += PlayerShot(x, y - 10f, 0f, -950f, pawDamage[level] * power, pawRadius[level], ShotStyle.PAW, pierce = 2)
+                w.playerShots += PlayerShot(x, y - 10f, 0f, -950f, pawDamage[level] * power, pawRadius[level], ShotStyle.PAW, pierce = if(w.novaBalance)8 else 2)
                 if (level >= 2) {
                     for (side in listOf(-1f, 1f)) {
                         val a = -HALF_PI + side * 14f * DEG
@@ -74,7 +74,12 @@ object Weapons {
         w.beam.bottom = bottom
         w.beam.width = width
         w.beam.top = target?.let { it.y + it.radius * 0.4f } ?: -60f
-        if (target != null) w.damageEnemy(target, beamDps[level] * power(p) * dt)
+        if(w.novaBalance) {
+            w.beam.top=-60f
+            val hit=mutableSetOf<Int>()
+            for(e in w.enemies.toList()) if(e.alive&&!e.invulnerable&&e.y<=bottom&&e.y>=-40f&&abs(e.x-p.x)<=e.radius*.8f+width/2f&&hit.add(e.damageIdentity.id))
+                w.damageEnemy(e,beamDps[level]*1.15f*power(p)*dt)
+        } else if (target != null) w.damageEnemy(target, beamDps[level] * power(p) * dt)
         return target
     }
 
@@ -100,7 +105,7 @@ object Weapons {
             b.pulseAge = 0f
             w.cue(SoundCue.SONIC)
         }
-        val damage = vibroDamage[level] * power(p)
+        val damage = vibroDamage[level] * power(p) * if(w.novaBalance).8f else 1f
         var hit: Enemy? = null
         val struck = mutableSetOf<Int>()
         for (e in w.enemies) {
@@ -158,7 +163,7 @@ object Weapons {
                     val a = -HALF_PI + side * (50f + (i / 2) * 18f) * DEG
                     w.playerShots += PlayerShot(p.x + side * 30f, p.y, cos(a) * 420f, sin(a) * 420f, HOMING_DAMAGE * if(w.novaBalance) .8f else 1f, 18f, ShotStyle.MISSILE)
                 }
-                p.subTimer = 0.6f
+                p.subTimer = if(w.novaBalance).8f else .6f
                 w.cue(SoundCue.MISSILE)
             }
             SubWeapon.SONIC -> if (w.canDeployWall()) {
