@@ -19,7 +19,8 @@ class NovaFinalBossTest {
         assertTrue(world(13).boss is NovaPigBoss);assertTrue(world(1).boss is NovaMouseBoss)
         for(stage in listOf(1,13))assertEquals(Stages.get(stage)!!.script.events.size+1,NovaEncounters.stage(Stages.get(stage)!!).script.events.size)
         val tour=NovaTour.start(CatType.BLACK)
-        assertEquals((2..13).toList()+1,tour.order)
+        assertEquals(Tour.POOL.toSet(),tour.order.take(9).toSet())
+        assertEquals(Tour.KINGS+1,tour.order.drop(9))
     }
     @Test fun boresLockPositionsAndLeaveReachableLowerEscapeLane() {
         for(height in listOf(1200f,1800f,2200f))for(cat in CatType.entries) {
@@ -96,9 +97,9 @@ class NovaFinalBossTest {
             assertEquals(1,boss.awakenings);assertEquals(1,boss.transformations)
         }
     }
-    @Test fun bothCatsCanFinishInitialWeaponsAndOutro() {
+    @Test fun bothCatsCanFinishFullPiercingLoadoutAndOutro() {
         for(stage in listOf(1,13))for(cat in CatType.entries) {
-            val w=world(stage,cat=cat);w.firing=true;var t=0f
+            val w=world(stage,cat=cat);w.player.mainWeapon=MainWeapon.FOCUS;w.player.mainLevel=5;w.player.subWeapon=SubWeapon.SONIC;w.player.subLevel=5;w.firing=true;var t=0f
             while(w.phase==Phase.BOSS&&t<360f){val b=w.boss!!;w.moveX=if(abs(b.x-w.player.x)>20f)sign(b.x-w.player.x)else 0f;w.update(STEP);w.cues.clear();t+=STEP}
             assertEquals("stage $stage $cat hp=${w.boss!!.hp}",Phase.BOSS_DEFEATED,w.phase)
             until(w){w.phase==Phase.OUTRO_DIALOG};assertTrue(w.enemies.none{it.alive&&!it.isBoss})

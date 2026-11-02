@@ -135,12 +135,14 @@ private fun NovaSettings(prefs: AppPrefs, onClose: () -> Unit) {
     var left by remember { mutableStateOf(prefs.shooterUltimateOnLeft) }
     var numbers by remember { mutableStateOf(prefs.shooterDamageNumbers) }
     var high by remember { mutableStateOf(prefs.shooterFxHigh) }
+    var telegraphs by remember { mutableStateOf(prefs.shooterTelegraphs) }
     AlertDialog(onDismissRequest=onClose, containerColor=NovaPanel,
         title={Text("艦載控制",color=NovaCyan)},text={
             Column {
                 for ((label,value,change) in listOf(
                     Triple("超載按鈕置左",left,{ v:Boolean -> left=v;prefs.shooterUltimateOnLeft=v }),
                     Triple("傷害數據",numbers,{ v:Boolean -> numbers=v;prefs.shooterDamageNumbers=v }),
+                    Triple("敵方攻擊預告",telegraphs,{ v:Boolean -> telegraphs=v;prefs.shooterTelegraphs=v }),
                     Triple("高品質特效",high,{ v:Boolean -> high=v;prefs.shooterFxHigh=v }))) {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Text(label,Modifier.weight(1f),color=Color.White);Switch(value,change)

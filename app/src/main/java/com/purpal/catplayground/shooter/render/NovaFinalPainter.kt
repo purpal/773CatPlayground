@@ -20,7 +20,7 @@ internal fun DrawScope.drawNovaFinalPart(e:Enemy,w:World,sprites:SpriteCache):Bo
             if(e.fieldActive) {
                 drawSprite(sprites.novaSprite("PIG_FIELD",r*2),e.x,e.y,alpha=.4f)
                 drawCircle(finalCyan.copy(alpha=.2f),r,center)
-            } else {
+            } else if(FxSettings.telegraphs || e.erupting) {
                 drawCircle(finalGold.copy(alpha=.07f),r,center)
                 drawCircle(finalGold,r,center,style=Stroke(3f,pathEffect=finalDash))
                 drawArc(finalGold,-90f,360f*progress,false,center-Offset(r,r),Size(r*2,r*2),style=Stroke(5f))
@@ -29,7 +29,7 @@ internal fun DrawScope.drawNovaFinalPart(e:Enemy,w:World,sprites:SpriteCache):Bo
             if(e.erupting)drawSprite(sprites.novaSprite("PIG_BORE",r*2),e.x,e.y,alpha=.9f)
         }
         is NovaRailGate -> {
-            if(!e.active) {
+            if(FxSettings.telegraphs && !e.active) {
                 drawLine(finalCyan.copy(alpha=.2f),Offset(e.x,e.y),Offset(e.x,w.height),3f,pathEffect=finalDash)
                 drawCircle(finalGold,46f,Offset(e.x,e.y),style=Stroke(3f,pathEffect=finalDash))
             }
@@ -38,7 +38,7 @@ internal fun DrawScope.drawNovaFinalPart(e:Enemy,w:World,sprites:SpriteCache):Bo
         is NovaDrillArm, is NovaRailBattery -> {
             val id=if(e is NovaDrillArm)"PIG_ARM"else"MOUSE_BATTERY"
             drawSprite(sprites.novaSprite(id,120f),e.x,e.y)
-            val hp=(if(e is NovaDrillArm)250f else 240f)*w.difficulty.enemyHp
+            val hp=(if(e is NovaDrillArm)250f else 240f)*w.difficulty.enemyHp*(if(w.novaBalance)1.25f else 1f)
             drawArc(finalCyan,-90f,360f*(e.hp/hp).coerceIn(0f,1f),false,Offset(e.x-65,e.y-65),Size(130f,130f),style=Stroke(4f))
         }
         else -> return false
@@ -63,7 +63,7 @@ internal fun DrawScope.drawNovaFinalBoss(b:NovaVehicleBoss,w:World,sprites:Sprit
             val time=if(b.transforming)b.armorTime/Boss.ARMOR_TIME else mouse.awakeningTime/1.6f
             drawSprite(sprites.novaSprite("MOUSE_TOTEM",if(time>0f)250f else 100f),b.x,b.y-70f,scale=if(time>0f)1f+(1f-time)*5f else 1f,alpha=if(time>0f)time*.65f else .6f)
         }
-        if(!b.transforming&&mouse.awakeningTime<=0f&&mouse.clock<3.5f) {
+        if(FxSettings.telegraphs&&!b.transforming&&mouse.awakeningTime<=0f&&mouse.clock<3.5f) {
             drawLine(finalCyan.copy(alpha=.35f),Offset(mouse.gapX,560f),Offset(mouse.gapX,w.height),4f,pathEffect=finalDash)
         }
     }

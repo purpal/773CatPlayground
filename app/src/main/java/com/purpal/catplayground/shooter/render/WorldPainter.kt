@@ -1654,6 +1654,7 @@ private fun energy(style: HazardStyle): Color = when (style) {
 /** 雷射與 Boss 的道具攻擊。預告時畫紅色虛線（掃擊另外畫出掃過的範圍），發動時道具伸出去。 */
 private fun DrawScope.drawHazard(l: Laser, w: World, sprites: SpriteCache) {
     if (l.age < l.warnTime) {
+        if(!FxSettings.telegraphs)return
         val blink = if ((l.age * 12f).toInt() % 2 == 0) 0.95f else 0.45f
         val warn = Color(0xFFFF3D5A)
         val dash = if (DebugFlags.plainFx) null else PathEffect.dashPathEffect(floatArrayOf(26f, 18f), -l.age * 200f)

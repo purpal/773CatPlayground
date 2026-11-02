@@ -2,6 +2,7 @@ package com.purpal.catplayground.shooter.render
 
 /** 玩家在設定裡選的特效選項（進入關卡時從 AppPrefs 讀進來）。 */
 object FxSettings {
+    @Volatile var telegraphs = true
     /** 顯示傷害數字。 */
     @Volatile var damageNumbers = true
 

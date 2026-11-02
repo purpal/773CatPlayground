@@ -21,7 +21,7 @@ internal fun DrawScope.drawNovaIcePylon(e: NovaIcePylon, w: World, sprites: Spri
     if (!e.alive) return
     val thaw = ((e.age - (e.lifetime - .6f)) / .6f).coerceIn(0f, 1f)
     val center = Offset(e.x, e.y)
-    if (e.age < NovaIcePylon.WARN) {
+    if (FxSettings.telegraphs && e.age < NovaIcePylon.WARN) {
         drawCircle(warningRed.copy(alpha=.12f), e.radius, center)
         drawCircle(warningRed, e.radius, center, style=Stroke(3f,pathEffect=warningDash))
         drawArc(warningRed, -90f, 360f * e.age / NovaIcePylon.WARN, false,
@@ -51,7 +51,7 @@ internal fun DrawScope.drawNovaVehicle(b: NovaVehicleBoss,w:World,sprites:Sprite
     val rabbit=b as? NovaRabbitBoss
     val penguin=b as? NovaPenguinBoss
     val live=!defeated && !b.transforming
-    if(live && rabbit!=null && rabbit.motion in listOf(NovaRabbitBoss.Motion.LOCK,NovaRabbitBoss.Motion.FLIGHT)) {
+    if(FxSettings.telegraphs && live && rabbit!=null && rabbit.motion in listOf(NovaRabbitBoss.Motion.LOCK,NovaRabbitBoss.Motion.FLIGHT)) {
         landingMark(rabbit.targetX,rabbit.targetY,rabbit.landingRadius,rabbit.jumpNumber,
             if(rabbit.motion==NovaRabbitBoss.Motion.FLIGHT)1f else rabbit.clock/NovaRabbitBoss.WARN,sprites)
         if(rabbit.form==1 && rabbit.jumpNumber==1) landingMark(rabbit.nextX,rabbit.nextY,rabbit.landingRadius,2,0f,sprites,true)
@@ -59,7 +59,7 @@ internal fun DrawScope.drawNovaVehicle(b: NovaVehicleBoss,w:World,sprites:Sprite
     if(penguin!=null) {
         // Wake gives the naval silhouette a clear surface connection, without extra collisions.
         for(side in listOf(-1f,1f)) drawOval(iceBlue.copy(alpha=.13f),Offset(b.x+side*120f-45f,b.y-240f),Size(90f,280f))
-        if(live && penguin.clock<4.4f) {
+        if(FxSettings.telegraphs && live && penguin.clock<4.4f) {
             val gap=Offset(penguin.gapX,maxOf(620f,w.height*.49f))
             drawLine(iceBlue.copy(alpha=.5f),gap-Offset(0f,90f),gap+Offset(0f,90f),5f,pathEffect=warningDash)
             if(b.form==1) {

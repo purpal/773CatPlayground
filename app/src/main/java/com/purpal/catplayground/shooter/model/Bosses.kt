@@ -21,6 +21,7 @@ abstract class Boss(hp: Float, radius: Float, score: Int, protected val homeY: F
         private set
 
     /** 依出場順序設定血量時乘上的倍率：有自帶「打得比較快的時機」（打瞌睡、雙胞胎…）的 Boss 會比較硬一點。 */
+    open val preserveBulletsOnTransform: Boolean get() = false
     open val hpFactor: Float get() = 1f
 
     /** 依出場順序重新設定血量（開打前呼叫）。 */

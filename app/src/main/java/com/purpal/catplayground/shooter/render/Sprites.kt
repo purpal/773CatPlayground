@@ -125,7 +125,7 @@ class SpriteCache(private val pxPerUnit: Float, private val assets: AssetManager
         if (nova != null) {
             if (kind == EnemyKind.BALLOON) return nova.sprite("carrier", 100f, pxPerUnit)
             if (kind == EnemyKind.THROWN_BONE) return nova.sprite("BONE_THROWN_RETURNING", 200f, pxPerUnit)
-            val scoped = "FINALE.EnemyKind.${kind.name}"
+            val scoped = "FINALE.EnemyKind.${if(kind==EnemyKind.MINI_MOUSE) "MOUSE_RUNNER" else kind.name}"
             val id = if(novaStage in listOf(1,13) && nova.contains(scoped))scoped else "EnemyKind.${kind.name}"
             if (nova.contains(id)) return nova.sprite(id, when (kind) {
                 EnemyKind.ELITE_DOG, EnemyKind.ELITE_MOUSE, EnemyKind.ELITE_BEE, EnemyKind.ELITE_MONKEY,
