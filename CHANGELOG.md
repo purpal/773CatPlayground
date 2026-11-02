@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.32.0](https://github.com/purpal/773CatPlayground/compare/v0.31.0...v0.32.0) (2026-11-02)
+
+
+### Features
+
+* **nova:** add metal score and varied combat formations ([96d98cc](https://github.com/purpal/773CatPlayground/commit/96d98cceeb38017df33aa837c010d3852e751429))
+
 ## [0.31.0](https://github.com/purpal/773CatPlayground/compare/v0.30.0...v0.31.0) (2026-11-02)
 
 
