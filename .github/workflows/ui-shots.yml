@@ -10,13 +10,13 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: ui-shots-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   shots:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]')
+    # 放在 job 層級：沒有 [shots] 的推送會被上面的 if 略過，不會取消正在截圖的那一次
+    concurrency:
+      group: ui-shots-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
