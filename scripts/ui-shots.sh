@@ -29,11 +29,15 @@ while IFS='|' read -r name wait args tap xy <&3; do
     # shellcheck disable=SC2086
     adb shell am start -W -S -n "$PKG/.MainActivity" $args > "$OUT/$name.launch.txt" 2>&1
     sleep 4
+    adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
     tap=$(echo "${tap:-}" | xargs)
     xy=$(echo "${xy:-}" | xargs)
     # shellcheck disable=SC2086
     if [ -n "$tap" ]; then tap_text "$tap" || { [ -n "$xy" ] && adb shell input tap $xy; }; fi
     sleep "$(echo "$wait" | xargs)"
+    # 模擬器的桌面偶爾會跳「沒有回應」的對話框，擋住畫面也擋住點擊：拍照前先關掉
+    adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
+    sleep 1
     adb exec-out screencap -p > "$OUT/$name.png"
     echo "shot $name"
 done 3< scripts/ui-shots.txt
