@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.33.0](https://github.com/purpal/773CatPlayground/compare/v0.32.0...v0.33.0) (2026-11-15)
+
+
+### Features
+
+* 新遊戲「喵神封魔錄」——卡牌塔防，組牌請神、五路降魔 [shots] ([7e7d085](https://github.com/purpal/773CatPlayground/commit/7e7d085df53ffea9ef4f63a4b74566123800e716))
+
 ## [0.32.0](https://github.com/purpal/773CatPlayground/compare/v0.31.0...v0.32.0) (2026-11-02)
 
 
