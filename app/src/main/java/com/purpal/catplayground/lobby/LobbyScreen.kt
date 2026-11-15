@@ -52,6 +52,7 @@ import com.purpal.catplayground.watersort.model.LevelGenerator
 fun LobbyScreen(
     waterSortCleared: Int,
     shooterCleared: Int,
+    divineCleared: Int = 0,
     version: String,
     onOpen: (Screen) -> Unit,
     onCheckUpdate: () -> Unit,
@@ -90,7 +91,7 @@ fun LobbyScreen(
             for (game in GameRegistry.games) {
                 GameCard(
                     game = game,
-                    status = statusFor(game.id, waterSortCleared, shooterCleared),
+                    status = statusFor(game.id, waterSortCleared, shooterCleared, divineCleared),
                     onClick = { onOpen(game.start) },
                 )
                 Spacer(Modifier.height(16.dp))
@@ -114,7 +115,8 @@ fun LobbyScreen(
     }
 }
 
-private fun statusFor(id: String, waterSortCleared: Int, shooterCleared: Int): String? = when (id) {
+private fun statusFor(id: String, waterSortCleared: Int, shooterCleared: Int, divineCleared: Int): String? = when (id) {
+    GameRegistry.DIVINE -> "幽冥鬼域 $divineCleared / ${com.purpal.catplayground.divine.model.DivineStages.all.size} 關"
     GameRegistry.WATER_SORT -> {
         val rank = Ranks.forCleared(waterSortCleared)
         "${rank.emoji} ${rank.title}　已過 $waterSortCleared / ${LevelGenerator.LEVEL_COUNT} 關"

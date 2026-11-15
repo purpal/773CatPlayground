@@ -10,6 +10,10 @@ sealed interface Screen {
     data object NovaMenu : Screen
     data object NovaTour : Screen
     data class NovaPlay(val stage: Int, val cat: CatType, val loadout: Loadout? = null, val bout: Int? = null) : Screen
+    data object DivineMenu : Screen
+    data object DivineDeck : Screen
+    data object DivineShop : Screen
+    data class DivinePlay(val stage: Int) : Screen
     data object ShooterMenu : Screen
     /** 世界巡迴的地圖與對戰表。 */
     data object ShooterTour : Screen

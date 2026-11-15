@@ -1,0 +1,63 @@
+name: ui-shots
+
+# 開發中的畫面截圖：推到工作分支、提交訊息含 [shots] 時，在模擬器上開 scripts/ui-shots.txt 列的畫面截圖，
+# 結果放到 ui-shots 分支（每次覆蓋）。也可以手動觸發。
+on:
+  workflow_dispatch:
+  push:
+    branches: ['ccr-**', 'claude/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ui-shots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shots:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+      - name: Take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          cores: 2
+          emulator-boot-timeout: 600
+          disable-animations: false
+          emulator-options: -accel on -no-snapshot -no-window -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash scripts/ui-shots.sh
+      - name: Publish screenshots
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          cd ui-shots
+          printf 'Commit: %s\n' "$SOURCE_SHA" > RUN.txt
+          git init -q
+          git checkout -q -b ui-shots
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -qm "UI screenshots for $SOURCE_SHA"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/ui-shots

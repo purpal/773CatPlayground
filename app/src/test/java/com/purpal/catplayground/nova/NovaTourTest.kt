@@ -9,7 +9,7 @@ import kotlin.random.Random
 
 class NovaTourTest {
     @Test fun thirdGameDoesNotReplaceExistingEntries() {
-        assertEquals(listOf("water_sort","shooter","nova"), GameRegistry.games.map { it.id })
+        assertEquals(listOf("water_sort","shooter","nova"), GameRegistry.games.take(3).map { it.id })
         assertEquals(Screen.ShooterMenu, GameRegistry.games[1].start)
         assertEquals(Screen.NovaMenu, GameRegistry.games[2].start)
     }

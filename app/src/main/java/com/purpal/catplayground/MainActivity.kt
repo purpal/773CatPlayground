@@ -106,6 +106,13 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     }
 
 
+    val divineStore = remember { com.purpal.catplayground.divine.ui.DivineStore(context) }
+    var divineSave by remember { mutableStateOf(divineStore.load()) }
+    fun saveDivine(next: com.purpal.catplayground.divine.model.DivineSave) {
+        divineSave = next
+        divineStore.save(next)
+    }
+
     fun saveTour(next: TourState?) {
         tour = next
         prefs.shooterTour = next?.encode()
@@ -145,7 +152,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
 
     // 射擊遊戲自己管理背景音樂，其他畫面都用大廳音樂。
     LaunchedEffect(stack.last()) {
-        if (stack.last() !is Screen.ShooterPlay && stack.last() !is Screen.NovaPlay) sound.playMusic(Music.LOBBY)
+        if (stack.last() !is Screen.ShooterPlay && stack.last() !is Screen.NovaPlay && stack.last() !is Screen.DivinePlay) sound.playMusic(Music.LOBBY)
     }
 
     BackHandler(enabled = stack.size > 1) { pop() }
@@ -156,6 +163,7 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
             Screen.Lobby -> LobbyScreen(
                 waterSortCleared = waterSortCleared,
                 shooterCleared = shooterCleared,
+                divineCleared = divineSave.cleared,
                 version = updater.currentVersion,
                 onOpen = { push(it) },
                 onCheckUpdate = ::checkForUpdate,
@@ -205,6 +213,36 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                         },
                         onNewTour = { saveTour(Tour.start(current.cat)) },
                         onBack = { pop() },
+                    )
+                }
+            }
+
+            Screen.DivineMenu -> com.purpal.catplayground.divine.ui.DivineMenuScreen(
+                save = divineSave, onBack = { pop() },
+                onPlay = { push(Screen.DivinePlay(it)) },
+                onDeck = { push(Screen.DivineDeck) },
+                onShop = { push(Screen.DivineShop) },
+            )
+            Screen.DivineDeck -> com.purpal.catplayground.divine.ui.DivineDeckScreen(divineSave, ::saveDivine, onBack = { pop() })
+            Screen.DivineShop -> com.purpal.catplayground.divine.ui.DivineShopScreen(divineSave, ::saveDivine, onBack = { pop() })
+            is Screen.DivinePlay -> {
+                val stage = com.purpal.catplayground.divine.model.DivineStages.get(screen.stage)
+                if (stage == null || !divineSave.deckReady) {
+                    LaunchedEffect(Unit) { pop() }
+                } else {
+                    // 牌組在進場時就定下來，戰鬥中存檔變動（過關發金幣）不會讓戰鬥重來
+                    val deck = remember(screen.stage) { divineSave.deckCards }
+                    com.purpal.catplayground.divine.ui.DivineBattleScreen(
+                        stage = stage, deck = deck,
+                        hasNext = com.purpal.catplayground.divine.model.DivineStages.get(screen.stage + 1) != null,
+                        onWin = { stars ->
+                            val (next, reward) = divineSave.afterWin(stage, stars)
+                            saveDivine(next)
+                            reward
+                        },
+                        onNext = { replaceTop(Screen.DivinePlay(screen.stage + 1)) },
+                        onExit = { pop() },
+                        autoplay = debug?.autotest == true,
                     )
                 }
             }

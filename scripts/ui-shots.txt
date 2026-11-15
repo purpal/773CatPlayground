@@ -1,0 +1,10 @@
+# 檔名 | 等幾秒 | am start 的額外參數 | 截圖前要點的文字
+divine-menu   | 3  | --es open divine_menu
+divine-deck   | 3  | --es open divine_deck
+divine-detail | 2  | --es open divine_deck | 孫悟空
+divine-shop   | 5  | --es open divine_shop | 開一包
+divine-intro  | 2  | --es open divine_play --ei stage 1
+divine-play1  | 24 | --es open divine_play --ei stage 3 --ez autotest true
+divine-play2  | 50 | --es open divine_play --ei stage 5 --ez autotest true
+divine-boss   | 75 | --es open divine_play --ei stage 6 --ez autotest true
+lobby         | 6  | --es open lobby
