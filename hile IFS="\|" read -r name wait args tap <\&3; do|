@@ -1,0 +1,1 @@
+. read -r name wait args tap; do|' read -r name wait args tap; do

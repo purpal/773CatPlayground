@@ -20,7 +20,7 @@ PY
 )
     [ -n "$point" ] && adb shell input tap $point
 }
-while IFS='|' read -r name wait args tap; do
+while IFS='|' read -r name wait args tap <&3; do
     name=$(echo "$name" | xargs); [ -z "$name" ] && continue
     case "$name" in \#*) continue;; esac
     # shellcheck disable=SC2086
@@ -31,7 +31,7 @@ while IFS='|' read -r name wait args tap; do
     sleep "$(echo "$wait" | xargs)"
     adb exec-out screencap -p > "$OUT/$name.png"
     echo "shot $name"
-done < scripts/ui-shots.txt
+done 3< scripts/ui-shots.txt
 adb logcat -d -s AndroidRuntime:E > "$OUT/crash.txt" 2>&1
 rm -f "$OUT/w.xml"
 exit 0
