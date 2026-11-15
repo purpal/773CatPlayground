@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # 在模擬器上開幾個畫面截圖（.github/workflows/ui-shots.yml 用）。
-# scripts/ui-shots.txt 每行一張圖：  檔名 | 等幾秒 | am start 的額外參數 | 截圖前要點的文字（可省略）
+# scripts/ui-shots.txt 每行一張圖：  檔名 | 等幾秒 | am start 的額外參數 | 截圖前要點的文字（可省略）| 找不到文字時點的座標（可省略）
 set -uo pipefail
 OUT=${UI_SHOTS_OUT:-ui-shots}
 PKG=com.purpal.catplayground
 mkdir -p "$OUT"
+ADB_BIN=$(command -v adb)
+# 每個 adb 指令都加逾時：畫面一直在動時 uiautomator dump 可能等不到「靜止」而卡住
+adb() { timeout 40 "$ADB_BIN" "$@"; }
 adb install -r app/build/outputs/apk/debug/app-debug.apk > "$OUT/install.txt" 2>&1
 tap_text() {
     adb shell uiautomator dump /sdcard/w.xml > /dev/null 2>&1
@@ -20,14 +23,16 @@ PY
 )
     [ -n "$point" ] && adb shell input tap $point
 }
-while IFS='|' read -r name wait args tap <&3; do
+while IFS='|' read -r name wait args tap xy <&3; do
     name=$(echo "$name" | xargs); [ -z "$name" ] && continue
     case "$name" in \#*) continue;; esac
     # shellcheck disable=SC2086
     adb shell am start -W -S -n "$PKG/.MainActivity" $args > "$OUT/$name.launch.txt" 2>&1
     sleep 4
     tap=$(echo "${tap:-}" | xargs)
-    if [ -n "$tap" ]; then tap_text "$tap"; fi
+    xy=$(echo "${xy:-}" | xargs)
+    # shellcheck disable=SC2086
+    if [ -n "$tap" ]; then tap_text "$tap" || { [ -n "$xy" ] && adb shell input tap $xy; }; fi
     sleep "$(echo "$wait" | xargs)"
     adb exec-out screencap -p > "$OUT/$name.png"
     echo "shot $name"
