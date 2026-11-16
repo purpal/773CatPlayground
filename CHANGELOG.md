@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.0](https://github.com/purpal/773CatPlayground/compare/v0.33.0...v0.34.0) (2026-11-16)
+
+
+### Features
+
+* **nightwatch:** add 喵神守夜 as the fifth game ([dc14387](https://github.com/purpal/773CatPlayground/commit/dc1438754227aad8ee7b78dc36eea97524e1cb28))
+
 ## [0.33.0](https://github.com/purpal/773CatPlayground/compare/v0.32.0...v0.33.0) (2026-11-15)
 
 
