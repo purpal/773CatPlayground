@@ -23,6 +23,7 @@ object GameRegistry {
     const val WATER_SORT = "water_sort"
     const val SHOOTER = "shooter"
     const val NOVA = "nova"
+    const val NIGHTWATCH = "nightwatch"
     const val DIVINE = "divine"
 
     val games = listOf(
@@ -57,6 +58,14 @@ object GameRegistry {
             icon = "lobby_divine",
             colors = listOf(Color(0xFF8A3AD6), Color(0xFF3A1466)),
             start = Screen.DivineMenu,
+        ),
+        GameEntry(
+            id = NIGHTWATCH,
+            title = "喵神守夜",
+            description = "四貓布防・神力連鎖・守住罐罐神殿",
+            icon = "nw_zeus",
+            colors = listOf(Color(0xFF264B62), Color(0xFF151D36)),
+            start = Screen.NightMenu,
         ),
     )
 }

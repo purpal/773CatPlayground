@@ -124,9 +124,13 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
     var updateDismissed by remember { mutableStateOf(false) }
 
     // 自動測試時不跳更新視窗，以免擋住畫面。
-    LaunchedEffect(Unit) { if (debug == null) update = updater.check() }
+    LaunchedEffect(Unit) { if (debug == null && !context.packageName.endsWith(".nightwatch")) update = updater.check() }
 
     fun checkForUpdate() {
+        if (context.packageName.endsWith(".nightwatch")) {
+            Toast.makeText(context, "守夜試玩版：請從聊天下載後續測試 APK", Toast.LENGTH_SHORT).show()
+            return
+        }
         scope.launch {
             val found = updater.check()
             if (found != null) {
@@ -217,6 +221,12 @@ private fun AppRoot(prefs: AppPrefs, updater: AppUpdater, debug: DebugLaunch?, o
                 }
             }
 
+            Screen.NightMenu -> com.purpal.catplayground.nightwatch.NightMenuScreen(
+                onBack = { pop() }, onPlay = { stage, team -> push(Screen.NightPlay(stage, team)) },
+            )
+            is Screen.NightPlay -> com.purpal.catplayground.nightwatch.NightGameScreen(
+                stageId = screen.stage, team = screen.team, onExit = { pop() },
+            )
             Screen.DivineMenu -> com.purpal.catplayground.divine.ui.DivineMenuScreen(
                 save = divineSave, onBack = { pop() },
                 onPlay = { push(Screen.DivinePlay(it)) },

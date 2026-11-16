@@ -1,7 +1,7 @@
 # 773CatPlayground
 做給小7玩的遊戲
 
-Android App「773喵遊樂園」：一個遊戲大廳，目前收錄「彩虹倒水」。
+Android App「773喵遊樂園」：一個遊戲大廳，目前收錄「彩虹倒水」、「喵星萌王爭霸戰」、「喵航特攻隊」、「喵神封魔錄」與「喵神守夜」。
 
 ## 遊戲
 
@@ -106,3 +106,10 @@ APK 簽署需要在 repo 的 **Settings → Secrets and variables → Actions** 
 - 原有 **emulator-test** 保留作手動長時間遊玩與效能診斷，仍在 GitHub runner 執行。**ui-test** 是獨立檢查，目前不作為 Release 發布的前置條件。
 
 Nova 戰鬥演出更新：核心超載保留貓頭嘴炮剪影，搭配機械外框與充能格；爆發圖騰半透明放大並淡出。十三關採獨立出怪編排，包含側向、夾擊、縱列、蛇行與底部超車回頭攻擊。Nova 音樂使用獨立重金屬合成配樂，小怪段 116 BPM，Boss 段 172 BPM，以失真吉他、貝斯與雙踩鼓點區分張力。
+
+
+## 喵神守夜（第五款遊戲）
+
+獨立的雙入口路線塔防：六選四神貓、八座布防、戰鬥中換座、雙分支升級、每波祝福、雷水與風火連鎖。三張月夜地圖各有機關與頭目；星星、隊伍與特效偏好獨立保存。角色採粗黑線條貓武將美術，搭配閃電、水浪、火焰與神諭特效。
+
+設定、素材來源、實機測試方式見 [喵神守夜設定與測試](docs/nightwatch/README.md)。使用 `./gradlew testDebugUnitTest assembleRelease -PnightwatchPreview=true` 產生可與正式版並存的 release 試玩 APK；本次不使用 Android 模擬器。

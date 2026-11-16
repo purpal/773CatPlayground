@@ -10,6 +10,8 @@ sealed interface Screen {
     data object NovaMenu : Screen
     data object NovaTour : Screen
     data class NovaPlay(val stage: Int, val cat: CatType, val loadout: Loadout? = null, val bout: Int? = null) : Screen
+    data object NightMenu : Screen
+    data class NightPlay(val stage: Int, val team: List<com.purpal.catplayground.nightwatch.God>) : Screen
     data object DivineMenu : Screen
     data object DivineDeck : Screen
     data object DivineShop : Screen

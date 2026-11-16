@@ -24,6 +24,7 @@ android {
         applicationId = "com.purpal.catplayground"
         minSdk = 26
         targetSdk = 35
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         versionCode = appVersionCode
         versionName = appVersion
     }
@@ -41,6 +42,12 @@ android {
 
     buildTypes {
         release {
+            // Local release previews coexist with the officially signed app and its saves.
+            if (providers.gradleProperty("nightwatchPreview").orNull == "true") {
+                applicationIdSuffix = ".nightwatch"
+                versionNameSuffix = "-nightwatch"
+                manifestPlaceholders["appLabel"] = "773喵遊樂園・守夜試玩"
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
